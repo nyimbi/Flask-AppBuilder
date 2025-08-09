@@ -53,7 +53,8 @@ Includes:
 ---------
 
   - Database
-      - SQLAlchemy, multiple database support: sqlite, MySQL, ORACLE, MSSQL, DB2 etc.
+      - SQLAlchemy 2.x, multiple database support: sqlite, MySQL, ORACLE, MSSQL, DB2 etc.
+      - Flask-SQLAlchemy 3.x for enhanced performance and modern features.
       - Partial support for MongoDB using MongoEngine.
       - Multiple database connections support (Vertical partitioning).
       - Easy mixin audit to models (created/changed by user, and timestamps).

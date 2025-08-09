@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>{{ title }} - Enterprise Integration Suite</title>
+	
+	<!-- Bootstrap CSS -->
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+	
+	<style>
+		.enterprise-card {
+			transition: transform 0.2s ease-in-out;
+			border-left: 4px solid #6c757d;
+		}
+		
+		.enterprise-card:hover {
+			transform: translateY(-2px);
+			box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+		}
+		
+		.sso-card { border-left-color: #007bff; }
+		.ldap-card { border-left-color: #28a745; }
+		.api-card { border-left-color: #ffc107; }
+		.audit-card { border-left-color: #dc3545; }
+		.connector-card { border-left-color: #6f42c1; }
+		
+		.integration-status {
+			display: inline-flex;
+			align-items: center;
+			gap: 0.5rem;
+			padding: 0.375rem 0.75rem;
+			border-radius: 1rem;
+			font-size: 0.875rem;
+			font-weight: 500;
+		}
+		
+		.status-active { background-color: #d4edda; color: #155724; }
+		.status-inactive { background-color: #f8d7da; color: #721c24; }
+		.status-pending { background-color: #fff3cd; color: #856404; }
+		
+		.stats-grid {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+			gap: 1rem;
+		}
+		
+		.stat-item {
+			text-align: center;
+			padding: 1.5rem;
+			background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+			border-radius: 0.5rem;
+			border: 1px solid #dee2e6;
+		}
+		
+		.stat-number {
+			font-size: 2rem;
+			font-weight: bold;
+			line-height: 1;
+			margin-bottom: 0.5rem;
+		}
+		
+		.stat-label {
+			font-size: 0.875rem;
+			color: #6c757d;
+			text-transform: uppercase;
+			letter-spacing: 0.5px;
+		}
+		
+		.integration-overview {
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			color: white;
+			border-radius: 1rem;
+			padding: 2rem;
+		}
+		
+		.quick-action-btn {
+			border-radius: 50px;
+			padding: 0.75rem 1.5rem;
+			font-weight: 600;
+			text-transform: uppercase;
+			letter-spacing: 0.5px;
+			transition: all 0.2s ease-in-out;
+		}
+		
+		.quick-action-btn:hover {
+			transform: scale(1.05);
+		}
+		
+		.feature-icon {
+			width: 60px;
+			height: 60px;
+			border-radius: 50%;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-size: 1.5rem;
+			margin: 0 auto 1rem;
+		}
+		
+		.sso-icon { background: linear-gradient(135deg, #007bff, #0056b3); }
+		.ldap-icon { background: linear-gradient(135deg, #28a745, #1e7e34); }
+		.api-icon { background: linear-gradient(135deg, #ffc107, #e0a800); }
+		.audit-icon { background: linear-gradient(135deg, #dc3545, #bd2130); }
+		.connector-icon { background: linear-gradient(135deg, #6f42c1, #59359a); }
+	</style>
+</head>
+
+<body>
+	<div class="container-fluid p-4">
+		<!-- Header -->
+		<div class="row mb-4">
+			<div class="col-12">
+				<div class="d-flex justify-content-between align-items-center">
+					<h1 class="h2 mb-0">
+						<i class="fas fa-building text-primary me-2"></i>
+						{{ title }}
+					</h1>
+					<div class="btn-group">
+						<a href="{{ url_for('EnterpriseIntegrationView.credentials') }}" class="btn btn-outline-primary">
+							<i class="fas fa-key me-1"></i> Credentials
+						</a>
+						<a href="{{ url_for('EnterpriseIntegrationView.sso_config') }}" class="btn btn-outline-success">
+							<i class="fas fa-sign-in-alt me-1"></i> SSO Config
+						</a>
+						<a href="{{ url_for('EnterpriseIntegrationView.audit_logs') }}" class="btn btn-outline-danger">
+							<i class="fas fa-clipboard-list me-1"></i> Audit Logs
+						</a>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Integration Overview -->
+		<div class="row mb-4">
+			<div class="col-12">
+				<div class="integration-overview">
+					<div class="row align-items-center">
+						<div class="col-md-8">
+							<h3 class="mb-3">Enterprise Integration Dashboard</h3>
+							<p class="mb-3">
+								Manage SSO providers, LDAP authentication, API integrations, 
+								audit logging, and external system connectors from a centralized interface.
+							</p>
+							<div class="integration-status status-active">
+								<i class="fas fa-check-circle"></i>
+								System Active - {{ overview.active_integrations }} integrations running
+							</div>
+						</div>
+						<div class="col-md-4">
+							<div class="stats-grid">
+								<div class="stat-item text-white bg-transparent border-white">
+									<div class="stat-number">{{ overview.total_credentials }}</div>
+									<div class="stat-label text-white-50">Stored Credentials</div>
+								</div>
+								<div class="stat-item text-white bg-transparent border-white">
+									<div class="stat-number">{{ overview.active_connectors }}</div>
+									<div class="stat-label text-white-50">Active Connectors</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Integration Features -->
+		<div class="row mb-4">
+			<div class="col-md-4 mb-3">
+				<div class="card enterprise-card sso-card h-100">
+					<div class="card-body text-center">
+						<div class="feature-icon sso-icon text-white">
+							<i class="fas fa-sign-in-alt"></i>
+						</div>
+						<h5>Single Sign-On</h5>
+						<p class="text-muted">Configure SAML and OAuth2 providers for seamless authentication across your organization.</p>
+						<div class="mb-3">
+							<span class="badge bg-primary">{{ overview.sso_providers }} Providers</span>
+						</div>
+						<a href="{{ url_for('EnterpriseIntegrationView.sso_config') }}" class="btn btn-primary quick-action-btn">
+							Configure SSO
+						</a>
+					</div>
+				</div>
+			</div>
+			
+			<div class="col-md-4 mb-3">
+				<div class="card enterprise-card ldap-card h-100">
+					<div class="card-body text-center">
+						<div class="feature-icon ldap-icon text-white">
+							<i class="fas fa-users"></i>
+						</div>
+						<h5>LDAP/Active Directory</h5>
+						<p class="text-muted">Integrate with existing directory services for centralized user management and authentication.</p>
+						<div class="mb-3">
+							<span class="integration-status status-{{ 'active' if overview.ldap_status else 'inactive' }}">
+								<i class="fas fa-{{ 'check' if overview.ldap_status else 'times' }}-circle"></i>
+								{{ 'Connected' if overview.ldap_status else 'Disconnected' }}
+							</span>
+						</div>
+						<button class="btn btn-success quick-action-btn" onclick="configureLDAP()">
+							Setup LDAP
+						</button>
+					</div>
+				</div>
+			</div>
+			
+			<div class="col-md-4 mb-3">
+				<div class="card enterprise-card api-card h-100">
+					<div class="card-body text-center">
+						<div class="feature-icon api-icon text-white">
+							<i class="fas fa-key"></i>
+						</div>
+						<h5>API Management</h5>
+						<p class="text-muted">Generate and manage API keys, configure rate limiting, and monitor API usage.</p>
+						<div class="mb-3">
+							<span class="badge bg-warning text-dark">{{ overview.active_api_keys }} Active Keys</span>
+						</div>
+						<a href="{{ url_for('EnterpriseIntegrationView.api_management') }}" class="btn btn-warning quick-action-btn">
+							Manage APIs
+						</a>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Additional Features Row -->
+		<div class="row mb-4">
+			<div class="col-md-6 mb-3">
+				<div class="card enterprise-card audit-card h-100">
+					<div class="card-body">
+						<div class="row align-items-center">
+							<div class="col-3">
+								<div class="feature-icon audit-icon text-white">
+									<i class="fas fa-clipboard-list"></i>
+								</div>
+							</div>
+							<div class="col-9">
+								<h5>Audit & Compliance</h5>
+								<p class="text-muted mb-3">Comprehensive logging of all system activities for compliance and security monitoring.</p>
+								<div class="mb-2">
+									<small class="text-muted">Recent Events: {{ overview.recent_audit_events }}</small>
+								</div>
+								<a href="{{ url_for('EnterpriseIntegrationView.audit_logs') }}" class="btn btn-danger btn-sm quick-action-btn">
+									View Audit Logs
+								</a>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			
+			<div class="col-md-6 mb-3">
+				<div class="card enterprise-card connector-card h-100">
+					<div class="card-body">
+						<div class="row align-items-center">
+							<div class="col-3">
+								<div class="feature-icon connector-icon text-white">
+									<i class="fas fa-plug"></i>
+								</div>
+							</div>
+							<div class="col-9">
+								<h5>External Connectors</h5>
+								<p class="text-muted mb-3">Connect to external databases, REST APIs, and other systems securely.</p>
+								<div class="mb-2">
+									<small class="text-muted">Active Connections: {{ overview.active_connectors }}</small>
+								</div>
+								<a href="{{ url_for('EnterpriseIntegrationView.connectors') }}" class="btn btn-secondary btn-sm quick-action-btn">
+									Manage Connectors
+								</a>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Quick Setup Wizard -->
+		<div class="row mb-4">
+			<div class="col-12">
+				<div class="card enterprise-card">
+					<div class="card-header">
+						<h6 class="mb-0">
+							<i class="fas fa-magic text-primary me-2"></i>
+							Quick Setup Wizard
+						</h6>
+					</div>
+					<div class="card-body">
+						<p class="text-muted mb-3">
+							Get started quickly with common enterprise integration scenarios.
+						</p>
+						<div class="row">
+							<div class="col-md-3">
+								<button class="btn btn-outline-primary w-100 mb-2" onclick="startSAMLSetup()">
+									<i class="fas fa-rocket me-2"></i>
+									Setup SAML SSO
+								</button>
+							</div>
+							<div class="col-md-3">
+								<button class="btn btn-outline-success w-100 mb-2" onclick="startLDAPSetup()">
+									<i class="fas fa-users me-2"></i>
+									Connect LDAP
+								</button>
+							</div>
+							<div class="col-md-3">
+								<button class="btn btn-outline-warning w-100 mb-2" onclick="startAPISetup()">
+									<i class="fas fa-key me-2"></i>
+									Generate API Keys
+								</button>
+							</div>
+							<div class="col-md-3">
+								<button class="btn btn-outline-info w-100 mb-2" onclick="startConnectorSetup()">
+									<i class="fas fa-plug me-2"></i>
+									Add Connector
+								</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Recent Activity -->
+		<div class="row">
+			<div class="col-12">
+				<div class="card enterprise-card">
+					<div class="card-header">
+						<h6 class="mb-0">
+							<i class="fas fa-history text-info me-2"></i>
+							Recent Integration Activity
+						</h6>
+					</div>
+					<div class="card-body">
+						{% if overview.recent_activities %}
+							<div class="timeline">
+								{% for activity in overview.recent_activities[:5] %}
+									<div class="d-flex mb-3">
+										<div class="flex-shrink-0">
+											<div class="bg-{{ activity.type_color }} text-white rounded-circle p-2" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+												<i class="fas fa-{{ activity.icon }}"></i>
+											</div>
+										</div>
+										<div class="flex-grow-1 ms-3">
+											<h6 class="mb-1">{{ activity.title }}</h6>
+											<p class="text-muted mb-1">{{ activity.description }}</p>
+											<small class="text-muted">{{ activity.timestamp }}</small>
+										</div>
+									</div>
+								{% endfor %}
+							</div>
+						{% else %}
+							<div class="text-center text-muted py-3">
+								<i class="fas fa-clock fa-2x mb-2"></i>
+								<p>No recent activity</p>
+							</div>
+						{% endif %}
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Setup Modals -->
+	{% include 'enterprise/setup_modals.html' %}
+
+	<!-- Bootstrap JS -->
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+	
+	<script>
+		// Quick setup functions
+		function startSAMLSetup() {
+			new bootstrap.Modal(document.getElementById('samlSetupModal')).show();
+		}
+		
+		function startLDAPSetup() {
+			new bootstrap.Modal(document.getElementById('ldapSetupModal')).show();
+		}
+		
+		function startAPISetup() {
+			new bootstrap.Modal(document.getElementById('apiSetupModal')).show();
+		}
+		
+		function startConnectorSetup() {
+			new bootstrap.Modal(document.getElementById('connectorSetupModal')).show();
+		}
+		
+		function configureLDAP() {
+			new bootstrap.Modal(document.getElementById('ldapSetupModal')).show();
+		}
+		
+		// Auto-refresh status every 30 seconds
+		setInterval(function() {
+			fetch('/enterprise/api/overview/')
+				.then(response => response.json())
+				.then(data => {
+					if (data.success) {
+						// Update status indicators
+						console.log('Status updated:', data.overview);
+					}
+				})
+				.catch(error => console.error('Status update failed:', error));
+		}, 30000);
+	</script>
+</body>
+</html>

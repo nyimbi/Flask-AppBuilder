@@ -117,7 +117,8 @@ pip installs all the requirements for you.
 Flask App Builder depends on
 
     - flask : The web framework, this is what we're extending.
-    - flask-sqlalchemy : DB access (see SQLAlchemy).
+    - flask-sqlalchemy>=3.0 : DB access (see SQLAlchemy 2.x).
+    - sqlalchemy>=2.0 : The Python SQL toolkit and ORM.
     - flask-login : Login, session on flask.
     - flask-openid : Open ID authentication.
     - flask-wtform : Web forms.
@@ -127,10 +128,16 @@ If you plan to use Image processing or upload, you will need to install Pillow::
 
     pip install Pillow
 
-Python 2 and 3 Compatibility
-----------------------------
+Python Compatibility
+--------------------
 
 The framework removed support for python 2 since version 1.13.X
 
-For version 2.1.1, the minimum supported Python version is 3.6.
+**Current Version Requirements:**
+- Python >= 3.7 (required for SQLAlchemy 2.x support)
+- SQLAlchemy >= 2.0.0 (upgraded from 1.4.x for improved performance and modern features)
+- Flask-SQLAlchemy >= 3.0 (required for SQLAlchemy 2.x compatibility)
+
+**Note**: If you are upgrading from a previous version that used SQLAlchemy 1.4.x, 
+please refer to the migration documentation for upgrade guidance.
 

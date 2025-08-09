@@ -1,0 +1,513 @@
+{% extends "appbuilder/base.html" %}
+
+{% block head_css %}
+  {{ super() }}
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <style>
+    .import-summary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 8px;
+      padding: 1.5rem;
+    }
+    
+    .file-upload-area {
+      border: 3px dashed #dee2e6;
+      border-radius: 12px;
+      padding: 3rem 2rem;
+      text-align: center;
+      background: #f8f9fa;
+      transition: all 0.3s;
+      cursor: pointer;
+    }
+    
+    .file-upload-area:hover {
+      border-color: #007bff;
+      background: #f0f8ff;
+    }
+    
+    .file-upload-area.dragover {
+      border-color: #007bff;
+      background: #e3f2fd;
+      transform: scale(1.02);
+    }
+    
+    .file-upload-area.has-file {
+      border-color: #28a745;
+      background: #f0fff4;
+    }
+    
+    .import-options {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 1.5rem;
+    }
+    
+    .option-group {
+      background: white;
+      border-radius: 6px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      border: 1px solid #dee2e6;
+    }
+    
+    .option-group h6 {
+      color: #495057;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+    }
+    
+    .file-info {
+      background: white;
+      border: 1px solid #28a745;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-top: 1rem;
+    }
+    
+    .validation-results {
+      margin-top: 1rem;
+      padding: 1rem;
+      border-radius: 8px;
+    }
+    
+    .validation-results.success {
+      background: #d4edda;
+      border: 1px solid #c3e6cb;
+    }
+    
+    .validation-results.error {
+      background: #f8d7da;
+      border: 1px solid #f5c6cb;
+    }
+    
+    .progress-section {
+      display: none;
+      background: #e3f2fd;
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-top: 1rem;
+    }
+    
+    .import-restrictions {
+      background: #fff3cd;
+      border: 1px solid #ffeaa7;
+      border-radius: 6px;
+      padding: 1rem;
+      margin-top: 1rem;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <!-- Page Header -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card import-summary">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h1 class="mb-2">
+                <i class="fa fa-download"></i> Import Wizards
+              </h1>
+              <p class="mb-0 opacity-75">
+                Import wizard forms from exported files with validation and conflict resolution
+              </p>
+            </div>
+            <div class="text-end">
+              <a href="/wizard-migration" class="btn btn-light btn-sm">
+                <i class="fa fa-arrow-left"></i> Back to Dashboard
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <form method="POST" enctype="multipart/form-data" id="importForm">
+    <div class="row">
+      <!-- File Upload -->
+      <div class="col-md-8">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="mb-0">
+              <i class="fa fa-cloud-upload-alt"></i> Select Import File
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="file-upload-area" id="fileUploadArea" onclick="document.getElementById('importFile').click()">
+              <div id="uploadPrompt">
+                <i class="fa fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                <h5>Drop your import file here or click to browse</h5>
+                <p class="text-muted mb-3">
+                  Supported formats: {{ ', '.join(allowed_extensions) }}<br>
+                  Maximum file size: {{ max_file_size_mb }}MB
+                </p>
+                <button type="button" class="btn btn-outline-primary">
+                  <i class="fa fa-folder-open"></i> Browse Files
+                </button>
+              </div>
+              
+              <div id="fileInfo" class="file-info" style="display: none;">
+                <div class="d-flex align-items-center">
+                  <i class="fa fa-file-archive fa-2x text-success me-3"></i>
+                  <div class="flex-grow-1">
+                    <h6 class="mb-1" id="fileName"></h6>
+                    <p class="mb-0 text-muted">
+                      <span id="fileSize"></span> • 
+                      <span id="fileType"></span>
+                    </p>
+                  </div>
+                  <button type="button" class="btn btn-outline-danger btn-sm" onclick="clearFile()">
+                    <i class="fa fa-times"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            <input type="file" id="importFile" name="import_file" style="display: none;" 
+                   accept="{{ ','.join(allowed_extensions) }}" onchange="handleFileSelect(this)">
+            
+            <!-- Validation Results -->
+            <div id="validationResults" class="validation-results" style="display: none;">
+              <h6><i class="fa fa-check-circle"></i> File Validation</h6>
+              <div id="validationContent"></div>
+            </div>
+            
+            <!-- Import Restrictions -->
+            <div class="import-restrictions">
+              <h6><i class="fa fa-info-circle"></i> Import Guidelines</h6>
+              <ul class="mb-0 small">
+                <li>Only files exported from this system or compatible formats are supported</li>
+                <li>Large files may take several minutes to process</li>
+                <li>Existing wizards with the same ID will be skipped unless overwrite is enabled</li>
+                <li>Invalid or corrupted data will be reported and skipped</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Import Options -->
+      <div class="col-md-4">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="mb-0">
+              <i class="fa fa-cog"></i> Import Options
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="import-options">
+              
+              <!-- Validation Options -->
+              <div class="option-group">
+                <h6>Validation</h6>
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" name="validate_import" id="validateImport" checked>
+                  <label class="form-check-label" for="validateImport">
+                    <strong>Validate Before Import</strong>
+                    <br><small class="text-muted">Check file integrity and compatibility</small>
+                  </label>
+                </div>
+              </div>
+              
+              <!-- Conflict Resolution -->
+              <div class="option-group">
+                <h6>Conflict Resolution</h6>
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" name="overwrite_existing" id="overwriteExisting">
+                  <label class="form-check-label" for="overwriteExisting">
+                    <strong>Overwrite Existing</strong>
+                    <br><small class="text-muted">Replace wizards with same ID</small>
+                  </label>
+                </div>
+              </div>
+              
+              <!-- Selective Import -->
+              <div class="option-group">
+                <h6>Selective Import</h6>
+                <div class="mb-2">
+                  <label class="form-label small">Specific Wizard IDs (optional)</label>
+                  <input type="text" class="form-control form-control-sm" name="specific_wizards" 
+                         placeholder="wizard1, wizard2, wizard3" id="specificWizards">
+                  <small class="form-text text-muted">
+                    Comma-separated list. Leave empty to import all wizards.
+                  </small>
+                </div>
+              </div>
+              
+              <!-- Advanced Options -->
+              <div class="option-group">
+                <h6>Advanced Options</h6>
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" name="create_backup" id="createBackup" checked>
+                  <label class="form-check-label" for="createBackup">
+                    <strong>Create Backup First</strong>
+                    <br><small class="text-muted">Backup existing data before import</small>
+                  </label>
+                </div>
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" name="dry_run" id="dryRun">
+                  <label class="form-check-label" for="dryRun">
+                    <strong>Dry Run</strong>
+                    <br><small class="text-muted">Preview import without making changes</small>
+                  </label>
+                </div>
+              </div>
+              
+            </div>
+            
+            <!-- Import Button -->
+            <div class="d-grid">
+              <button type="submit" class="btn btn-success btn-lg" id="importButton" disabled>
+                <i class="fa fa-download"></i> Import Wizards
+              </button>
+            </div>
+            
+            <!-- Validate Button -->
+            <div class="d-grid mt-2">
+              <button type="button" class="btn btn-outline-info" id="validateButton" onclick="validateFile()" disabled>
+                <i class="fa fa-check"></i> Validate File
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+  
+  <!-- Progress Section -->
+  <div class="progress-section" id="progressSection">
+    <div class="text-center">
+      <h5><i class="fa fa-spinner fa-spin"></i> Importing Wizards...</h5>
+      <p class="text-muted">Please wait while we process your import file</p>
+      <div class="progress">
+        <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%" id="importProgress"></div>
+      </div>
+      <div class="mt-2">
+        <small id="progressStatus">Initializing import...</small>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block tail_js %}
+  {{ super() }}
+  <script>
+    let selectedFile = null;
+    
+    // File upload handling
+    const fileUploadArea = document.getElementById('fileUploadArea');
+    const fileInput = document.getElementById('importFile');
+    
+    // Drag and drop handlers
+    fileUploadArea.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      this.classList.add('dragover');
+    });
+    
+    fileUploadArea.addEventListener('dragleave', function(e) {
+      e.preventDefault();
+      this.classList.remove('dragover');
+    });
+    
+    fileUploadArea.addEventListener('drop', function(e) {
+      e.preventDefault();
+      this.classList.remove('dragover');
+      
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        fileInput.files = files;
+        handleFileSelect(fileInput);
+      }
+    });
+    
+    function handleFileSelect(input) {
+      const file = input.files[0];
+      if (!file) return;
+      
+      selectedFile = file;
+      
+      // Validate file
+      const validation = validateSelectedFile(file);
+      if (!validation.valid) {
+        alert(validation.error);
+        clearFile();
+        return;
+      }
+      
+      // Update UI
+      showFileInfo(file);
+      document.getElementById('importButton').disabled = false;
+      document.getElementById('validateButton').disabled = false;
+    }
+    
+    function validateSelectedFile(file) {
+      // Check file extension
+      const allowedExtensions = {{ allowed_extensions | safe }};
+      const fileName = file.name.toLowerCase();
+      const fileExtension = '.' + fileName.split('.').pop();
+      
+      if (!allowedExtensions.includes(fileExtension)) {
+        return {
+          valid: false,
+          error: `File type "${fileExtension}" is not allowed. Allowed types: ${allowedExtensions.join(', ')}`
+        };
+      }
+      
+      // Check file size
+      const maxSize = {{ max_file_size_mb }} * 1024 * 1024; // Convert MB to bytes
+      if (file.size > maxSize) {
+        return {
+          valid: false,
+          error: `File is too large. Maximum size: {{ max_file_size_mb }}MB`
+        };
+      }
+      
+      if (file.size === 0) {
+        return {
+          valid: false,
+          error: 'File is empty'
+        };
+      }
+      
+      return { valid: true };
+    }
+    
+    function showFileInfo(file) {
+      document.getElementById('uploadPrompt').style.display = 'none';
+      document.getElementById('fileInfo').style.display = 'block';
+      fileUploadArea.classList.add('has-file');
+      
+      document.getElementById('fileName').textContent = file.name;
+      document.getElementById('fileSize').textContent = formatFileSize(file.size);
+      document.getElementById('fileType').textContent = file.type || 'Unknown type';
+    }
+    
+    function clearFile() {
+      selectedFile = null;
+      fileInput.value = '';
+      
+      document.getElementById('uploadPrompt').style.display = 'block';
+      document.getElementById('fileInfo').style.display = 'none';
+      document.getElementById('validationResults').style.display = 'none';
+      
+      fileUploadArea.classList.remove('has-file');
+      
+      document.getElementById('importButton').disabled = true;
+      document.getElementById('validateButton').disabled = true;
+    }
+    
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+    
+    function validateFile() {
+      if (!selectedFile) return;
+      
+      const validateButton = document.getElementById('validateButton');
+      validateButton.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Validating...';
+      validateButton.disabled = true;
+      
+      // Simulate validation (in real implementation, this would make an API call)
+      setTimeout(() => {
+        const validationResults = document.getElementById('validationResults');
+        const validationContent = document.getElementById('validationContent');
+        
+        // Mock validation results
+        const isValid = Math.random() > 0.3; // 70% chance of valid file
+        
+        if (isValid) {
+          validationResults.className = 'validation-results success';
+          validationContent.innerHTML = `
+            <div class="d-flex align-items-center mb-2">
+              <i class="fa fa-check-circle text-success me-2"></i>
+              <strong>File is valid and ready for import</strong>
+            </div>
+            <ul class="mb-0 small">
+              <li>Found ${Math.floor(Math.random() * 5) + 1} wizard(s) to import</li>
+              <li>All data structures are valid</li>
+              <li>No conflicts detected</li>
+              <li>File integrity check passed</li>
+            </ul>
+          `;
+        } else {
+          validationResults.className = 'validation-results error';
+          validationContent.innerHTML = `
+            <div class="d-flex align-items-center mb-2">
+              <i class="fa fa-exclamation-triangle text-danger me-2"></i>
+              <strong>File validation failed</strong>
+            </div>
+            <ul class="mb-0 small">
+              <li>Invalid file format or corrupted data</li>
+              <li>Missing required metadata</li>
+              <li>Incompatible format version</li>
+            </ul>
+          `;
+        }
+        
+        validationResults.style.display = 'block';
+        
+        validateButton.innerHTML = '<i class="fa fa-check"></i> Validate File';
+        validateButton.disabled = false;
+      }, 2000);
+    }
+    
+    // Form submission handling
+    document.getElementById('importForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      if (!selectedFile) {
+        alert('Please select a file to import');
+        return;
+      }
+      
+      // Show progress section
+      document.getElementById('progressSection').style.display = 'block';
+      
+      // Simulate progress
+      let progress = 0;
+      const progressBar = document.getElementById('importProgress');
+      const progressStatus = document.getElementById('progressStatus');
+      
+      const interval = setInterval(() => {
+        progress += Math.random() * 15;
+        
+        if (progress >= 100) {
+          progress = 100;
+          progressBar.style.width = '100%';
+          progressStatus.textContent = 'Import complete! Redirecting to results...';
+          clearInterval(interval);
+          
+          // Submit the actual form after animation
+          setTimeout(() => {
+            e.target.submit();
+          }, 1000);
+        } else {
+          progressBar.style.width = progress + '%';
+          
+          if (progress < 20) {
+            progressStatus.textContent = 'Reading import file...';
+          } else if (progress < 40) {
+            progressStatus.textContent = 'Validating data structures...';
+          } else if (progress < 60) {
+            progressStatus.textContent = 'Processing wizard configurations...';
+          } else if (progress < 80) {
+            progressStatus.textContent = 'Importing data and settings...';
+          } else {
+            progressStatus.textContent = 'Finalizing import...';
+          }
+        }
+      }, 400);
+    });
+  </script>
+{% endblock %}

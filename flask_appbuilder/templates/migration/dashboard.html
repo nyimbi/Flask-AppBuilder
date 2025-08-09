@@ -1,0 +1,555 @@
+{% extends "appbuilder/base.html" %}
+
+{% block head_css %}
+  {{ super() }}
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <style>
+    .migration-card {
+      transition: transform 0.2s, box-shadow 0.2s;
+      border-left: 4px solid transparent;
+      cursor: pointer;
+    }
+    
+    .migration-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    
+    .migration-card.export {
+      border-left-color: #007bff;
+    }
+    
+    .migration-card.import {
+      border-left-color: #28a745;
+    }
+    
+    .migration-card.backup {
+      border-left-color: #ffc107;
+    }
+    
+    .migration-card.restore {
+      border-left-color: #17a2b8;
+    }
+    
+    .status-indicator {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 8px;
+    }
+    
+    .status-indicator.ready {
+      background-color: #28a745;
+    }
+    
+    .status-indicator.warning {
+      background-color: #ffc107;
+    }
+    
+    .status-indicator.error {
+      background-color: #dc3545;
+    }
+    
+    .wizard-count {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #007bff;
+    }
+    
+    .migration-stats {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 12px;
+    }
+    
+    .quick-action-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+      margin-top: 2rem;
+    }
+    
+    .recent-migration-item {
+      padding: 1rem;
+      border-left: 4px solid #dee2e6;
+      margin-bottom: 0.5rem;
+      border-radius: 0 8px 8px 0;
+      background: #f8f9fa;
+    }
+    
+    .recent-migration-item.export {
+      border-left-color: #007bff;
+    }
+    
+    .recent-migration-item.import {
+      border-left-color: #28a745;
+    }
+    
+    .recent-migration-item.backup {
+      border-left-color: #ffc107;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <!-- Page Header -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card migration-stats">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h1 class="mb-2">
+                <i class="fa fa-exchange-alt"></i> Wizard Migration Center
+              </h1>
+              <p class="mb-0 opacity-75">
+                Import, export, backup, and restore wizard forms with complete data integrity
+              </p>
+            </div>
+            <div class="text-end">
+              <div class="wizard-count">{{ wizards|length }}</div>
+              <small class="opacity-75">Available Wizards</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- System Status -->
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="fa fa-system-wired"></i> System Status</h5>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-3 text-center">
+              <div class="status-indicator ready"></div>
+              <strong>Export Engine</strong>
+              <br><small class="text-muted">Ready</small>
+            </div>
+            <div class="col-md-3 text-center">
+              <div class="status-indicator ready"></div>
+              <strong>Import Engine</strong>
+              <br><small class="text-muted">Ready</small>
+            </div>
+            <div class="col-md-3 text-center">
+              <div class="status-indicator ready"></div>
+              <strong>Validator</strong>
+              <br><small class="text-muted">Ready</small>
+            </div>
+            <div class="col-md-3 text-center">
+              <div class="status-indicator ready"></div>
+              <strong>Storage</strong>
+              <br><small class="text-muted">Available</small>
+            </div>
+          </div>
+          
+          <hr>
+          
+          <div class="row mt-3">
+            <div class="col-md-6">
+              <strong>Supported Formats:</strong>
+              {% for format in status.supported_formats %}
+              <span class="badge badge-secondary me-1">{{ format|upper }}</span>
+              {% endfor %}
+            </div>
+            <div class="col-md-6">
+              <strong>Format Version:</strong>
+              <span class="badge badge-info">{{ status.format_version }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="fa fa-history"></i> Recent Activity</h5>
+        </div>
+        <div class="card-body">
+          {% if recent_migrations %}
+          {% for migration in recent_migrations %}
+          <div class="recent-migration-item {{ migration.type }}">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <strong>{{ migration.type|title }}</strong>
+                <br>
+                <small class="text-muted">
+                  {{ migration.wizard_count }} wizard(s) • {{ migration.created_by }}
+                </small>
+              </div>
+              <small class="text-muted">
+                {{ migration.created_at[:10] }}
+              </small>
+            </div>
+          </div>
+          {% endfor %}
+          {% else %}
+          <div class="text-center text-muted">
+            <i class="fa fa-inbox fa-2x mb-2"></i>
+            <p>No recent migrations</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="row">
+    <div class="col-12">
+      <h3 class="mb-3">Quick Actions</h3>
+      <div class="quick-action-grid">
+        
+        <!-- Export Wizard -->
+        <div class="card migration-card export" onclick="window.location.href='/wizard-migration/export'">
+          <div class="card-body text-center">
+            <i class="fa fa-upload fa-3x text-primary mb-3"></i>
+            <h5 class="card-title">Export Wizards</h5>
+            <p class="card-text">
+              Export wizard forms with configurations, data, and settings to JSON or ZIP format
+            </p>
+            <div class="mt-3">
+              <span class="badge badge-outline-primary">JSON</span>
+              <span class="badge badge-outline-primary">ZIP</span>
+              <span class="badge badge-outline-primary">Compressed</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Import Wizard -->
+        <div class="card migration-card import" onclick="window.location.href='/wizard-migration/import'">
+          <div class="card-body text-center">
+            <i class="fa fa-download fa-3x text-success mb-3"></i>
+            <h5 class="card-title">Import Wizards</h5>
+            <p class="card-text">
+              Import wizard forms from exported files with full validation and conflict resolution
+            </p>
+            <div class="mt-3">
+              <span class="badge badge-outline-success">Validation</span>
+              <span class="badge badge-outline-success">Conflict Resolution</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Backup Wizard -->
+        <div class="card migration-card backup" onclick="window.location.href='/wizard-migration/backup'">
+          <div class="card-body text-center">
+            <i class="fa fa-shield-alt fa-3x text-warning mb-3"></i>
+            <h5 class="card-title">Create Backup</h5>
+            <p class="card-text">
+              Create complete backups of wizard forms including all data and configurations
+            </p>
+            <div class="mt-3">
+              <span class="badge badge-outline-warning">Complete Data</span>
+              <span class="badge badge-outline-warning">Compressed</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Restore/Migrate -->
+        <div class="card migration-card restore" onclick="showMigrationOptions()">
+          <div class="card-body text-center">
+            <i class="fa fa-recycle fa-3x text-info mb-3"></i>
+            <h5 class="card-title">Restore & Migrate</h5>
+            <p class="card-text">
+              Restore from backups or migrate wizards between systems with transformation support
+            </p>
+            <div class="mt-3">
+              <span class="badge badge-outline-info">Transformations</span>
+              <span class="badge badge-outline-info">Cross-System</span>
+            </div>
+          </div>
+        </div>
+        
+      </div>
+    </div>
+  </div>
+  
+  <!-- Available Wizards -->
+  <div class="row mt-5">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+              <i class="fa fa-magic"></i> Available Wizards
+            </h5>
+            <div>
+              <button class="btn btn-outline-primary btn-sm" onclick="selectAllWizards()">
+                <i class="fa fa-check-double"></i> Select All
+              </button>
+              <button class="btn btn-outline-secondary btn-sm" onclick="exportSelectedWizards()">
+                <i class="fa fa-upload"></i> Export Selected
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="card-body">
+          {% if wizards %}
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th width="40">
+                    <input type="checkbox" id="selectAllCheckbox" onchange="toggleAllWizards()">
+                  </th>
+                  <th>Title</th>
+                  <th>Description</th>
+                  <th>ID</th>
+                  <th width="120">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for wizard in wizards %}
+                <tr>
+                  <td>
+                    <input type="checkbox" class="wizard-checkbox" value="{{ wizard.id }}">
+                  </td>
+                  <td>
+                    <strong>{{ wizard.title }}</strong>
+                  </td>
+                  <td>{{ wizard.description }}</td>
+                  <td>
+                    <code>{{ wizard.id }}</code>
+                  </td>
+                  <td>
+                    <div class="btn-group btn-group-sm">
+                      <button class="btn btn-outline-primary" onclick="exportSingleWizard('{{ wizard.id }}')">
+                        <i class="fa fa-upload"></i>
+                      </button>
+                      <button class="btn btn-outline-warning" onclick="backupSingleWizard('{{ wizard.id }}')">
+                        <i class="fa fa-shield-alt"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="text-center text-muted">
+            <i class="fa fa-magic fa-3x mb-3"></i>
+            <h5>No wizards available</h5>
+            <p>Create a wizard first to use migration features</p>
+            <a href="/wizard-builder" class="btn btn-primary">
+              <i class="fa fa-plus"></i> Create Wizard
+            </a>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Migration Options Modal -->
+<div class="modal fade" id="migrationOptionsModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Migration Options</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">Migration Type</label>
+          <select class="form-select" id="migrationType">
+            <option value="restore">Restore from Backup</option>
+            <option value="migrate">Migrate from Another System</option>
+            <option value="import">Import Exported Wizards</option>
+          </select>
+        </div>
+        
+        <div class="mb-3">
+          <label class="form-label">Source File</label>
+          <input type="file" class="form-control" id="migrationFile" accept=".json,.zip">
+          <small class="form-text text-muted">
+            Select a backup file, export package, or migration archive
+          </small>
+        </div>
+        
+        <div class="form-check mb-3">
+          <input type="checkbox" class="form-check-input" id="validateMigration" checked>
+          <label class="form-check-label" for="validateMigration">
+            Validate data before migration
+          </label>
+        </div>
+        
+        <div class="form-check mb-3">
+          <input type="checkbox" class="form-check-input" id="overwriteExisting">
+          <label class="form-check-label" for="overwriteExisting">
+            Overwrite existing wizards
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-info" onclick="executeMigration()">
+          <i class="fa fa-recycle"></i> Start Migration
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block tail_js %}
+  {{ super() }}
+  <script>
+    function selectAllWizards() {
+      const checkboxes = document.querySelectorAll('.wizard-checkbox');
+      const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+      
+      checkboxes.forEach(checkbox => {
+        checkbox.checked = true;
+      });
+      selectAllCheckbox.checked = true;
+    }
+    
+    function toggleAllWizards() {
+      const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+      const checkboxes = document.querySelectorAll('.wizard-checkbox');
+      
+      checkboxes.forEach(checkbox => {
+        checkbox.checked = selectAllCheckbox.checked;
+      });
+    }
+    
+    function getSelectedWizards() {
+      const checkboxes = document.querySelectorAll('.wizard-checkbox:checked');
+      return Array.from(checkboxes).map(cb => cb.value);
+    }
+    
+    function exportSelectedWizards() {
+      const selectedWizards = getSelectedWizards();
+      
+      if (selectedWizards.length === 0) {
+        alert('Please select at least one wizard to export');
+        return;
+      }
+      
+      // Create form and submit
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = '/wizard-migration/export';
+      
+      selectedWizards.forEach(wizardId => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'wizard_ids';
+        input.value = wizardId;
+        form.appendChild(input);
+      });
+      
+      document.body.appendChild(form);
+      form.submit();
+      document.body.removeChild(form);
+    }
+    
+    function exportSingleWizard(wizardId) {
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = '/wizard-migration/export';
+      
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = 'wizard_ids';
+      input.value = wizardId;
+      form.appendChild(input);
+      
+      document.body.appendChild(form);
+      form.submit();
+      document.body.removeChild(form);
+    }
+    
+    function backupSingleWizard(wizardId) {
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = '/wizard-migration/backup';
+      
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = 'wizard_ids';
+      input.value = wizardId;
+      form.appendChild(input);
+      
+      document.body.appendChild(form);
+      form.submit();
+      document.body.removeChild(form);
+    }
+    
+    function showMigrationOptions() {
+      const modal = new bootstrap.Modal(document.getElementById('migrationOptionsModal'));
+      modal.show();
+    }
+    
+    function executeMigration() {
+      const migrationType = document.getElementById('migrationType').value;
+      const file = document.getElementById('migrationFile').files[0];
+      const validate = document.getElementById('validateMigration').checked;
+      const overwrite = document.getElementById('overwriteExisting').checked;
+      
+      if (!file) {
+        alert('Please select a file to migrate');
+        return;
+      }
+      
+      // Create form data
+      const formData = new FormData();
+      formData.append('import_file', file);
+      formData.append('validate_import', validate ? 'on' : '');
+      formData.append('overwrite_existing', overwrite ? 'on' : '');
+      
+      // Submit to import endpoint
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = '/wizard-migration/import';
+      form.enctype = 'multipart/form-data';
+      
+      // Convert FormData to form inputs
+      for (const [key, value] of formData.entries()) {
+        const input = document.createElement('input');
+        if (key === 'import_file') {
+          input.type = 'file';
+          input.files = document.getElementById('migrationFile').files;
+        } else {
+          input.type = 'hidden';
+          input.value = value;
+        }
+        input.name = key;
+        form.appendChild(input);
+      }
+      
+      document.body.appendChild(form);
+      form.submit();
+      document.body.removeChild(form);
+    }
+    
+    // Update checkbox state when individual checkboxes change
+    document.addEventListener('change', function(e) {
+      if (e.target.classList.contains('wizard-checkbox')) {
+        const allCheckboxes = document.querySelectorAll('.wizard-checkbox');
+        const checkedCheckboxes = document.querySelectorAll('.wizard-checkbox:checked');
+        const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+        
+        if (checkedCheckboxes.length === 0) {
+          selectAllCheckbox.indeterminate = false;
+          selectAllCheckbox.checked = false;
+        } else if (checkedCheckboxes.length === allCheckboxes.length) {
+          selectAllCheckbox.indeterminate = false;
+          selectAllCheckbox.checked = true;
+        } else {
+          selectAllCheckbox.indeterminate = true;
+        }
+      }
+    });
+  </script>
+{% endblock %}

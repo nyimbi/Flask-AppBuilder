@@ -1,0 +1,277 @@
+{% extends "appbuilder/base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <h2>{{ _('My Profile') }}</h2>
+            
+            <!-- Profile Header -->
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="row align-items-center">
+                                <div class="col-md-2 text-center">
+                                    {% if profile.avatar %}
+                                        <img src="{{ profile.avatar }}" class="rounded-circle img-thumbnail" width="100" height="100">
+                                    {% else %}
+                                        <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center" 
+                                             style="width: 100px; height: 100px; font-size: 2rem;">
+                                            {{ profile.initials }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-8">
+                                    <h4 class="mb-1">{{ profile.full_name or user.username }}</h4>
+                                    <p class="text-muted mb-2">{{ user.email }}</p>
+                                    {% if profile.job_title or profile.organization %}
+                                        <p class="mb-1">
+                                            {% if profile.job_title %}{{ profile.job_title }}{% endif %}
+                                            {% if profile.job_title and profile.organization %} at {% endif %}
+                                            {% if profile.organization %}{{ profile.organization }}{% endif %}
+                                        </p>
+                                    {% endif %}
+                                    {% if profile.city or profile.country %}
+                                        <p class="text-muted">
+                                            <i class="fa fa-map-marker" aria-hidden="true"></i>
+                                            {% if profile.city %}{{ profile.city }}{% endif %}
+                                            {% if profile.city and profile.country %}, {% endif %}
+                                            {% if profile.country %}{{ profile.country }}{% endif %}
+                                        </p>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-2 text-right">
+                                    <a href="{{ url_for('MyProfileView.edit') }}" class="btn btn-primary">
+                                        <i class="fa fa-edit"></i> {{ _('Edit Profile') }}
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Profile Completion -->
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <h6>{{ _('Profile Completion') }}</h6>
+                            <div class="progress mb-2">
+                                <div class="progress-bar" role="progressbar" 
+                                     style="width: {{ completion_rate }}%" 
+                                     aria-valuenow="{{ completion_rate }}" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100">
+                                    {{ "%.1f"|format(completion_rate) }}%
+                                </div>
+                            </div>
+                            {% if completion_rate < 80 %}
+                                <small class="text-muted">
+                                    {{ _('Complete your profile to unlock all features') }}
+                                </small>
+                            {% else %}
+                                <small class="text-success">
+                                    <i class="fa fa-check-circle"></i> {{ _('Profile complete') }}
+                                </small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Profile Details -->
+            <div class="row">
+                <!-- Personal Information -->
+                <div class="col-md-6">
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="mb-0">{{ _('Personal Information') }}</h6>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-sm table-borderless">
+                                <tbody>
+                                    {% if user.first_name %}
+                                    <tr>
+                                        <td><strong>{{ _('First Name') }}:</strong></td>
+                                        <td>{{ user.first_name }}</td>
+                                    </tr>
+                                    {% endif %}
+                                    {% if user.last_name %}
+                                    <tr>
+                                        <td><strong>{{ _('Last Name') }}:</strong></td>
+                                        <td>{{ user.last_name }}</td>
+                                    </tr>
+                                    {% endif %}
+                                    {% if user.email %}
+                                    <tr>
+                                        <td><strong>{{ _('Email') }}:</strong></td>
+                                        <td>{{ user.email }}</td>
+                                    </tr>
+                                    {% endif %}
+                                    {% if profile.phone %}
+                                    <tr>
+                                        <td><strong>{{ _('Phone') }}:</strong></td>
+                                        <td>{{ profile.phone }}</td>
+                                    </tr>
+                                    {% endif %}
+                                    {% if profile.mobile %}
+                                    <tr>
+                                        <td><strong>{{ _('Mobile') }}:</strong></td>
+                                        <td>{{ profile.mobile }}</td>
+                                    </tr>
+                                    {% endif %}
+                                    {% if profile.date_of_birth %}
+                                    <tr>
+                                        <td><strong>{{ _('Date of Birth') }}:</strong></td>
+                                        <td>{{ profile.date_of_birth.strftime('%B %d, %Y') }}</td>
+                                    </tr>
+                                    {% endif %}
+                                    {% if profile.timezone %}
+                                    <tr>
+                                        <td><strong>{{ _('Timezone') }}:</strong></td>
+                                        <td>{{ profile.timezone }}</td>
+                                    </tr>
+                                    {% endif %}
+                                    {% if profile.language %}
+                                    <tr>
+                                        <td><strong>{{ _('Language') }}:</strong></td>
+                                        <td>{{ profile.language }}</td>
+                                    </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Address Information -->
+                    {% if profile.address_line1 or profile.city or profile.country %}
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="mb-0">{{ _('Address') }}</h6>
+                        </div>
+                        <div class="card-body">
+                            {% if profile.full_address %}
+                                <p>{{ profile.full_address }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Professional & Social -->
+                <div class="col-md-6">
+                    <!-- Professional Information -->
+                    {% if profile.job_title or profile.department or profile.organization %}
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="mb-0">{{ _('Professional Information') }}</h6>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-sm table-borderless">
+                                <tbody>
+                                    {% if profile.job_title %}
+                                    <tr>
+                                        <td><strong>{{ _('Job Title') }}:</strong></td>
+                                        <td>{{ profile.job_title }}</td>
+                                    </tr>
+                                    {% endif %}
+                                    {% if profile.department %}
+                                    <tr>
+                                        <td><strong>{{ _('Department') }}:</strong></td>
+                                        <td>{{ profile.department }}</td>
+                                    </tr>
+                                    {% endif %}
+                                    {% if profile.organization %}
+                                    <tr>
+                                        <td><strong>{{ _('Organization') }}:</strong></td>
+                                        <td>{{ profile.organization }}</td>
+                                    </tr>
+                                    {% endif %}
+                                    {% if profile.employee_id %}
+                                    <tr>
+                                        <td><strong>{{ _('Employee ID') }}:</strong></td>
+                                        <td>{{ profile.employee_id }}</td>
+                                    </tr>
+                                    {% endif %}
+                                    {% if profile.start_date %}
+                                    <tr>
+                                        <td><strong>{{ _('Start Date') }}:</strong></td>
+                                        <td>{{ profile.start_date.strftime('%B %d, %Y') }}</td>
+                                    </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Social Media -->
+                    {% if profile.website or profile.linkedin or profile.twitter or profile.github %}
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="mb-0">{{ _('Social Media') }}</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex flex-wrap">
+                                {% if profile.website %}
+                                    <a href="{{ profile.website }}" target="_blank" class="btn btn-outline-primary btn-sm me-2 mb-2">
+                                        <i class="fa fa-globe"></i> {{ _('Website') }}
+                                    </a>
+                                {% endif %}
+                                {% if profile.linkedin %}
+                                    <a href="{{ profile.linkedin }}" target="_blank" class="btn btn-outline-primary btn-sm me-2 mb-2">
+                                        <i class="fa fa-linkedin"></i> {{ _('LinkedIn') }}
+                                    </a>
+                                {% endif %}
+                                {% if profile.twitter %}
+                                    <a href="{{ profile.twitter }}" target="_blank" class="btn btn-outline-info btn-sm me-2 mb-2">
+                                        <i class="fa fa-twitter"></i> {{ _('Twitter') }}
+                                    </a>
+                                {% endif %}
+                                {% if profile.github %}
+                                    <a href="{{ profile.github }}" target="_blank" class="btn btn-outline-dark btn-sm me-2 mb-2">
+                                        <i class="fa fa-github"></i> {{ _('GitHub') }}
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Skills -->
+                    {% if profile.skills %}
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="mb-0">{{ _('Skills') }}</h6>
+                        </div>
+                        <div class="card-body">
+                            {% for skill in profile.skills %}
+                                <span class="badge badge-secondary me-1 mb-1">{{ skill }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Biography -->
+            {% if profile.biography %}
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0">{{ _('About Me') }}</h6>
+                        </div>
+                        <div class="card-body">
+                            <p>{{ profile.biography|nl2br }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

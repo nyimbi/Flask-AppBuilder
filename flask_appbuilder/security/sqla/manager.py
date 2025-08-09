@@ -4,7 +4,7 @@ import logging
 from typing import Dict, List, Optional, Tuple, Union
 import uuid
 
-from sqlalchemy import and_, func, literal, update
+from sqlalchemy import and_, func, literal, update, select
 from sqlalchemy.engine.reflection import Inspector
 from sqlalchemy.orm import contains_eager
 from sqlalchemy.orm.exc import MultipleResultsFound
@@ -129,9 +129,10 @@ class SecurityManager(BaseSecurityManager):
 
     def find_register_user(self, registration_hash):
         return (
-            self.get_session.query(self.registeruser_model)
-            .filter(self.registeruser_model.registration_hash == registration_hash)
-            .scalar()
+            self.get_session.execute(
+                select(self.registeruser_model)
+                .filter(self.registeruser_model.registration_hash == registration_hash)
+            ).scalar_one_or_none()
         )
 
     def add_register_user(
@@ -192,17 +193,19 @@ class SecurityManager(BaseSecurityManager):
             try:
                 if self.auth_username_ci:
                     return (
-                        self.get_session.query(self.user_model)
-                        .filter(
-                            func.lower(self.user_model.username) == func.lower(username)
-                        )
-                        .one_or_none()
+                        self.get_session.execute(
+                            select(self.user_model)
+                            .filter(
+                                func.lower(self.user_model.username) == func.lower(username)
+                            )
+                        ).scalar_one_or_none()
                     )
                 else:
                     return (
-                        self.get_session.query(self.user_model)
-                        .filter(self.user_model.username == username)
-                        .one_or_none()
+                        self.get_session.execute(
+                            select(self.user_model)
+                            .filter(self.user_model.username == username)
+                        ).scalar_one_or_none()
                     )
             except MultipleResultsFound:
                 log.error("Multiple results found for user %s", username)
@@ -210,16 +213,17 @@ class SecurityManager(BaseSecurityManager):
         elif email:
             try:
                 return (
-                    self.get_session.query(self.user_model)
-                    .filter_by(email=email)
-                    .one_or_none()
+                    self.get_session.execute(
+                        select(self.user_model)
+                        .filter_by(email=email)
+                    ).scalar_one_or_none()
                 )
             except MultipleResultsFound:
                 log.error("Multiple results found for user with email %s", email)
                 return None
 
     def get_all_users(self):
-        return self.get_session.query(self.user_model).all()
+        return self.get_session.execute(select(self.user_model)).scalars().all()
 
     def add_user(
         self,
@@ -270,7 +274,7 @@ class SecurityManager(BaseSecurityManager):
             return False
 
     def count_users(self):
-        return self.get_session.query(func.count(self.user_model.id)).scalar()
+        return self.get_session.execute(select(func.count(self.user_model.id))).scalar()
 
     def update_user(self, user):
         try:
@@ -283,10 +287,10 @@ class SecurityManager(BaseSecurityManager):
             return False
 
     def get_user_by_id(self, pk):
-        return self.get_session.query(self.user_model).get(pk)
+        return self.get_session.get(self.user_model, pk)
 
     def get_first_user(self) -> "User":
-        return self.get_session.query(self.user_model).first()
+        return self.get_session.execute(select(self.user_model)).scalars().first()
 
     def noop_user_update(self, user: "User") -> None:
         stmt = (
@@ -325,7 +329,7 @@ class SecurityManager(BaseSecurityManager):
         return role
 
     def update_role(self, pk, name: str) -> Optional[Role]:
-        role = self.get_session.query(self.role_model).get(pk)
+        role = self.get_session.get(self.role_model, pk)
         if not role:
             return
         try:
@@ -340,22 +344,27 @@ class SecurityManager(BaseSecurityManager):
 
     def find_role(self, name):
         return (
-            self.get_session.query(self.role_model).filter_by(name=name).one_or_none()
+            self.get_session.execute(
+                select(self.role_model).filter_by(name=name)
+            ).scalar_one_or_none()
         )
 
     def get_all_roles(self):
-        return self.get_session.query(self.role_model).all()
+        return self.get_session.execute(select(self.role_model)).scalars().all()
 
     def get_public_role(self):
         return (
-            self.get_session.query(self.role_model)
-            .filter_by(name=self.auth_role_public)
-            .one_or_none()
+            self.get_session.execute(
+                select(self.role_model)
+                .filter_by(name=self.auth_role_public)
+            ).scalar_one_or_none()
         )
 
     def find_group(self, name: str) -> Group:
         return (
-            self.get_session.query(self.group_model).filter_by(name=name).one_or_none()
+            self.get_session.execute(
+                select(self.group_model).filter_by(name=name)
+            ).scalar_one_or_none()
         )
 
     def add_group(
@@ -396,9 +405,10 @@ class SecurityManager(BaseSecurityManager):
         Finds and returns a Permission by name
         """
         return (
-            self.get_session.query(self.permission_model)
-            .filter_by(name=name)
-            .one_or_none()
+            self.get_session.execute(
+                select(self.permission_model)
+                .filter_by(name=name)
+            ).scalar_one_or_none()
         )
 
     def exist_permission_on_roles(

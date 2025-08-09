@@ -1,0 +1,1101 @@
+{% extends "appbuilder/base.html" %}
+
+{% block head_css %}
+  {{ super() }}
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/sortablejs/1.15.0/sortable.min.js" rel="preload" as="script">
+  <style>
+    .builder-sidebar {
+      height: calc(100vh - 120px);
+      overflow-y: auto;
+      border-right: 1px solid #dee2e6;
+      background-color: #f8f9fa;
+    }
+    
+    .field-palette {
+      padding: 1rem;
+    }
+    
+    .field-item {
+      display: block;
+      width: 100%;
+      padding: 0.75rem;
+      margin-bottom: 0.5rem;
+      border: 1px solid #dee2e6;
+      border-radius: 6px;
+      background: white;
+      cursor: grab;
+      transition: all 0.2s;
+      text-decoration: none;
+      color: inherit;
+    }
+    
+    .field-item:hover {
+      border-color: #007bff;
+      background-color: #f8f9fa;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      color: inherit;
+      text-decoration: none;
+    }
+    
+    .field-item:active {
+      cursor: grabbing;
+    }
+    
+    .field-icon {
+      width: 20px;
+      text-align: center;
+      margin-right: 0.5rem;
+      color: #007bff;
+    }
+    
+    .builder-canvas {
+      min-height: calc(100vh - 120px);
+      padding: 2rem;
+    }
+    
+    .step-container {
+      border: 2px dashed #dee2e6;
+      border-radius: 8px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      min-height: 200px;
+      background: white;
+      transition: all 0.3s;
+    }
+    
+    .step-container.drag-over {
+      border-color: #007bff;
+      background-color: #f8f9fa;
+    }
+    
+    .step-header {
+      display: flex;
+      justify-content-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid #dee2e6;
+    }
+    
+    .step-title {
+      font-weight: 600;
+      font-size: 1.1rem;
+    }
+    
+    .step-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+    
+    .form-field {
+      padding: 1rem;
+      margin-bottom: 1rem;
+      border: 1px solid #dee2e6;
+      border-radius: 6px;
+      background: white;
+      position: relative;
+      transition: all 0.2s;
+    }
+    
+    .form-field:hover {
+      border-color: #007bff;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .form-field.selected {
+      border-color: #007bff;
+      box-shadow: 0 0 0 3px rgba(0,123,255,0.25);
+    }
+    
+    .field-controls {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    
+    .form-field:hover .field-controls {
+      opacity: 1;
+    }
+    
+    .field-preview {
+      margin-top: 0.5rem;
+    }
+    
+    .empty-step {
+      text-align: center;
+      color: #6c757d;
+      padding: 3rem 1rem;
+    }
+    
+    .properties-panel {
+      position: fixed;
+      right: -400px;
+      top: 0;
+      width: 400px;
+      height: 100vh;
+      background: white;
+      border-left: 1px solid #dee2e6;
+      transition: right 0.3s;
+      z-index: 1050;
+      overflow-y: auto;
+    }
+    
+    .properties-panel.open {
+      right: 0;
+    }
+    
+    .properties-header {
+      padding: 1rem;
+      border-bottom: 1px solid #dee2e6;
+      background-color: #f8f9fa;
+    }
+    
+    .properties-body {
+      padding: 1rem;
+    }
+    
+    .toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 1040;
+      background: white;
+      border-bottom: 1px solid #dee2e6;
+      padding: 1rem;
+    }
+    
+    .step-tabs {
+      border-bottom: 1px solid #dee2e6;
+      margin-bottom: 2rem;
+    }
+    
+    .step-tab {
+      display: inline-block;
+      padding: 0.75rem 1rem;
+      margin-right: 0.5rem;
+      border: 1px solid transparent;
+      border-bottom: none;
+      border-radius: 6px 6px 0 0;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: #f8f9fa;
+    }
+    
+    .step-tab.active {
+      background: white;
+      border-color: #dee2e6;
+      border-bottom: 1px solid white;
+      margin-bottom: -1px;
+    }
+    
+    .step-tab:hover {
+      background: #e9ecef;
+    }
+    
+    .sortable-ghost {
+      opacity: 0.5;
+    }
+    
+    .sortable-chosen {
+      opacity: 0.8;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="builder-container">
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="d-flex justify-content-between align-items-center">
+      <div class="d-flex align-items-center">
+        <a href="{{ url_for('.index') }}" class="btn btn-outline-secondary me-3">
+          <i class="fa fa-arrow-left"></i> Back
+        </a>
+        <h4 class="mb-0">
+          {% if edit_mode %}
+            Editing: {{ wizard_config.title }}
+          {% else %}
+            Create New Wizard
+          {% endif %}
+        </h4>
+      </div>
+      
+      <div class="btn-group">
+        <button type="button" class="btn btn-outline-primary" onclick="previewWizard()">
+          <i class="fa fa-eye"></i> Preview
+        </button>
+        <button type="button" class="btn btn-outline-success" onclick="saveWizard()">
+          <i class="fa fa-save"></i> Save
+        </button>
+        <button type="button" class="btn btn-outline-info" onclick="exportWizard()">
+          <i class="fa fa-download"></i> Export
+        </button>
+        <div class="btn-group" role="group">
+          <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+            <i class="fa fa-cog"></i> Settings
+          </button>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="#" onclick="showWizardSettings()">
+              <i class="fa fa-sliders-h"></i> Wizard Settings
+            </a></li>
+            <li><a class="dropdown-item" href="#" onclick="showThemeSettings()">
+              <i class="fa fa-palette"></i> Theme & Style
+            </a></li>
+            <li><a class="dropdown-item" href="#" onclick="showValidationSettings()">
+              <i class="fa fa-check-circle"></i> Validation Rules
+            </a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="row g-0">
+    <!-- Sidebar with Field Palette -->
+    <div class="col-md-3 builder-sidebar">
+      <div class="field-palette">
+        <h6 class="text-muted mb-3">Field Types</h6>
+        
+        <div class="mb-4">
+          <h6 class="small text-uppercase text-muted mb-2">Basic Fields</h6>
+          {% for field_type, field_info in field_types.items() %}
+            {% if field_type in ['text', 'textarea', 'email', 'password', 'number'] %}
+            <div class="field-item" 
+                 draggable="true" 
+                 data-field-type="{{ field_type }}"
+                 title="{{ field_info.description }}">
+              <i class="fa {{ field_info.icon }} field-icon"></i>
+              <strong>{{ field_info.name }}</strong>
+              <br><small class="text-muted">{{ field_info.description }}</small>
+            </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+        
+        <div class="mb-4">
+          <h6 class="small text-uppercase text-muted mb-2">Selection Fields</h6>
+          {% for field_type, field_info in field_types.items() %}
+            {% if field_type in ['select', 'radio', 'checkbox', 'boolean'] %}
+            <div class="field-item" 
+                 draggable="true" 
+                 data-field-type="{{ field_type }}"
+                 title="{{ field_info.description }}">
+              <i class="fa {{ field_info.icon }} field-icon"></i>
+              <strong>{{ field_info.name }}</strong>
+              <br><small class="text-muted">{{ field_info.description }}</small>
+            </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+        
+        <div class="mb-4">
+          <h6 class="small text-uppercase text-muted mb-2">Date & Time</h6>
+          {% for field_type, field_info in field_types.items() %}
+            {% if field_type in ['date', 'time', 'datetime'] %}
+            <div class="field-item" 
+                 draggable="true" 
+                 data-field-type="{{ field_type }}"
+                 title="{{ field_info.description }}">
+              <i class="fa {{ field_info.icon }} field-icon"></i>
+              <strong>{{ field_info.name }}</strong>
+              <br><small class="text-muted">{{ field_info.description }}</small>
+            </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+        
+        <div class="mb-4">
+          <h6 class="small text-uppercase text-muted mb-2">Advanced</h6>
+          {% for field_type, field_info in field_types.items() %}
+            {% if field_type in ['file', 'url', 'phone', 'rating', 'slider'] %}
+            <div class="field-item" 
+                 draggable="true" 
+                 data-field-type="{{ field_type }}"
+                 title="{{ field_info.description }}">
+              <i class="fa {{ field_info.icon }} field-icon"></i>
+              <strong>{{ field_info.name }}</strong>
+              <br><small class="text-muted">{{ field_info.description }}</small>
+            </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+        
+        <div class="mb-4">
+          <h6 class="small text-uppercase text-muted mb-2">Layout</h6>
+          {% for field_type, field_info in field_types.items() %}
+            {% if field_type in ['divider', 'html'] %}
+            <div class="field-item" 
+                 draggable="true" 
+                 data-field-type="{{ field_type }}"
+                 title="{{ field_info.description }}">
+              <i class="fa {{ field_info.icon }} field-icon"></i>
+              <strong>{{ field_info.name }}</strong>
+              <br><small class="text-muted">{{ field_info.description }}</small>
+            </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    
+    <!-- Main Canvas -->
+    <div class="col-md-9 builder-canvas">
+      <div class="wizard-builder" id="wizardBuilder">
+        <!-- Step Tabs -->
+        <div class="step-tabs" id="stepTabs">
+          {% for step in wizard_config.steps %}
+          <div class="step-tab {% if loop.first %}active{% endif %}" 
+               data-step-id="{{ step.id }}"
+               onclick="switchToStep('{{ step.id }}')">
+            <i class="fa fa-edit"></i>
+            <span class="step-title-text">{{ step.title }}</span>
+            <button type="button" class="btn btn-sm btn-link text-muted ms-2" onclick="removeStep('{{ step.id }}'); event.stopPropagation();">
+              <i class="fa fa-times"></i>
+            </button>
+          </div>
+          {% endfor %}
+          <button type="button" class="btn btn-outline-primary btn-sm ms-3" onclick="addNewStep()">
+            <i class="fa fa-plus"></i> Add Step
+          </button>
+        </div>
+        
+        <!-- Step Containers -->
+        {% for step in wizard_config.steps %}
+        <div class="step-container {% if not loop.first %}d-none{% endif %}" 
+             id="step-{{ step.id }}" 
+             data-step-id="{{ step.id }}">
+          <div class="step-header">
+            <div>
+              <input type="text" class="form-control step-title-input" 
+                     value="{{ step.title }}"
+                     placeholder="Step Title"
+                     onchange="updateStepTitle('{{ step.id }}', this.value)">
+              <textarea class="form-control mt-2" 
+                        placeholder="Step Description (optional)"
+                        rows="2"
+                        onchange="updateStepDescription('{{ step.id }}', this.value)">{{ step.description or '' }}</textarea>
+            </div>
+          </div>
+          
+          <div class="step-fields" data-step-id="{{ step.id }}">
+            {% if step.fields %}
+              {% for field in step.fields %}
+                <div class="form-field" data-field-id="{{ field.id }}" data-field-type="{{ field.type }}">
+                  <div class="field-controls">
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="editField('{{ field.id }}')">
+                      <i class="fa fa-edit"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeField('{{ field.id }}')">
+                      <i class="fa fa-trash"></i>
+                    </button>
+                  </div>
+                  <div class="field-preview">
+                    <!-- Field preview will be generated by JavaScript -->
+                  </div>
+                </div>
+              {% endfor %}
+            {% else %}
+              <div class="empty-step">
+                <i class="fa fa-mouse-pointer fa-2x text-muted mb-3"></i>
+                <p>Drag fields from the sidebar to build your form</p>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Properties Panel -->
+<div class="properties-panel" id="propertiesPanel">
+  <div class="properties-header">
+    <div class="d-flex justify-content-between align-items-center">
+      <h6 class="mb-0">Field Properties</h6>
+      <button type="button" class="btn btn-sm btn-outline-secondary" onclick="closePropertiesPanel()">
+        <i class="fa fa-times"></i>
+      </button>
+    </div>
+  </div>
+  <div class="properties-body" id="propertiesBody">
+    <!-- Properties form will be dynamically loaded -->
+  </div>
+</div>
+{% endblock %}
+
+{% block tail_js %}
+  {{ super() }}
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/sortablejs/1.15.0/sortable.min.js"></script>
+  <script>
+    let wizardConfig = {{ wizard_config | tojson }};
+    let currentStepId = null;
+    let currentFieldId = null;
+    let fieldCounter = 0;
+    
+    // Initialize the builder
+    document.addEventListener('DOMContentLoaded', function() {
+      initializeBuilder();
+      initializeSortable();
+      
+      // Set first step as active
+      const firstStep = document.querySelector('.step-container');
+      if (firstStep) {
+        currentStepId = firstStep.dataset.stepId;
+      }
+    });
+    
+    function initializeBuilder() {
+      // Initialize drag and drop for field palette
+      const fieldItems = document.querySelectorAll('.field-item');
+      fieldItems.forEach(item => {
+        item.addEventListener('dragstart', handleDragStart);
+      });
+      
+      // Initialize drop zones
+      const stepContainers = document.querySelectorAll('.step-fields');
+      stepContainers.forEach(container => {
+        container.addEventListener('dragover', handleDragOver);
+        container.addEventListener('drop', handleDrop);
+        container.addEventListener('dragenter', handleDragEnter);
+        container.addEventListener('dragleave', handleDragLeave);
+      });
+      
+      // Initialize field previews
+      updateAllFieldPreviews();
+    }
+    
+    function initializeSortable() {
+      const stepFields = document.querySelectorAll('.step-fields');
+      stepFields.forEach(container => {
+        new Sortable(container, {
+          group: 'fields',
+          animation: 150,
+          ghostClass: 'sortable-ghost',
+          chosenClass: 'sortable-chosen',
+          onEnd: function(evt) {
+            updateFieldOrder();
+          }
+        });
+      });
+    }
+    
+    function handleDragStart(e) {
+      e.dataTransfer.setData('text/plain', e.target.dataset.fieldType);
+    }
+    
+    function handleDragOver(e) {
+      e.preventDefault();
+    }
+    
+    function handleDragEnter(e) {
+      e.target.closest('.step-container').classList.add('drag-over');
+    }
+    
+    function handleDragLeave(e) {
+      if (!e.target.closest('.step-container').contains(e.relatedTarget)) {
+        e.target.closest('.step-container').classList.remove('drag-over');
+      }
+    }
+    
+    function handleDrop(e) {
+      e.preventDefault();
+      e.target.closest('.step-container').classList.remove('drag-over');
+      
+      const fieldType = e.dataTransfer.getData('text/plain');
+      const stepId = e.target.closest('.step-fields').dataset.stepId;
+      
+      addFieldToStep(stepId, fieldType);
+    }
+    
+    function addFieldToStep(stepId, fieldType) {
+      const fieldId = 'field_' + (++fieldCounter);
+      const field = createFieldConfig(fieldId, fieldType);
+      
+      // Add to wizard config
+      const step = wizardConfig.steps.find(s => s.id === stepId);
+      if (step) {
+        step.fields.push(field);
+        renderFieldInStep(stepId, field);
+        
+        // Remove empty state if it exists
+        const emptyState = document.querySelector(`#step-${stepId} .empty-step`);
+        if (emptyState) {
+          emptyState.remove();
+        }
+      }
+    }
+    
+    function createFieldConfig(fieldId, fieldType) {
+      const fieldTypes = {{ field_types | tojson }};
+      const fieldInfo = fieldTypes[fieldType];
+      
+      return {
+        id: fieldId,
+        type: fieldType,
+        label: fieldInfo.name,
+        required: false,
+        placeholder: '',
+        description: '',
+        validation: {},
+        options: fieldType === 'select' || fieldType === 'radio' || fieldType === 'checkbox' ? ['Option 1', 'Option 2'] : [],
+        properties: {}
+      };
+    }
+    
+    function renderFieldInStep(stepId, field) {
+      const stepContainer = document.querySelector(`#step-${stepId} .step-fields`);
+      const fieldElement = document.createElement('div');
+      fieldElement.className = 'form-field';
+      fieldElement.dataset.fieldId = field.id;
+      fieldElement.dataset.fieldType = field.type;
+      
+      fieldElement.innerHTML = `
+        <div class="field-controls">
+          <button type="button" class="btn btn-sm btn-outline-primary" onclick="editField('${field.id}')">
+            <i class="fa fa-edit"></i>
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeField('${field.id}')">
+            <i class="fa fa-trash"></i>
+          </button>
+        </div>
+        <div class="field-preview">
+          ${generateFieldPreview(field)}
+        </div>
+      `;
+      
+      stepContainer.appendChild(fieldElement);
+    }
+    
+    function generateFieldPreview(field) {
+      let preview = `<label class="form-label">${field.label}${field.required ? ' *' : ''}</label>`;
+      
+      switch (field.type) {
+        case 'text':
+        case 'email':
+        case 'url':
+        case 'phone':
+          preview += `<input type="${field.type}" class="form-control" placeholder="${field.placeholder || ''}" disabled>`;
+          break;
+        case 'password':
+          preview += `<input type="password" class="form-control" placeholder="${field.placeholder || ''}" disabled>`;
+          break;
+        case 'number':
+          preview += `<input type="number" class="form-control" placeholder="${field.placeholder || ''}" disabled>`;
+          break;
+        case 'textarea':
+          preview += `<textarea class="form-control" rows="${field.rows || 3}" placeholder="${field.placeholder || ''}" disabled></textarea>`;
+          break;
+        case 'select':
+          preview += '<select class="form-select" disabled>';
+          if (field.options) {
+            field.options.forEach(option => {
+              preview += `<option>${option}</option>`;
+            });
+          }
+          preview += '</select>';
+          break;
+        case 'radio':
+          if (field.options) {
+            field.options.forEach((option, index) => {
+              preview += `
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="${field.id}" id="${field.id}_${index}" disabled>
+                  <label class="form-check-label" for="${field.id}_${index}">${option}</label>
+                </div>
+              `;
+            });
+          }
+          break;
+        case 'checkbox':
+          if (field.options) {
+            field.options.forEach((option, index) => {
+              preview += `
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="${field.id}_${index}" disabled>
+                  <label class="form-check-label" for="${field.id}_${index}">${option}</label>
+                </div>
+              `;
+            });
+          }
+          break;
+        case 'boolean':
+          preview += `
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="${field.id}" disabled>
+              <label class="form-check-label" for="${field.id}">${field.label}</label>
+            </div>
+          `;
+          break;
+        case 'date':
+          preview += `<input type="date" class="form-control" disabled>`;
+          break;
+        case 'time':
+          preview += `<input type="time" class="form-control" disabled>`;
+          break;
+        case 'datetime':
+          preview += `<input type="datetime-local" class="form-control" disabled>`;
+          break;
+        case 'file':
+          preview += `<input type="file" class="form-control" disabled>`;
+          break;
+        case 'rating':
+          preview += '<div class="rating-stars">';
+          for (let i = 1; i <= (field.max_stars || 5); i++) {
+            preview += `<i class="fa fa-star text-warning"></i>`;
+          }
+          preview += '</div>';
+          break;
+        case 'slider':
+          preview += `<input type="range" class="form-range" min="${field.min_value || 0}" max="${field.max_value || 100}" disabled>`;
+          break;
+        case 'divider':
+          preview = `<hr><h6>${field.title || 'Section Divider'}</h6>`;
+          if (field.description) {
+            preview += `<p class="text-muted">${field.description}</p>`;
+          }
+          break;
+        case 'html':
+          preview = field.content || '<p>Custom HTML content</p>';
+          break;
+        default:
+          preview += `<input type="text" class="form-control" disabled>`;
+      }
+      
+      if (field.description && field.type !== 'divider') {
+        preview += `<small class="form-text text-muted">${field.description}</small>`;
+      }
+      
+      return preview;
+    }
+    
+    function updateAllFieldPreviews() {
+      document.querySelectorAll('.form-field').forEach(fieldElement => {
+        const fieldId = fieldElement.dataset.fieldId;
+        const field = findFieldById(fieldId);
+        if (field) {
+          fieldElement.querySelector('.field-preview').innerHTML = generateFieldPreview(field);
+        }
+      });
+    }
+    
+    function findFieldById(fieldId) {
+      for (const step of wizardConfig.steps) {
+        const field = step.fields.find(f => f.id === fieldId);
+        if (field) return field;
+      }
+      return null;
+    }
+    
+    function switchToStep(stepId) {
+      // Update tab active state
+      document.querySelectorAll('.step-tab').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      document.querySelector(`[data-step-id="${stepId}"]`).classList.add('active');
+      
+      // Update step container visibility
+      document.querySelectorAll('.step-container').forEach(container => {
+        container.classList.add('d-none');
+      });
+      document.querySelector(`#step-${stepId}`).classList.remove('d-none');
+      
+      currentStepId = stepId;
+    }
+    
+    function addNewStep() {
+      const stepId = 'step_' + Date.now();
+      const step = {
+        id: stepId,
+        title: `Step ${wizardConfig.steps.length + 1}`,
+        description: '',
+        fields: []
+      };
+      
+      wizardConfig.steps.push(step);
+      renderNewStep(step);
+    }
+    
+    function renderNewStep(step) {
+      // Add tab
+      const tabsContainer = document.querySelector('.step-tabs');
+      const addButton = tabsContainer.querySelector('button');
+      
+      const tabElement = document.createElement('div');
+      tabElement.className = 'step-tab';
+      tabElement.dataset.stepId = step.id;
+      tabElement.onclick = () => switchToStep(step.id);
+      tabElement.innerHTML = `
+        <i class="fa fa-edit"></i>
+        <span class="step-title-text">${step.title}</span>
+        <button type="button" class="btn btn-sm btn-link text-muted ms-2" onclick="removeStep('${step.id}'); event.stopPropagation();">
+          <i class="fa fa-times"></i>
+        </button>
+      `;
+      
+      tabsContainer.insertBefore(tabElement, addButton);
+      
+      // Add container
+      const builderContainer = document.querySelector('#wizardBuilder');
+      const containerElement = document.createElement('div');
+      containerElement.className = 'step-container d-none';
+      containerElement.id = `step-${step.id}`;
+      containerElement.dataset.stepId = step.id;
+      containerElement.innerHTML = `
+        <div class="step-header">
+          <div>
+            <input type="text" class="form-control step-title-input" 
+                   value="${step.title}"
+                   placeholder="Step Title"
+                   onchange="updateStepTitle('${step.id}', this.value)">
+            <textarea class="form-control mt-2" 
+                      placeholder="Step Description (optional)"
+                      rows="2"
+                      onchange="updateStepDescription('${step.id}', this.value)">${step.description}</textarea>
+          </div>
+        </div>
+        
+        <div class="step-fields" data-step-id="${step.id}">
+          <div class="empty-step">
+            <i class="fa fa-mouse-pointer fa-2x text-muted mb-3"></i>
+            <p>Drag fields from the sidebar to build your form</p>
+          </div>
+        </div>
+      `;
+      
+      builderContainer.appendChild(containerElement);
+      
+      // Initialize sortable for new step
+      const stepFields = containerElement.querySelector('.step-fields');
+      new Sortable(stepFields, {
+        group: 'fields',
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        chosenClass: 'sortable-chosen',
+        onEnd: function(evt) {
+          updateFieldOrder();
+        }
+      });
+      
+      // Initialize drag and drop
+      stepFields.addEventListener('dragover', handleDragOver);
+      stepFields.addEventListener('drop', handleDrop);
+      stepFields.addEventListener('dragenter', handleDragEnter);
+      stepFields.addEventListener('dragleave', handleDragLeave);
+      
+      // Switch to new step
+      switchToStep(step.id);
+    }
+    
+    function removeStep(stepId) {
+      if (wizardConfig.steps.length <= 1) {
+        alert('Cannot remove the last step. A wizard must have at least one step.');
+        return;
+      }
+      
+      if (confirm('Are you sure you want to remove this step and all its fields?')) {
+        // Remove from config
+        wizardConfig.steps = wizardConfig.steps.filter(s => s.id !== stepId);
+        
+        // Remove from DOM
+        document.querySelector(`[data-step-id="${stepId}"].step-tab`).remove();
+        document.querySelector(`#step-${stepId}`).remove();
+        
+        // Switch to first step if current step was removed
+        if (currentStepId === stepId) {
+          switchToStep(wizardConfig.steps[0].id);
+        }
+      }
+    }
+    
+    function updateStepTitle(stepId, title) {
+      const step = wizardConfig.steps.find(s => s.id === stepId);
+      if (step) {
+        step.title = title;
+        document.querySelector(`[data-step-id="${stepId}"] .step-title-text`).textContent = title;
+      }
+    }
+    
+    function updateStepDescription(stepId, description) {
+      const step = wizardConfig.steps.find(s => s.id === stepId);
+      if (step) {
+        step.description = description;
+      }
+    }
+    
+    function editField(fieldId) {
+      currentFieldId = fieldId;
+      const field = findFieldById(fieldId);
+      if (field) {
+        showFieldProperties(field);
+        document.querySelector('.form-field[data-field-id="' + fieldId + '"]').classList.add('selected');
+      }
+    }
+    
+    function removeField(fieldId) {
+      if (confirm('Are you sure you want to remove this field?')) {
+        // Remove from config
+        for (const step of wizardConfig.steps) {
+          step.fields = step.fields.filter(f => f.id !== fieldId);
+        }
+        
+        // Remove from DOM
+        document.querySelector(`[data-field-id="${fieldId}"]`).remove();
+        
+        closePropertiesPanel();
+      }
+    }
+    
+    function showFieldProperties(field) {
+      const panel = document.getElementById('propertiesPanel');
+      const body = document.getElementById('propertiesBody');
+      
+      body.innerHTML = generatePropertiesForm(field);
+      panel.classList.add('open');
+    }
+    
+    function generatePropertiesForm(field) {
+      const fieldTypes = {{ field_types | tojson }};
+      const fieldInfo = fieldTypes[field.type];
+      
+      let form = `
+        <form id="fieldPropertiesForm">
+          <div class="mb-3">
+            <label class="form-label">Field Type</label>
+            <select class="form-select" disabled>
+              <option>${fieldInfo.name}</option>
+            </select>
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label">Label</label>
+            <input type="text" class="form-control" name="label" value="${field.label}" onchange="updateFieldProperty('label', this.value)">
+          </div>
+      `;
+      
+      if (fieldInfo.properties.includes('placeholder')) {
+        form += `
+          <div class="mb-3">
+            <label class="form-label">Placeholder</label>
+            <input type="text" class="form-control" name="placeholder" value="${field.placeholder || ''}" onchange="updateFieldProperty('placeholder', this.value)">
+          </div>
+        `;
+      }
+      
+      if (fieldInfo.properties.includes('required')) {
+        form += `
+          <div class="mb-3">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="required" ${field.required ? 'checked' : ''} onchange="updateFieldProperty('required', this.checked)">
+              <label class="form-check-label">Required</label>
+            </div>
+          </div>
+        `;
+      }
+      
+      if (fieldInfo.properties.includes('description')) {
+        form += `
+          <div class="mb-3">
+            <label class="form-label">Description</label>
+            <textarea class="form-control" name="description" rows="3" onchange="updateFieldProperty('description', this.value)">${field.description || ''}</textarea>
+          </div>
+        `;
+      }
+      
+      if (fieldInfo.properties.includes('options')) {
+        form += `
+          <div class="mb-3">
+            <label class="form-label">Options</label>
+            <div id="optionsList">
+        `;
+        
+        (field.options || []).forEach((option, index) => {
+          form += `
+            <div class="input-group mb-2">
+              <input type="text" class="form-control" value="${option}" onchange="updateOption(${index}, this.value)">
+              <button type="button" class="btn btn-outline-danger" onclick="removeOption(${index})">
+                <i class="fa fa-trash"></i>
+              </button>
+            </div>
+          `;
+        });
+        
+        form += `
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-primary" onclick="addOption()">
+              <i class="fa fa-plus"></i> Add Option
+            </button>
+          </div>
+        `;
+      }
+      
+      if (fieldInfo.properties.includes('min_length')) {
+        form += `
+          <div class="mb-3">
+            <label class="form-label">Minimum Length</label>
+            <input type="number" class="form-control" name="min_length" value="${field.min_length || ''}" onchange="updateFieldProperty('min_length', parseInt(this.value) || undefined)">
+          </div>
+        `;
+      }
+      
+      if (fieldInfo.properties.includes('max_length')) {
+        form += `
+          <div class="mb-3">
+            <label class="form-label">Maximum Length</label>
+            <input type="number" class="form-control" name="max_length" value="${field.max_length || ''}" onchange="updateFieldProperty('max_length', parseInt(this.value) || undefined)">
+          </div>
+        `;
+      }
+      
+      form += '</form>';
+      return form;
+    }
+    
+    function updateFieldProperty(property, value) {
+      if (currentFieldId) {
+        const field = findFieldById(currentFieldId);
+        if (field) {
+          field[property] = value;
+          
+          // Update field preview
+          const fieldElement = document.querySelector(`[data-field-id="${currentFieldId}"]`);
+          if (fieldElement) {
+            fieldElement.querySelector('.field-preview').innerHTML = generateFieldPreview(field);
+          }
+          
+          // Update tab title if label changed
+          if (property === 'label') {
+            const stepTab = document.querySelector(`[data-step-id="${currentStepId}"] .step-title-text`);
+            // Only update if it's the step title, not field label
+          }
+        }
+      }
+    }
+    
+    function updateOption(index, value) {
+      if (currentFieldId) {
+        const field = findFieldById(currentFieldId);
+        if (field && field.options) {
+          field.options[index] = value;
+          updateFieldPreview(currentFieldId);
+        }
+      }
+    }
+    
+    function addOption() {
+      if (currentFieldId) {
+        const field = findFieldById(currentFieldId);
+        if (field) {
+          if (!field.options) field.options = [];
+          field.options.push(`Option ${field.options.length + 1}`);
+          showFieldProperties(field); // Refresh the properties form
+          updateFieldPreview(currentFieldId);
+        }
+      }
+    }
+    
+    function removeOption(index) {
+      if (currentFieldId) {
+        const field = findFieldById(currentFieldId);
+        if (field && field.options) {
+          field.options.splice(index, 1);
+          showFieldProperties(field); // Refresh the properties form
+          updateFieldPreview(currentFieldId);
+        }
+      }
+    }
+    
+    function updateFieldPreview(fieldId) {
+      const field = findFieldById(fieldId);
+      const fieldElement = document.querySelector(`[data-field-id="${fieldId}"]`);
+      if (field && fieldElement) {
+        fieldElement.querySelector('.field-preview').innerHTML = generateFieldPreview(field);
+      }
+    }
+    
+    function closePropertiesPanel() {
+      document.getElementById('propertiesPanel').classList.remove('open');
+      document.querySelectorAll('.form-field.selected').forEach(el => {
+        el.classList.remove('selected');
+      });
+      currentFieldId = null;
+    }
+    
+    function updateFieldOrder() {
+      // Update wizard config based on DOM order
+      document.querySelectorAll('.step-fields').forEach(container => {
+        const stepId = container.dataset.stepId;
+        const step = wizardConfig.steps.find(s => s.id === stepId);
+        if (step) {
+          const fieldElements = container.querySelectorAll('.form-field');
+          const orderedFields = [];
+          
+          fieldElements.forEach(element => {
+            const fieldId = element.dataset.fieldId;
+            const field = step.fields.find(f => f.id === fieldId);
+            if (field) {
+              orderedFields.push(field);
+            }
+          });
+          
+          step.fields = orderedFields;
+        }
+      });
+    }
+    
+    function saveWizard() {
+      const saveData = {
+        wizard_id: wizardConfig.wizard_id,
+        config: wizardConfig
+      };
+      
+      fetch('{{ url_for('.save_wizard') }}', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(saveData)
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          alert('Wizard saved successfully!');
+        } else {
+          alert('Error saving wizard: ' + data.error);
+        }
+      })
+      .catch(error => {
+        alert('Error saving wizard: ' + error);
+      });
+    }
+    
+    function previewWizard() {
+      // Save first, then open preview
+      saveWizard();
+      window.open('{{ url_for('.preview', wizard_id='') }}' + wizardConfig.wizard_id, '_blank');
+    }
+    
+    function exportWizard() {
+      const exportData = {
+        wizard_id: wizardConfig.wizard_id,
+        config: wizardConfig,
+        export_version: '1.0',
+        exported_at: new Date().toISOString(),
+        exported_by: 'wizard_builder'
+      };
+      
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+        type: 'application/json'
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${wizardConfig.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_wizard.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  </script>
+{% endblock %}

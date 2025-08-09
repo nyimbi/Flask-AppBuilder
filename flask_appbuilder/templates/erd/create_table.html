@@ -1,0 +1,1468 @@
+{% extends "appbuilder/base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block head_css %}
+{{ super() }}
+<style>
+/* Create Table Interface Styles */
+.create-table-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.page-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 25px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.header-content h1 {
+    margin: 0;
+    font-size: 1.8rem;
+    font-weight: 600;
+}
+
+.header-content .subtitle {
+    margin: 5px 0 0 0;
+    opacity: 0.9;
+    font-size: 1rem;
+}
+
+.form-container {
+    background: white;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+}
+
+.form-section {
+    margin-bottom: 30px;
+    padding-bottom: 25px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.form-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.section-title {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #343a40;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.section-icon {
+    width: 24px;
+    height: 24px;
+    background: #667eea;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.required {
+    color: #dc3545;
+}
+
+.form-control {
+    padding: 12px;
+    border: 2px solid #e9ecef;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.form-control.error {
+    border-color: #dc3545;
+}
+
+.form-help {
+    font-size: 0.85rem;
+    color: #6c757d;
+    margin-top: 5px;
+}
+
+.columns-section {
+    background: #f8f9fa;
+    padding: 25px;
+    border-radius: 6px;
+    margin-top: 20px;
+}
+
+.columns-header {
+    display: flex;
+    align-items: center;
+    justify-content: between;
+    margin-bottom: 20px;
+}
+
+.columns-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #343a40;
+    margin: 0;
+    flex: 1;
+}
+
+.add-column-btn {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: background 0.2s ease;
+}
+
+.add-column-btn:hover {
+    background: #218838;
+}
+
+.column-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.column-item {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 20px;
+    margin-bottom: 15px;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+.column-item:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.column-header {
+    display: flex;
+    align-items: center;
+    justify-content: between;
+    margin-bottom: 15px;
+}
+
+.column-number {
+    background: #667eea;
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: bold;
+    margin-right: 10px;
+}
+
+.column-title {
+    font-weight: 600;
+    color: #343a40;
+    flex: 1;
+}
+
+.column-actions {
+    display: flex;
+    gap: 5px;
+}
+
+.column-action-btn {
+    background: none;
+    border: none;
+    color: #6c757d;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 3px;
+    transition: all 0.2s ease;
+    font-size: 0.9rem;
+}
+
+.column-action-btn:hover {
+    background: #f8f9fa;
+    color: #495057;
+}
+
+.column-action-btn.delete:hover {
+    background: #f8d7da;
+    color: #dc3545;
+}
+
+.column-form {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 15px;
+    align-items: end;
+}
+
+.column-constraints {
+    display: flex;
+    gap: 15px;
+    margin-top: 15px;
+    flex-wrap: wrap;
+}
+
+.checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.checkbox-group input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+}
+
+.checkbox-group label {
+    font-size: 0.9rem;
+    color: #495057;
+    margin: 0;
+    cursor: pointer;
+}
+
+.foreign-key-section {
+    background: #e3f2fd;
+    border: 1px solid #bbdefb;
+    border-radius: 4px;
+    padding: 15px;
+    margin-top: 10px;
+    display: none;
+}
+
+.foreign-key-section.visible {
+    display: block;
+}
+
+.fk-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    align-items: end;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 15px;
+    padding: 25px 0;
+    border-top: 1px solid #e9ecef;
+    margin-top: 30px;
+}
+
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+}
+
+.btn-primary {
+    background: #667eea;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #5a67d8;
+    color: white;
+    text-decoration: none;
+}
+
+.btn-success {
+    background: #28a745;
+    color: white;
+}
+
+.btn-success:hover {
+    background: #218838;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #5a6268;
+    color: white;
+    text-decoration: none;
+}
+
+.btn-outline {
+    background: transparent;
+    border: 2px solid #6c757d;
+    color: #6c757d;
+}
+
+.btn-outline:hover {
+    background: #6c757d;
+    color: white;
+}
+
+.preview-section {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 20px;
+    margin-top: 20px;
+}
+
+.preview-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #343a40;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sql-preview {
+    background: #2d3748;
+    color: #e2e8f0;
+    padding: 15px;
+    border-radius: 4px;
+    font-family: 'Monaco', 'Consolas', monospace;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    overflow-x: auto;
+}
+
+.validation-errors {
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    border-radius: 4px;
+    padding: 15px;
+    margin-bottom: 20px;
+    display: none;
+}
+
+.validation-errors.visible {
+    display: block;
+}
+
+.validation-title {
+    font-weight: 600;
+    color: #721c24;
+    margin-bottom: 10px;
+}
+
+.validation-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.validation-list li {
+    color: #721c24;
+    font-size: 0.9rem;
+    margin-bottom: 5px;
+    padding-left: 20px;
+    position: relative;
+}
+
+.validation-list li:before {
+    content: "⚠";
+    position: absolute;
+    left: 0;
+    color: #dc3545;
+}
+
+.success-message {
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+    padding: 15px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    display: none;
+}
+
+.success-message.visible {
+    display: block;
+}
+
+@media (max-width: 768px) {
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .column-form {
+        grid-template-columns: 1fr;
+    }
+    
+    .column-constraints {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+    
+    .fk-form {
+        grid-template-columns: 1fr;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+    }
+}
+
+/* Advanced field types styling */
+.field-type-specific {
+    background: #e8f4f8;
+    border: 1px solid #bee5eb;
+    border-radius: 4px;
+    padding: 15px;
+    margin-top: 10px;
+    display: none;
+}
+
+.field-type-specific.visible {
+    display: block;
+}
+
+.type-options {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.type-option {
+    display: flex;
+    flex-direction: column;
+}
+
+.type-option label {
+    font-size: 0.85rem;
+    color: #495057;
+    margin-bottom: 5px;
+}
+
+.type-option input {
+    padding: 6px 10px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 0.85rem;
+}
+
+/* Drag and drop for column reordering */
+.column-item.dragging {
+    opacity: 0.5;
+    transform: rotate(5deg);
+}
+
+.column-item.drag-over {
+    border-color: #667eea;
+    background: #f0f4ff;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="create-table-container">
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="header-content">
+            <h1><i class="fa fa-table"></i> Create New Table</h1>
+            <p class="subtitle">Design and create a new database table with columns, constraints, and relationships</p>
+        </div>
+        <div>
+            <a href="{{ url_for('DatabaseERDView.index') }}" class="btn btn-outline">
+                <i class="fa fa-arrow-left"></i> Back to ERD
+            </a>
+        </div>
+    </div>
+
+    <!-- Success Message -->
+    <div class="success-message" id="successMessage">
+        <i class="fa fa-check-circle"></i>
+        <strong>Success!</strong> Table created successfully.
+    </div>
+
+    <!-- Validation Errors -->
+    <div class="validation-errors" id="validationErrors">
+        <div class="validation-title">Please fix the following errors:</div>
+        <ul class="validation-list" id="validationList">
+            <!-- Errors will be dynamically added here -->
+        </ul>
+    </div>
+
+    <form id="createTableForm" class="form-container">
+        <!-- Basic Table Information -->
+        <div class="form-section">
+            <div class="section-title">
+                <span class="section-icon">1</span>
+                Basic Information
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">
+                        Table Name <span class="required">*</span>
+                    </label>
+                    <input type="text" 
+                           class="form-control" 
+                           id="tableName" 
+                           name="tableName" 
+                           placeholder="e.g., users, products, orders"
+                           required>
+                    <div class="form-help">Must be unique and follow database naming conventions</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Schema</label>
+                    <select class="form-control" id="tableSchema" name="tableSchema">
+                        <option value="">Default Schema</option>
+                        <option value="public">public</option>
+                        <option value="admin">admin</option>
+                        <option value="reporting">reporting</option>
+                    </select>
+                    <div class="form-help">Optional schema namespace</div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Table Comment</label>
+                <textarea class="form-control" 
+                         id="tableComment" 
+                         name="tableComment" 
+                         rows="2"
+                         placeholder="Brief description of what this table stores..."></textarea>
+                <div class="form-help">Optional description for documentation purposes</div>
+            </div>
+        </div>
+
+        <!-- Columns Section -->
+        <div class="form-section">
+            <div class="section-title">
+                <span class="section-icon">2</span>
+                Table Columns
+            </div>
+
+            <div class="columns-section">
+                <div class="columns-header">
+                    <h3 class="columns-title">Define Columns <span id="columnCount">(0)</span></h3>
+                    <button type="button" class="add-column-btn" onclick="addColumn()">
+                        <i class="fa fa-plus"></i> Add Column
+                    </button>
+                </div>
+
+                <ul class="column-list" id="columnList">
+                    <!-- Columns will be dynamically added here -->
+                </ul>
+
+                <div style="text-align: center; padding: 20px; color: #6c757d;" id="noColumnsMessage">
+                    <i class="fa fa-columns" style="font-size: 2rem; margin-bottom: 10px;"></i>
+                    <p>No columns defined yet. Click "Add Column" to start building your table.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Advanced Options -->
+        <div class="form-section">
+            <div class="section-title">
+                <span class="section-icon">3</span>
+                Advanced Options
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Storage Engine</label>
+                    <select class="form-control" id="storageEngine" name="storageEngine">
+                        <option value="">Default</option>
+                        <option value="InnoDB">InnoDB</option>
+                        <option value="MyISAM">MyISAM</option>
+                        <option value="Memory">Memory</option>
+                    </select>
+                    <div class="form-help">Database-specific storage engine (if supported)</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Character Set</label>
+                    <select class="form-control" id="charset" name="charset">
+                        <option value="">Default</option>
+                        <option value="utf8mb4">utf8mb4</option>
+                        <option value="utf8">utf8</option>
+                        <option value="latin1">latin1</option>
+                    </select>
+                    <div class="form-help">Character encoding for text data</div>
+                </div>
+            </div>
+
+            <div class="checkbox-group" style="margin-top: 15px;">
+                <input type="checkbox" id="createIndexes" name="createIndexes" checked>
+                <label for="createIndexes">Automatically create indexes for foreign keys</label>
+            </div>
+        </div>
+
+        <!-- SQL Preview -->
+        <div class="form-section">
+            <div class="section-title">
+                <span class="section-icon">4</span>
+                SQL Preview
+            </div>
+
+            <div class="preview-section">
+                <div class="preview-title">
+                    <i class="fa fa-code"></i>
+                    Generated CREATE TABLE Statement
+                </div>
+                <div class="sql-preview" id="sqlPreview">
+                    -- Define table columns above to see the generated SQL
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <button type="submit" class="btn btn-success">
+                <i class="fa fa-check"></i>
+                Create Table
+            </button>
+            <button type="button" class="btn btn-primary" onclick="validateAndPreview()">
+                <i class="fa fa-eye"></i>
+                Preview & Validate
+            </button>
+            <button type="button" class="btn btn-outline" onclick="resetForm()">
+                <i class="fa fa-refresh"></i>
+                Reset Form
+            </button>
+            <a href="{{ url_for('DatabaseERDView.index') }}" class="btn btn-secondary">
+                <i class="fa fa-times"></i>
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- Hidden data for JavaScript -->
+<script type="application/json" id="columnTypes">
+{{ column_types | tojson | safe }}
+</script>
+
+<script type="application/json" id="referenceTables">
+{{ reference_tables | tojson | safe }}
+</script>
+{% endblock %}
+
+{% block tail_js %}
+{{ super() }}
+<script>
+// Global variables
+let columnTypes = JSON.parse(document.getElementById('columnTypes').textContent);
+let referenceTables = JSON.parse(document.getElementById('referenceTables').textContent);
+let columnCounter = 0;
+let columns = [];
+
+// Initialize the form
+document.addEventListener('DOMContentLoaded', function() {
+    // Add first column automatically
+    addColumn();
+    
+    // Setup form validation
+    setupFormValidation();
+    
+    // Update SQL preview on changes
+    setupPreviewUpdater();
+});
+
+function addColumn() {
+    columnCounter++;
+    const columnId = `column_${columnCounter}`;
+    
+    const columnItem = document.createElement('li');
+    columnItem.className = 'column-item';
+    columnItem.id = columnId;
+    columnItem.setAttribute('data-column-id', columnCounter);
+    
+    columnItem.innerHTML = `
+        <div class="column-header">
+            <span class="column-number">${columnCounter}</span>
+            <span class="column-title">Column ${columnCounter}</span>
+            <div class="column-actions">
+                <button type="button" class="column-action-btn" onclick="moveColumnUp(${columnCounter})" title="Move Up">
+                    <i class="fa fa-arrow-up"></i>
+                </button>
+                <button type="button" class="column-action-btn" onclick="moveColumnDown(${columnCounter})" title="Move Down">
+                    <i class="fa fa-arrow-down"></i>
+                </button>
+                <button type="button" class="column-action-btn delete" onclick="removeColumn(${columnCounter})" title="Delete Column">
+                    <i class="fa fa-trash"></i>
+                </button>
+            </div>
+        </div>
+        
+        <div class="column-form">
+            <div class="form-group">
+                <label class="form-label">Column Name <span class="required">*</span></label>
+                <input type="text" 
+                       class="form-control" 
+                       name="columnName_${columnCounter}" 
+                       placeholder="e.g., id, name, email"
+                       onchange="updateColumnTitle(${columnCounter})"
+                       required>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Data Type <span class="required">*</span></label>
+                <select class="form-control" 
+                        name="columnType_${columnCounter}" 
+                        onchange="showTypeSpecificOptions(${columnCounter})"
+                        required>
+                    <option value="">Select Type</option>
+                    ${columnTypes.map(type => `<option value="${type.value}">${type.label}</option>`).join('')}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Length/Size</label>
+                <input type="number" 
+                       class="form-control" 
+                       name="columnLength_${columnCounter}" 
+                       placeholder="Optional"
+                       min="1">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Default Value</label>
+                <input type="text" 
+                       class="form-control" 
+                       name="columnDefault_${columnCounter}" 
+                       placeholder="Optional">
+            </div>
+        </div>
+        
+        <!-- Type-specific options -->
+        <div class="field-type-specific" id="typeSpecific_${columnCounter}">
+            <div class="type-options">
+                <div class="type-option">
+                    <label>Precision</label>
+                    <input type="number" name="columnPrecision_${columnCounter}" min="1" max="65">
+                </div>
+                <div class="type-option">
+                    <label>Scale</label>
+                    <input type="number" name="columnScale_${columnCounter}" min="0" max="30">
+                </div>
+            </div>
+        </div>
+        
+        <div class="column-constraints">
+            <div class="checkbox-group">
+                <input type="checkbox" id="pk_${columnCounter}" name="primaryKey_${columnCounter}" onchange="handlePrimaryKeyChange(${columnCounter})">
+                <label for="pk_${columnCounter}">Primary Key</label>
+            </div>
+            
+            <div class="checkbox-group">
+                <input type="checkbox" id="nn_${columnCounter}" name="notNull_${columnCounter}">
+                <label for="nn_${columnCounter}">Not Null</label>
+            </div>
+            
+            <div class="checkbox-group">
+                <input type="checkbox" id="uq_${columnCounter}" name="unique_${columnCounter}">
+                <label for="uq_${columnCounter}">Unique</label>
+            </div>
+            
+            <div class="checkbox-group">
+                <input type="checkbox" id="ai_${columnCounter}" name="autoIncrement_${columnCounter}">
+                <label for="ai_${columnCounter}">Auto Increment</label>
+            </div>
+            
+            <div class="checkbox-group">
+                <input type="checkbox" id="fk_${columnCounter}" name="foreignKey_${columnCounter}" onchange="toggleForeignKeySection(${columnCounter})">
+                <label for="fk_${columnCounter}">Foreign Key</label>
+            </div>
+            
+            <div class="checkbox-group">
+                <input type="checkbox" id="idx_${columnCounter}" name="index_${columnCounter}">
+                <label for="idx_${columnCounter}">Index</label>
+            </div>
+        </div>
+        
+        <div class="foreign-key-section" id="fkSection_${columnCounter}">
+            <div class="fk-form">
+                <div class="form-group">
+                    <label class="form-label">Reference Table</label>
+                    <select class="form-control" name="fkTable_${columnCounter}" onchange="updateForeignKeyColumns(${columnCounter})">
+                        <option value="">Select Table</option>
+                        ${referenceTables.map(table => `<option value="${table.name}">${table.name}</option>`).join('')}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Reference Column</label>
+                    <select class="form-control" name="fkColumn_${columnCounter}">
+                        <option value="">Select Column</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div style="margin-top: 10px; display: flex; gap: 15px;">
+                <div class="form-group" style="flex: 1;">
+                    <label class="form-label">On Delete</label>
+                    <select class="form-control" name="fkOnDelete_${columnCounter}">
+                        <option value="">No Action</option>
+                        <option value="CASCADE">CASCADE</option>
+                        <option value="SET NULL">SET NULL</option>
+                        <option value="RESTRICT">RESTRICT</option>
+                    </select>
+                </div>
+                
+                <div class="form-group" style="flex: 1;">
+                    <label class="form-label">On Update</label>
+                    <select class="form-control" name="fkOnUpdate_${columnCounter}">
+                        <option value="">No Action</option>
+                        <option value="CASCADE">CASCADE</option>
+                        <option value="SET NULL">SET NULL</option>
+                        <option value="RESTRICT">RESTRICT</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-group" style="margin-top: 15px;">
+            <label class="form-label">Column Comment</label>
+            <input type="text" 
+                   class="form-control" 
+                   name="columnComment_${columnCounter}" 
+                   placeholder="Optional description for this column">
+        </div>
+    `;
+    
+    document.getElementById('columnList').appendChild(columnItem);
+    updateColumnCount();
+    hideNoColumnsMessage();
+    
+    // Auto-focus on the column name field
+    const nameInput = columnItem.querySelector('input[name^="columnName_"]');
+    setTimeout(() => nameInput.focus(), 100);
+    
+    updateSQLPreview();
+}
+
+function removeColumn(columnId) {
+    if (document.querySelectorAll('.column-item').length <= 1) {
+        alert('A table must have at least one column.');
+        return;
+    }
+    
+    if (confirm('Are you sure you want to remove this column?')) {
+        const columnItem = document.getElementById(`column_${columnId}`);
+        if (columnItem) {
+            columnItem.remove();
+            updateColumnCount();
+            
+            if (document.querySelectorAll('.column-item').length === 0) {
+                showNoColumnsMessage();
+            }
+            
+            updateSQLPreview();
+        }
+    }
+}
+
+function moveColumnUp(columnId) {
+    const columnItem = document.getElementById(`column_${columnId}`);
+    const previousSibling = columnItem.previousElementSibling;
+    
+    if (previousSibling) {
+        columnItem.parentNode.insertBefore(columnItem, previousSibling);
+        updateSQLPreview();
+    }
+}
+
+function moveColumnDown(columnId) {
+    const columnItem = document.getElementById(`column_${columnId}`);
+    const nextSibling = columnItem.nextElementSibling;
+    
+    if (nextSibling) {
+        columnItem.parentNode.insertBefore(nextSibling, columnItem);
+        updateSQLPreview();
+    }
+}
+
+function updateColumnTitle(columnId) {
+    const nameInput = document.querySelector(`input[name="columnName_${columnId}"]`);
+    const titleElement = document.querySelector(`#column_${columnId} .column-title`);
+    
+    const columnName = nameInput.value.trim();
+    if (columnName) {
+        titleElement.textContent = columnName;
+    } else {
+        titleElement.textContent = `Column ${columnId}`;
+    }
+    
+    updateSQLPreview();
+}
+
+function showTypeSpecificOptions(columnId) {
+    const typeSelect = document.querySelector(`select[name="columnType_${columnId}"]`);
+    const specificSection = document.getElementById(`typeSpecific_${columnId}`);
+    const selectedType = typeSelect.value;
+    
+    // Show type-specific options for DECIMAL, NUMERIC, VARCHAR, CHAR
+    const typesWithOptions = ['DECIMAL', 'NUMERIC', 'VARCHAR', 'CHAR'];
+    
+    if (typesWithOptions.includes(selectedType)) {
+        specificSection.classList.add('visible');
+    } else {
+        specificSection.classList.remove('visible');
+    }
+    
+    updateSQLPreview();
+}
+
+function handlePrimaryKeyChange(columnId) {
+    const pkCheckbox = document.getElementById(`pk_${columnId}`);
+    const nnCheckbox = document.getElementById(`nn_${columnId}`);
+    const aiCheckbox = document.getElementById(`ai_${columnId}`);
+    
+    if (pkCheckbox.checked) {
+        // Primary keys are automatically NOT NULL
+        nnCheckbox.checked = true;
+        nnCheckbox.disabled = true;
+        
+        // Uncheck other primary keys
+        document.querySelectorAll('input[name^="primaryKey_"]').forEach(cb => {
+            if (cb !== pkCheckbox) {
+                cb.checked = false;
+                const otherId = cb.name.split('_')[1];
+                document.getElementById(`nn_${otherId}`).disabled = false;
+            }
+        });
+    } else {
+        nnCheckbox.disabled = false;
+    }
+    
+    updateSQLPreview();
+}
+
+function toggleForeignKeySection(columnId) {
+    const fkCheckbox = document.getElementById(`fk_${columnId}`);
+    const fkSection = document.getElementById(`fkSection_${columnId}`);
+    
+    if (fkCheckbox.checked) {
+        fkSection.classList.add('visible');
+    } else {
+        fkSection.classList.remove('visible');
+    }
+    
+    updateSQLPreview();
+}
+
+function updateForeignKeyColumns(columnId) {
+    const tableSelect = document.querySelector(`select[name="fkTable_${columnId}"]`);
+    const columnSelect = document.querySelector(`select[name="fkColumn_${columnId}"]`);
+    
+    const selectedTable = tableSelect.value;
+    
+    // Clear existing options
+    columnSelect.innerHTML = '<option value="">Select Column</option>';
+    
+    if (selectedTable) {
+        const table = referenceTables.find(t => t.name === selectedTable);
+        if (table && table.columns) {
+            table.columns.forEach(column => {
+                const option = document.createElement('option');
+                option.value = column;
+                option.textContent = column;
+                columnSelect.appendChild(option);
+            });
+        }
+    }
+    
+    updateSQLPreview();
+}
+
+function updateColumnCount() {
+    const count = document.querySelectorAll('.column-item').length;
+    document.getElementById('columnCount').textContent = `(${count})`;
+}
+
+function hideNoColumnsMessage() {
+    document.getElementById('noColumnsMessage').style.display = 'none';
+}
+
+function showNoColumnsMessage() {
+    document.getElementById('noColumnsMessage').style.display = 'block';
+}
+
+function updateSQLPreview() {
+    const tableName = document.getElementById('tableName').value.trim();
+    const tableComment = document.getElementById('tableComment').value.trim();
+    const columnItems = document.querySelectorAll('.column-item');
+    
+    if (!tableName) {
+        document.getElementById('sqlPreview').textContent = '-- Enter table name to see preview';
+        return;
+    }
+    
+    let sql = `CREATE TABLE ${tableName} (\n`;
+    const columnDefinitions = [];
+    const constraints = [];
+    let primaryKeys = [];
+    
+    columnItems.forEach((item, index) => {
+        const columnId = item.getAttribute('data-column-id');
+        
+        const name = document.querySelector(`input[name="columnName_${columnId}"]`).value.trim();
+        const type = document.querySelector(`select[name="columnType_${columnId}"]`).value;
+        const length = document.querySelector(`input[name="columnLength_${columnId}"]`).value;
+        const precision = document.querySelector(`input[name="columnPrecision_${columnId}"]`).value;
+        const scale = document.querySelector(`input[name="columnScale_${columnId}"]`).value;
+        const defaultValue = document.querySelector(`input[name="columnDefault_${columnId}"]`).value.trim();
+        
+        const isPrimaryKey = document.getElementById(`pk_${columnId}`).checked;
+        const isNotNull = document.getElementById(`nn_${columnId}`).checked;
+        const isUnique = document.getElementById(`uq_${columnId}`).checked;
+        const isAutoIncrement = document.getElementById(`ai_${columnId}`).checked;
+        const isForeignKey = document.getElementById(`fk_${columnId}`).checked;
+        
+        if (!name || !type) return;
+        
+        let columnDef = `  ${name}`;
+        
+        // Add type with length/precision
+        if (type === 'VARCHAR' || type === 'CHAR') {
+            columnDef += ` ${type}(${length || 255})`;
+        } else if (type === 'DECIMAL' || type === 'NUMERIC') {
+            if (precision && scale) {
+                columnDef += ` ${type}(${precision},${scale})`;
+            } else if (precision) {
+                columnDef += ` ${type}(${precision})`;
+            } else {
+                columnDef += ` ${type}`;
+            }
+        } else {
+            columnDef += ` ${type}`;
+            if (length && ['INTEGER', 'BIGINT', 'SMALLINT'].includes(type)) {
+                // Length for integer types is display width in MySQL
+                columnDef += `(${length})`;
+            }
+        }
+        
+        // Add constraints
+        if (isNotNull || isPrimaryKey) {
+            columnDef += ' NOT NULL';
+        }
+        
+        if (isAutoIncrement) {
+            columnDef += ' AUTO_INCREMENT';
+        }
+        
+        if (defaultValue) {
+            if (type === 'VARCHAR' || type === 'TEXT' || type === 'CHAR') {
+                columnDef += ` DEFAULT '${defaultValue}'`;
+            } else {
+                columnDef += ` DEFAULT ${defaultValue}`;
+            }
+        }
+        
+        if (isPrimaryKey) {
+            primaryKeys.push(name);
+        }
+        
+        columnDefinitions.push(columnDef);
+        
+        // Add unique constraint
+        if (isUnique && !isPrimaryKey) {
+            constraints.push(`  UNIQUE (${name})`);
+        }
+        
+        // Add foreign key constraint
+        if (isForeignKey) {
+            const fkTable = document.querySelector(`select[name="fkTable_${columnId}"]`).value;
+            const fkColumn = document.querySelector(`select[name="fkColumn_${columnId}"]`).value;
+            const fkOnDelete = document.querySelector(`select[name="fkOnDelete_${columnId}"]`).value;
+            const fkOnUpdate = document.querySelector(`select[name="fkOnUpdate_${columnId}"]`).value;
+            
+            if (fkTable && fkColumn) {
+                let fkConstraint = `  FOREIGN KEY (${name}) REFERENCES ${fkTable}(${fkColumn})`;
+                if (fkOnDelete) fkConstraint += ` ON DELETE ${fkOnDelete}`;
+                if (fkOnUpdate) fkConstraint += ` ON UPDATE ${fkOnUpdate}`;
+                constraints.push(fkConstraint);
+            }
+        }
+    });
+    
+    // Add primary key constraint
+    if (primaryKeys.length > 0) {
+        constraints.unshift(`  PRIMARY KEY (${primaryKeys.join(', ')})`);
+    }
+    
+    // Combine columns and constraints
+    const allItems = [...columnDefinitions, ...constraints];
+    sql += allItems.join(',\n');
+    sql += '\n)';
+    
+    // Add table comment
+    if (tableComment) {
+        sql += ` COMMENT='${tableComment}'`;
+    }
+    
+    sql += ';';
+    
+    document.getElementById('sqlPreview').textContent = sql;
+}
+
+function setupFormValidation() {
+    // Real-time validation
+    const form = document.getElementById('createTableForm');
+    
+    // Table name validation
+    const tableNameInput = document.getElementById('tableName');
+    tableNameInput.addEventListener('input', function() {
+        validateTableName();
+        updateSQLPreview();
+    });
+}
+
+function validateTableName() {
+    const tableNameInput = document.getElementById('tableName');
+    const tableName = tableNameInput.value.trim();
+    
+    // Basic validation rules
+    const validNameRegex = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
+    const reservedWords = ['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'CREATE', 'DROP', 'ALTER', 'TABLE', 'INDEX'];
+    
+    if (!tableName) {
+        tableNameInput.classList.remove('error');
+        return true;
+    }
+    
+    if (!validNameRegex.test(tableName)) {
+        tableNameInput.classList.add('error');
+        return false;
+    }
+    
+    if (reservedWords.includes(tableName.toUpperCase())) {
+        tableNameInput.classList.add('error');
+        return false;
+    }
+    
+    tableNameInput.classList.remove('error');
+    return true;
+}
+
+function setupPreviewUpdater() {
+    // Update SQL preview when any input changes
+    const form = document.getElementById('createTableForm');
+    
+    form.addEventListener('input', function(e) {
+        updateSQLPreview();
+    });
+    
+    form.addEventListener('change', function(e) {
+        updateSQLPreview();
+    });
+}
+
+function validateAndPreview() {
+    const errors = validateForm();
+    
+    if (errors.length > 0) {
+        showValidationErrors(errors);
+    } else {
+        hideValidationErrors();
+        // Focus on SQL preview
+        document.getElementById('sqlPreview').scrollIntoView({ behavior: 'smooth' });
+    }
+}
+
+function validateForm() {
+    const errors = [];
+    
+    // Validate table name
+    const tableName = document.getElementById('tableName').value.trim();
+    if (!tableName) {
+        errors.push('Table name is required');
+    } else if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(tableName)) {
+        errors.push('Table name must start with a letter or underscore and contain only letters, numbers, and underscores');
+    }
+    
+    // Validate columns
+    const columnItems = document.querySelectorAll('.column-item');
+    if (columnItems.length === 0) {
+        errors.push('At least one column is required');
+    }
+    
+    let hasPrimaryKey = false;
+    const columnNames = new Set();
+    
+    columnItems.forEach((item, index) => {
+        const columnId = item.getAttribute('data-column-id');
+        const name = document.querySelector(`input[name="columnName_${columnId}"]`).value.trim();
+        const type = document.querySelector(`select[name="columnType_${columnId}"]`).value;
+        const isPrimaryKey = document.getElementById(`pk_${columnId}`).checked;
+        
+        if (!name) {
+            errors.push(`Column ${index + 1}: Name is required`);
+        } else if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) {
+            errors.push(`Column ${index + 1}: Invalid column name format`);
+        } else if (columnNames.has(name)) {
+            errors.push(`Column ${index + 1}: Duplicate column name '${name}'`);
+        } else {
+            columnNames.add(name);
+        }
+        
+        if (!type) {
+            errors.push(`Column ${index + 1}: Data type is required`);
+        }
+        
+        if (isPrimaryKey) {
+            hasPrimaryKey = true;
+        }
+        
+        // Validate foreign key settings
+        const isForeignKey = document.getElementById(`fk_${columnId}`).checked;
+        if (isForeignKey) {
+            const fkTable = document.querySelector(`select[name="fkTable_${columnId}"]`).value;
+            const fkColumn = document.querySelector(`select[name="fkColumn_${columnId}"]`).value;
+            
+            if (!fkTable) {
+                errors.push(`Column ${index + 1}: Foreign key reference table is required`);
+            }
+            if (!fkColumn) {
+                errors.push(`Column ${index + 1}: Foreign key reference column is required`);
+            }
+        }
+    });
+    
+    if (!hasPrimaryKey) {
+        errors.push('At least one column should be marked as Primary Key (recommended)');
+    }
+    
+    return errors;
+}
+
+function showValidationErrors(errors) {
+    const errorDiv = document.getElementById('validationErrors');
+    const errorList = document.getElementById('validationList');
+    
+    errorList.innerHTML = '';
+    errors.forEach(error => {
+        const li = document.createElement('li');
+        li.textContent = error;
+        errorList.appendChild(li);
+    });
+    
+    errorDiv.classList.add('visible');
+    errorDiv.scrollIntoView({ behavior: 'smooth' });
+}
+
+function hideValidationErrors() {
+    document.getElementById('validationErrors').classList.remove('visible');
+}
+
+function resetForm() {
+    if (confirm('Are you sure you want to reset the form? All data will be lost.')) {
+        document.getElementById('createTableForm').reset();
+        
+        // Remove all columns except the first one
+        const columnList = document.getElementById('columnList');
+        columnList.innerHTML = '';
+        
+        // Reset counters
+        columnCounter = 0;
+        
+        // Add one default column
+        addColumn();
+        
+        // Hide messages
+        hideValidationErrors();
+        document.getElementById('successMessage').classList.remove('visible');
+        
+        // Reset preview
+        updateSQLPreview();
+    }
+}
+
+// Form submission
+document.getElementById('createTableForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const errors = validateForm();
+    if (errors.length > 0) {
+        showValidationErrors(errors);
+        return;
+    }
+    
+    // Collect form data
+    const formData = collectFormData();
+    
+    // Show loading state
+    const submitBtn = document.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Creating Table...';
+    submitBtn.disabled = true;
+    
+    // Submit to API
+    fetch('/database/erd/api/table/create/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showSuccessMessage();
+            setTimeout(() => {
+                window.location.href = `/database/erd/table/${formData.name}/`;
+            }, 2000);
+        } else {
+            showValidationErrors([data.error || 'Failed to create table']);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showValidationErrors(['Network error: ' + error.message]);
+    })
+    .finally(() => {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
+});
+
+function collectFormData() {
+    const tableName = document.getElementById('tableName').value.trim();
+    const tableComment = document.getElementById('tableComment').value.trim();
+    const tableSchema = document.getElementById('tableSchema').value;
+    
+    const columns = [];
+    const columnItems = document.querySelectorAll('.column-item');
+    
+    columnItems.forEach(item => {
+        const columnId = item.getAttribute('data-column-id');
+        
+        const name = document.querySelector(`input[name="columnName_${columnId}"]`).value.trim();
+        const type = document.querySelector(`select[name="columnType_${columnId}"]`).value;
+        const length = document.querySelector(`input[name="columnLength_${columnId}"]`).value;
+        const precision = document.querySelector(`input[name="columnPrecision_${columnId}"]`).value;
+        const scale = document.querySelector(`input[name="columnScale_${columnId}"]`).value;
+        const defaultValue = document.querySelector(`input[name="columnDefault_${columnId}"]`).value.trim();
+        const comment = document.querySelector(`input[name="columnComment_${columnId}"]`).value.trim();
+        
+        const isPrimaryKey = document.getElementById(`pk_${columnId}`).checked;
+        const isNotNull = document.getElementById(`nn_${columnId}`).checked;
+        const isUnique = document.getElementById(`uq_${columnId}`).checked;
+        const isAutoIncrement = document.getElementById(`ai_${columnId}`).checked;
+        const isIndex = document.getElementById(`idx_${columnId}`).checked;
+        const isForeignKey = document.getElementById(`fk_${columnId}`).checked;
+        
+        if (!name || !type) return;
+        
+        const column = {
+            name: name,
+            type: type,
+            nullable: !isNotNull && !isPrimaryKey,
+            primary_key: isPrimaryKey,
+            unique: isUnique,
+            autoincrement: isAutoIncrement,
+            index: isIndex,
+            comment: comment || null
+        };
+        
+        if (length) column.length = parseInt(length);
+        if (precision) column.precision = parseInt(precision);
+        if (scale) column.scale = parseInt(scale);
+        if (defaultValue) column.default = defaultValue;
+        
+        if (isForeignKey) {
+            const fkTable = document.querySelector(`select[name="fkTable_${columnId}"]`).value;
+            const fkColumn = document.querySelector(`select[name="fkColumn_${columnId}"]`).value;
+            if (fkTable && fkColumn) {
+                column.foreign_key = `${fkTable}.${fkColumn}`;
+            }
+        }
+        
+        columns.push(column);
+    });
+    
+    return {
+        name: tableName,
+        schema: tableSchema || null,
+        comment: tableComment || null,
+        columns: columns
+    };
+}
+
+function showSuccessMessage() {
+    hideValidationErrors();
+    document.getElementById('successMessage').classList.add('visible');
+    document.getElementById('successMessage').scrollIntoView({ behavior: 'smooth' });
+}
+
+// Add some keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    if (e.ctrlKey || e.metaKey) {
+        switch (e.key) {
+            case 'Enter':
+                e.preventDefault();
+                if (e.shiftKey) {
+                    document.getElementById('createTableForm').dispatchEvent(new Event('submit'));
+                } else {
+                    validateAndPreview();
+                }
+                break;
+            case 'n':
+                e.preventDefault();
+                addColumn();
+                break;
+        }
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,437 @@
+{% extends "appbuilder/base.html" %}
+
+{% block head_css %}
+  {{ super() }}
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <style>
+    .wizard-selection-card {
+      transition: all 0.2s;
+      cursor: pointer;
+      border: 2px solid transparent;
+    }
+    
+    .wizard-selection-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    
+    .wizard-selection-card.selected {
+      border-color: #007bff;
+      background-color: #f8f9ff;
+    }
+    
+    .export-options {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 1.5rem;
+    }
+    
+    .option-group {
+      background: white;
+      border-radius: 6px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      border: 1px solid #dee2e6;
+    }
+    
+    .option-group h6 {
+      color: #495057;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+    }
+    
+    .export-summary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 8px;
+      padding: 1.5rem;
+    }
+    
+    .progress-section {
+      display: none;
+      background: #e3f2fd;
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-top: 1rem;
+    }
+    
+    .format-selector {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    
+    .format-option {
+      text-align: center;
+      padding: 1rem;
+      border: 2px solid #dee2e6;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .format-option:hover {
+      border-color: #007bff;
+    }
+    
+    .format-option.selected {
+      border-color: #007bff;
+      background-color: #f8f9ff;
+    }
+    
+    .wizard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1rem;
+      max-height: 400px;
+      overflow-y: auto;
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+      padding: 1rem;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <!-- Page Header -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card export-summary">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h1 class="mb-2">
+                <i class="fa fa-upload"></i> Export Wizards
+              </h1>
+              <p class="mb-0 opacity-75">
+                Export wizard forms with configurations, data, and customizations
+              </p>
+            </div>
+            <div class="text-end">
+              <a href="/wizard-migration" class="btn btn-light btn-sm">
+                <i class="fa fa-arrow-left"></i> Back to Dashboard
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <form method="POST" id="exportForm">
+    <div class="row">
+      <!-- Wizard Selection -->
+      <div class="col-md-8">
+        <div class="card">
+          <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+              <h5 class="mb-0">
+                <i class="fa fa-magic"></i> Select Wizards to Export
+              </h5>
+              <div>
+                <button type="button" class="btn btn-outline-primary btn-sm" onclick="selectAllWizards()">
+                  <i class="fa fa-check-double"></i> Select All
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearSelection()">
+                  <i class="fa fa-times"></i> Clear
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="card-body">
+            {% if wizards %}
+            <div class="wizard-grid">
+              {% for wizard in wizards %}
+              <div class="card wizard-selection-card" onclick="toggleWizardSelection('{{ wizard.id }}', this)">
+                <div class="card-body">
+                  <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                      <h6 class="card-title mb-1">{{ wizard.title }}</h6>
+                      <p class="card-text text-muted small mb-2">{{ wizard.description }}</p>
+                      <code class="small">{{ wizard.id }}</code>
+                    </div>
+                    <div>
+                      <input type="checkbox" name="wizard_ids" value="{{ wizard.id }}" class="wizard-checkbox" onchange="updateWizardCard(this)">
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center text-muted py-5">
+              <i class="fa fa-magic fa-3x mb-3"></i>
+              <h5>No wizards available</h5>
+              <p>Create a wizard first to export it</p>
+              <a href="/wizard-builder" class="btn btn-primary">
+                <i class="fa fa-plus"></i> Create Wizard
+              </a>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      
+      <!-- Export Options -->
+      <div class="col-md-4">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="mb-0">
+              <i class="fa fa-cog"></i> Export Options
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="export-options">
+              
+              <!-- Format Selection -->
+              <div class="option-group">
+                <h6>Export Format</h6>
+                <div class="format-selector">
+                  <div class="format-option selected" onclick="selectFormat('json', this)">
+                    <i class="fa fa-file-code fa-2x mb-2"></i>
+                    <div><strong>JSON</strong></div>
+                    <small class="text-muted">Human readable</small>
+                    <input type="radio" name="format" value="json" checked style="display: none;">
+                  </div>
+                  <div class="format-option" onclick="selectFormat('zip', this)">
+                    <i class="fa fa-file-archive fa-2x mb-2"></i>
+                    <div><strong>ZIP</strong></div>
+                    <small class="text-muted">Compressed</small>
+                    <input type="radio" name="format" value="zip" style="display: none;">
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Data Options -->
+              <div class="option-group">
+                <h6>Data to Include</h6>
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" name="include_data" id="includeData" checked>
+                  <label class="form-check-label" for="includeData">
+                    <strong>Form Submissions</strong>
+                    <br><small class="text-muted">Include submitted form data</small>
+                  </label>
+                </div>
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" name="include_analytics" id="includeAnalytics" checked>
+                  <label class="form-check-label" for="includeAnalytics">
+                    <strong>Analytics Data</strong>
+                    <br><small class="text-muted">Usage statistics and metrics</small>
+                  </label>
+                </div>
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" name="include_themes" id="includeThemes" checked>
+                  <label class="form-check-label" for="includeThemes">
+                    <strong>Theme Customizations</strong>
+                    <br><small class="text-muted">Custom CSS and styling</small>
+                  </label>
+                </div>
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" name="include_collaboration" id="includeCollaboration" checked>
+                  <label class="form-check-label" for="includeCollaboration">
+                    <strong>Collaboration Data</strong>
+                    <br><small class="text-muted">Comments, shares, permissions</small>
+                  </label>
+                </div>
+              </div>
+              
+              <!-- Compression Options -->
+              <div class="option-group">
+                <h6>Compression</h6>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="compress" id="compressOutput" checked>
+                  <label class="form-check-label" for="compressOutput">
+                    <strong>Compress Output</strong>
+                    <br><small class="text-muted">Reduce file size (recommended)</small>
+                  </label>
+                </div>
+              </div>
+              
+            </div>
+            
+            <!-- Export Summary -->
+            <div class="mt-3 p-3 bg-light rounded">
+              <h6>Export Summary</h6>
+              <div class="d-flex justify-content-between">
+                <span>Selected Wizards:</span>
+                <span class="badge badge-primary" id="selectedCount">0</span>
+              </div>
+              <div class="d-flex justify-content-between">
+                <span>Include Data:</span>
+                <span id="dataIncluded">Yes</span>
+              </div>
+              <div class="d-flex justify-content-between">
+                <span>Format:</span>
+                <span id="selectedFormat">JSON</span>
+              </div>
+            </div>
+            
+            <!-- Export Button -->
+            <div class="d-grid mt-3">
+              <button type="submit" class="btn btn-primary btn-lg" id="exportButton" disabled>
+                <i class="fa fa-upload"></i> Export Wizards
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+  
+  <!-- Progress Section -->
+  <div class="progress-section" id="progressSection">
+    <div class="text-center">
+      <h5><i class="fa fa-spinner fa-spin"></i> Exporting Wizards...</h5>
+      <p class="text-muted">Please wait while we prepare your export package</p>
+      <div class="progress">
+        <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%" id="exportProgress"></div>
+      </div>
+      <div class="mt-2">
+        <small id="progressStatus">Initializing export...</small>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block tail_js %}
+  {{ super() }}
+  <script>
+    let selectedWizards = new Set();
+    
+    function toggleWizardSelection(wizardId, cardElement) {
+      const checkbox = cardElement.querySelector('.wizard-checkbox');
+      checkbox.checked = !checkbox.checked;
+      updateWizardCard(checkbox);
+    }
+    
+    function updateWizardCard(checkbox) {
+      const card = checkbox.closest('.wizard-selection-card');
+      const wizardId = checkbox.value;
+      
+      if (checkbox.checked) {
+        selectedWizards.add(wizardId);
+        card.classList.add('selected');
+      } else {
+        selectedWizards.delete(wizardId);
+        card.classList.remove('selected');
+      }
+      
+      updateSummary();
+    }
+    
+    function selectAllWizards() {
+      const checkboxes = document.querySelectorAll('.wizard-checkbox');
+      checkboxes.forEach(checkbox => {
+        checkbox.checked = true;
+        updateWizardCard(checkbox);
+      });
+    }
+    
+    function clearSelection() {
+      const checkboxes = document.querySelectorAll('.wizard-checkbox');
+      checkboxes.forEach(checkbox => {
+        checkbox.checked = false;
+        updateWizardCard(checkbox);
+      });
+    }
+    
+    function selectFormat(format, element) {
+      // Remove selected class from all format options
+      document.querySelectorAll('.format-option').forEach(el => {
+        el.classList.remove('selected');
+      });
+      
+      // Add selected class to clicked option
+      element.classList.add('selected');
+      
+      // Update hidden radio button
+      element.querySelector('input[type="radio"]').checked = true;
+      
+      updateSummary();
+    }
+    
+    function updateSummary() {
+      // Update selected count
+      document.getElementById('selectedCount').textContent = selectedWizards.size;
+      
+      // Update data included status
+      const includeData = document.getElementById('includeData').checked;
+      const includeAnalytics = document.getElementById('includeAnalytics').checked;
+      const includeThemes = document.getElementById('includeThemes').checked;
+      const includeCollaboration = document.getElementById('includeCollaboration').checked;
+      
+      let dataItems = [];
+      if (includeData) dataItems.push('Submissions');
+      if (includeAnalytics) dataItems.push('Analytics');
+      if (includeThemes) dataItems.push('Themes');
+      if (includeCollaboration) dataItems.push('Collaboration');
+      
+      document.getElementById('dataIncluded').textContent = dataItems.length > 0 ? dataItems.join(', ') : 'None';
+      
+      // Update format
+      const selectedFormat = document.querySelector('input[name="format"]:checked').value;
+      document.getElementById('selectedFormat').textContent = selectedFormat.toUpperCase();
+      
+      // Enable/disable export button
+      const exportButton = document.getElementById('exportButton');
+      exportButton.disabled = selectedWizards.size === 0;
+    }
+    
+    // Form submission handling
+    document.getElementById('exportForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      if (selectedWizards.size === 0) {
+        alert('Please select at least one wizard to export');
+        return;
+      }
+      
+      // Show progress section
+      document.getElementById('progressSection').style.display = 'block';
+      
+      // Simulate progress
+      let progress = 0;
+      const progressBar = document.getElementById('exportProgress');
+      const progressStatus = document.getElementById('progressStatus');
+      
+      const interval = setInterval(() => {
+        progress += Math.random() * 20;
+        
+        if (progress >= 100) {
+          progress = 100;
+          progressBar.style.width = '100%';
+          progressStatus.textContent = 'Export complete! Download starting...';
+          clearInterval(interval);
+          
+          // Submit the actual form after animation
+          setTimeout(() => {
+            e.target.submit();
+          }, 1000);
+        } else {
+          progressBar.style.width = progress + '%';
+          
+          if (progress < 30) {
+            progressStatus.textContent = 'Collecting wizard configurations...';
+          } else if (progress < 60) {
+            progressStatus.textContent = 'Processing data and analytics...';
+          } else if (progress < 90) {
+            progressStatus.textContent = 'Compressing export package...';
+          } else {
+            progressStatus.textContent = 'Finalizing export...';
+          }
+        }
+      }, 300);
+    });
+    
+    // Listen for option changes
+    document.querySelectorAll('#includeData, #includeAnalytics, #includeThemes, #includeCollaboration').forEach(checkbox => {
+      checkbox.addEventListener('change', updateSummary);
+    });
+    
+    // Initialize summary
+    updateSummary();
+  </script>
+{% endblock %}

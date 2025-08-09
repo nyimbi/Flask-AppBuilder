@@ -1,0 +1,286 @@
+{% extends "appbuilder/base.html" %}
+
+{% block head_css %}
+{{ super() }}
+<style>
+.success-container {
+    max-width: 800px;
+    margin: 50px auto;
+    padding: 40px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+.success-icon {
+    width: 100px;
+    height: 100px;
+    background: linear-gradient(135deg, #28a745, #20c997);
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 30px;
+    animation: successPulse 2s infinite;
+}
+
+.success-icon i {
+    font-size: 48px;
+    color: white;
+}
+
+@keyframes successPulse {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.4); }
+    50% { transform: scale(1.05); box-shadow: 0 0 0 20px rgba(40, 167, 69, 0); }
+}
+
+.success-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #28a745;
+    margin-bottom: 15px;
+}
+
+.success-message {
+    font-size: 1.2rem;
+    color: #6c757d;
+    margin-bottom: 30px;
+    line-height: 1.5;
+}
+
+.submission-info {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 30px;
+}
+
+.submission-id {
+    font-family: 'Monaco', 'Menlo', monospace;
+    font-size: 1.1rem;
+    color: #495057;
+    background: #e9ecef;
+    padding: 10px 15px;
+    border-radius: 6px;
+    display: inline-block;
+    margin: 10px 0;
+    border: 1px solid #ced4da;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.btn-success-page {
+    padding: 12px 24px;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 6px;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+    border: none;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #0056b3, #004085);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,123,255,0.3);
+    text-decoration: none;
+    color: white;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+    border: none;
+}
+
+.btn-secondary:hover {
+    background: #5a6268;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(108,117,125,0.3);
+    text-decoration: none;
+    color: white;
+}
+
+.btn-outline-info {
+    color: #17a2b8;
+    border: 2px solid #17a2b8;
+    background: transparent;
+}
+
+.btn-outline-info:hover {
+    background: #17a2b8;
+    color: white;
+    text-decoration: none;
+}
+
+@media (max-width: 768px) {
+    .success-container {
+        margin: 20px;
+        padding: 30px 20px;
+    }
+    
+    .success-title {
+        font-size: 2rem;
+    }
+    
+    .success-message {
+        font-size: 1.1rem;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .btn-success-page {
+        width: 100%;
+        max-width: 300px;
+        text-align: center;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="success-container">
+    <div class="success-icon">
+        <i class="fa fa-check"></i>
+    </div>
+    
+    <h1 class="success-title">Form Submitted Successfully!</h1>
+    
+    <p class="success-message">
+        Your {{ wizard_title }} has been submitted and is being processed. 
+        Thank you for completing the form.
+    </p>
+    
+    <div class="submission-info">
+        <h4>Submission Details</h4>
+        <p><strong>Submission ID:</strong></p>
+        <div class="submission-id">{{ submission_id }}</div>
+        <p><small class="text-muted">
+            Please save this ID for your records. You can use it to track the status of your submission.
+        </small></p>
+    </div>
+    
+    <div class="action-buttons">
+        <a href="{{ url_for('index') }}" class="btn-success-page btn-primary">
+            <i class="fa fa-home"></i> Return to Dashboard
+        </a>
+        
+        <a href="javascript:window.print()" class="btn-success-page btn-outline-info">
+            <i class="fa fa-print"></i> Print Confirmation
+        </a>
+        
+        <a href="{{ url_for(request.endpoint.split('.')[0] + '.wizard') }}" class="btn-success-page btn-secondary">
+            <i class="fa fa-plus"></i> Submit Another Form
+        </a>
+    </div>
+</div>
+
+<!-- Print-friendly version -->
+<div class="d-none d-print-block" style="padding: 20px;">
+    <div style="text-align: center; margin-bottom: 30px;">
+        <h2>{{ wizard_title }} - Submission Confirmation</h2>
+        <p><strong>Submission ID:</strong> {{ submission_id }}</p>
+        <p><strong>Submitted on:</strong> {{ moment().format('MMMM D, YYYY [at] h:mm A') }}</p>
+    </div>
+    
+    {% if form_data %}
+    <div style="margin-bottom: 30px;">
+        <h3>Submitted Information:</h3>
+        <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+            {% for key, value in form_data.items() %}
+            {% if value and key not in ['csrf_token', 'wizard_id', 'current_step', 'wizard_action'] %}
+            <tr>
+                <td style="padding: 8px; border: 1px solid #ddd; background: #f8f9fa; font-weight: bold;">
+                    {{ key.replace('_', ' ').title() }}
+                </td>
+                <td style="padding: 8px; border: 1px solid #ddd;">
+                    {% if value is iterable and value is not string %}
+                        {{ value|join(', ') }}
+                    {% else %}
+                        {{ value }}
+                    {% endif %}
+                </td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+        </table>
+    </div>
+    {% endif %}
+    
+    <div style="text-align: center; font-size: 12px; color: #6c757d; border-top: 1px solid #ddd; padding-top: 20px;">
+        This is an automated confirmation. Please retain this document for your records.
+    </div>
+</div>
+{% endblock %}
+
+{% block tail_js %}
+{{ super() }}
+<script>
+$(document).ready(function() {
+    // Success page enhancements
+    
+    // Copy submission ID to clipboard
+    $('.submission-id').on('click', function() {
+        const submissionId = $(this).text();
+        
+        // Try to use the modern clipboard API
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(submissionId).then(function() {
+                showCopyFeedback('Submission ID copied to clipboard!');
+            }).catch(function(err) {
+                console.error('Failed to copy: ', err);
+            });
+        } else {
+            // Fallback for older browsers
+            const textArea = document.createElement('textarea');
+            textArea.value = submissionId;
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                showCopyFeedback('Submission ID copied to clipboard!');
+            } catch (err) {
+                console.error('Fallback copy failed: ', err);
+            }
+            document.body.removeChild(textArea);
+        }
+    });
+    
+    function showCopyFeedback(message) {
+        // Create and show temporary feedback
+        const feedback = $('<div class="alert alert-success" style="position: fixed; top: 20px; right: 20px; z-index: 9999; padding: 10px 20px; border-radius: 5px;">' + message + '</div>');
+        $('body').append(feedback);
+        
+        setTimeout(function() {
+            feedback.fadeOut(300, function() {
+                feedback.remove();
+            });
+        }, 2000);
+    }
+    
+    // Add tooltip to submission ID
+    $('.submission-id').attr('title', 'Click to copy to clipboard').css('cursor', 'pointer');
+    
+    // Auto-focus on return button after a short delay
+    setTimeout(function() {
+        $('.btn-primary').first().focus();
+    }, 1000);
+});
+</script>
+{% endblock %}

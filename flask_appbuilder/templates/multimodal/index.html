@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>{{ title }} - Multi-Modal Data Integration</title>
+	
+	<!-- Bootstrap CSS -->
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+	
+	<!-- Chart.js -->
+	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+	
+	<style>
+		.multimodal-card {
+			transition: all 0.3s ease-in-out;
+			border-left: 4px solid #6c757d;
+			margin-bottom: 1rem;
+		}
+		
+		.multimodal-card:hover {
+			transform: translateY(-2px);
+			box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+			border-left-color: #007bff;
+		}
+		
+		.stats-overview {
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			color: white;
+			border-radius: 1rem;
+			padding: 2rem;
+			margin-bottom: 2rem;
+		}
+		
+		.stat-card {
+			background: rgba(255, 255, 255, 0.1);
+			backdrop-filter: blur(10px);
+			border-radius: 0.5rem;
+			padding: 1.5rem;
+			text-align: center;
+			border: 1px solid rgba(255, 255, 255, 0.2);
+		}
+		
+		.stat-number {
+			font-size: 2.5rem;
+			font-weight: bold;
+			line-height: 1;
+			margin-bottom: 0.5rem;
+		}
+		
+		.stat-label {
+			font-size: 0.875rem;
+			opacity: 0.9;
+		}
+		
+		.upload-zone {
+			border: 3px dashed #dee2e6;
+			border-radius: 1rem;
+			padding: 3rem;
+			text-align: center;
+			background-color: #f8f9fa;
+			transition: all 0.2s ease-in-out;
+			margin-bottom: 2rem;
+		}
+		
+		.upload-zone.dragover {
+			border-color: #007bff;
+			background-color: rgba(0, 123, 255, 0.1);
+		}
+		
+		.upload-zone:hover {
+			border-color: #007bff;
+		}
+		
+		.media-type-card {
+			background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+			border-radius: 1rem;
+			padding: 1.5rem;
+			text-align: center;
+			transition: all 0.2s ease-in-out;
+			cursor: pointer;
+			border: 2px solid transparent;
+		}
+		
+		.media-type-card:hover,
+		.media-type-card.selected {
+			transform: scale(1.05);
+			border-color: #007bff;
+			box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+		}
+		
+		.media-type-icon {
+			font-size: 3rem;
+			margin-bottom: 1rem;
+		}
+		
+		.icon-image { color: #28a745; }
+		.icon-audio { color: #dc3545; }
+		.icon-video { color: #6f42c1; }
+		.icon-text { color: #fd7e14; }
+		
+		.process-button {
+			background: linear-gradient(135deg, #28a745, #20c997);
+			border: none;
+			border-radius: 50px;
+			padding: 0.75rem 2rem;
+			color: white;
+			font-weight: 600;
+			text-transform: uppercase;
+			letter-spacing: 0.5px;
+			transition: all 0.2s ease-in-out;
+		}
+		
+		.process-button:hover {
+			transform: scale(1.05);
+			box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+		}
+		
+		.analysis-button {
+			background: linear-gradient(135deg, #007bff, #6610f2);
+			border: none;
+			border-radius: 50px;
+			padding: 0.75rem 2rem;
+			color: white;
+			font-weight: 600;
+			text-transform: uppercase;
+			letter-spacing: 0.5px;
+			transition: all 0.2s ease-in-out;
+		}
+		
+		.analysis-button:hover {
+			transform: scale(1.05);
+			box-shadow: 0 5px 15px rgba(0, 123, 255, 0.4);
+		}
+		
+		.file-preview {
+			background-color: #f8f9fa;
+			border-radius: 0.5rem;
+			padding: 1rem;
+			margin: 0.5rem 0;
+			display: none;
+		}
+		
+		.file-item {
+			display: flex;
+			align-items: center;
+			padding: 0.5rem;
+			border-bottom: 1px solid #e9ecef;
+		}
+		
+		.file-item:last-child {
+			border-bottom: none;
+		}
+		
+		.file-icon {
+			width: 40px;
+			height: 40px;
+			border-radius: 50%;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			margin-right: 1rem;
+			font-size: 1.25rem;
+		}
+		
+		.file-icon-image { background-color: #d4edda; color: #155724; }
+		.file-icon-audio { background-color: #f8d7da; color: #721c24; }
+		.file-icon-video { background-color: #e2e3e5; color: #495057; }
+		.file-icon-text { background-color: #fff3cd; color: #856404; }
+		
+		.activity-feed {
+			max-height: 400px;
+			overflow-y: auto;
+		}
+		
+		.activity-item {
+			padding: 1rem;
+			border-left: 3px solid #007bff;
+			margin-bottom: 0.5rem;
+			background-color: #f8f9fa;
+			border-radius: 0 0.5rem 0.5rem 0;
+		}
+		
+		.activity-timestamp {
+			font-size: 0.875rem;
+			color: #6c757d;
+		}
+		
+		.similarity-preview {
+			background-color: #f8f9fa;
+			border-radius: 0.5rem;
+			padding: 1.5rem;
+			margin: 1rem 0;
+			display: none;
+		}
+		
+		.similarity-cluster {
+			background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+			border-radius: 0.5rem;
+			padding: 1rem;
+			margin: 0.5rem 0;
+		}
+		
+		.progress-container {
+			display: none;
+			margin: 1rem 0;
+		}
+		
+		.processing-status {
+			padding: 1rem;
+			border-radius: 0.5rem;
+			margin: 1rem 0;
+			display: none;
+		}
+		
+		.status-processing { background-color: #d1ecf1; color: #0c5460; }
+		.status-success { background-color: #d4edda; color: #155724; }
+		.status-error { background-color: #f8d7da; color: #721c24; }
+		
+		.feature-grid {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+			gap: 1.5rem;
+			margin: 2rem 0;
+		}
+		
+		.feature-card {
+			text-align: center;
+			padding: 2rem;
+			background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+			border-radius: 1rem;
+			transition: transform 0.2s ease-in-out;
+		}
+		
+		.feature-card:hover {
+			transform: translateY(-5px);
+		}
+		
+		.feature-icon {
+			font-size: 3rem;
+			margin-bottom: 1rem;
+			color: #007bff;
+		}
+		
+		.graph-selector {
+			background-color: #fff;
+			border: 2px solid #e9ecef;
+			border-radius: 0.5rem;
+			padding: 0.75rem;
+			transition: border-color 0.2s ease-in-out;
+		}
+		
+		.graph-selector:focus {
+			border-color: #007bff;
+			outline: none;
+			box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+		}
+	</style>
+</head>
+
+<body>
+	<div class="container-fluid p-4">
+		<!-- Header -->
+		<div class="row mb-4">
+			<div class="col-12">
+				<div class="d-flex justify-content-between align-items-center">
+					<div>
+						<h1 class="h2 mb-0">
+							<i class="fas fa-layer-group text-primary me-2"></i>
+							{{ title }}
+						</h1>
+						<p class="text-muted mb-0">Process and analyze images, audio, video, and text with advanced AI features</p>
+					</div>
+					<div class="btn-group">
+						<a href="{{ url_for('MultiModalView.analyze_media', graph_name='default') }}" class="btn btn-outline-info">
+							<i class="fas fa-chart-line me-1"></i> View Analysis
+						</a>
+						<button class="btn btn-info" onclick="showBatchProcessor()">
+							<i class="fas fa-tasks me-1"></i> Batch Process
+						</button>
+						<button class="btn btn-primary" onclick="showSimilarityAnalyzer()">
+							<i class="fas fa-project-diagram me-1"></i> Similarity Analysis
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Statistics Overview -->
+		<div class="stats-overview">
+			<div class="row">
+				<div class="col-md-8">
+					<h3 class="mb-3">Multi-Modal Processing Overview</h3>
+					<p class="mb-4">Advanced AI-powered analysis of images, audio, video, and text files with feature extraction and similarity detection</p>
+					
+					<div class="row">
+						<div class="col-md-3">
+							<div class="stat-card">
+								<div class="stat-number">{{ processing_stats.total_files_processed }}</div>
+								<div class="stat-label">Files Processed</div>
+							</div>
+						</div>
+						<div class="col-md-3">
+							<div class="stat-card">
+								<div class="stat-number">{{ processing_stats.total_features_extracted }}</div>
+								<div class="stat-label">Features Extracted</div>
+							</div>
+						</div>
+						<div class="col-md-3">
+							<div class="stat-card">
+								<div class="stat-number">{{ processing_stats.similarity_clusters_found }}</div>
+								<div class="stat-label">Similarity Clusters</div>
+							</div>
+						</div>
+						<div class="col-md-3">
+							<div class="stat-card">
+								<div class="stat-number">{{ "%.1f"|format(processing_stats.processing_time_hours) }}</div>
+								<div class="stat-label">Processing Hours</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-md-4">
+					<div class="text-center">
+						<i class="fas fa-brain fa-4x mb-3" style="opacity: 0.7;"></i>
+						<h5>AI-Powered Analysis</h5>
+						<p class="mb-0">Advanced machine learning algorithms extract meaningful features from all media types</p>
+						<div class="mt-3">
+							<span class="badge bg-light text-dark me-2">Computer Vision</span>
+							<span class="badge bg-light text-dark me-2">Audio Processing</span>
+							<span class="badge bg-light text-dark">NLP Analysis</span>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Media Type Features -->
+		<div class="feature-grid">
+			<div class="feature-card">
+				<div class="feature-icon icon-image">
+					<i class="fas fa-images"></i>
+				</div>
+				<h6>Image Analysis</h6>
+				<p class="small text-muted">Color analysis, texture detection, edge patterns, and perceptual hashing</p>
+				<div class="small">
+					<span class="badge bg-success me-1">Color Histograms</span>
+					<span class="badge bg-success me-1">Texture Features</span>
+					<span class="badge bg-success">Edge Detection</span>
+				</div>
+			</div>
+			<div class="feature-card">
+				<div class="feature-icon icon-audio">
+					<i class="fas fa-volume-up"></i>
+				</div>
+				<h6>Audio Processing</h6>
+				<p class="small text-muted">Spectral analysis, rhythm detection, and timbral characteristics</p>
+				<div class="small">
+					<span class="badge bg-danger me-1">MFCC Features</span>
+					<span class="badge bg-danger me-1">Tempo Analysis</span>
+					<span class="badge bg-danger">Spectrograms</span>
+				</div>
+			</div>
+			<div class="feature-card">
+				<div class="feature-icon icon-video">
+					<i class="fas fa-video"></i>
+				</div>
+				<h6>Video Analysis</h6>
+				<p class="small text-muted">Frame analysis, motion detection, and scene segmentation</p>
+				<div class="small">
+					<span class="badge bg-secondary me-1">Frame Extraction</span>
+					<span class="badge bg-secondary me-1">Motion Vectors</span>
+					<span class="badge bg-secondary">Scene Detection</span>
+				</div>
+			</div>
+			<div class="feature-card">
+				<div class="feature-icon icon-text">
+					<i class="fas fa-file-alt"></i>
+				</div>
+				<h6>Text Analysis</h6>
+				<p class="small text-muted">Semantic analysis, linguistic features, and content classification</p>
+				<div class="small">
+					<span class="badge bg-warning me-1">Embeddings</span>
+					<span class="badge bg-warning me-1">Sentiment</span>
+					<span class="badge bg-warning">Topics</span>
+				</div>
+			</div>
+		</div>
+
+		<div class="row">
+			<!-- Media Upload and Processing -->
+			<div class="col-md-8">
+				<div class="card multimodal-card">
+					<div class="card-header">
+						<h5 class="mb-0">
+							<i class="fas fa-upload text-success me-2"></i>
+							Media Upload & Processing
+						</h5>
+					</div>
+					<div class="card-body">
+						<!-- Graph Selection -->
+						<div class="row mb-3">
+							<div class="col-md-6">
+								<label for="targetGraph" class="form-label">
+									<i class="fas fa-project-diagram me-1"></i>
+									Target Graph
+								</label>
+								<select id="targetGraph" class="form-select graph-selector">
+									{% for graph in available_graphs %}
+										<option value="{{ graph }}">{{ graph|title }}</option>
+									{% endfor %}
+								</select>
+							</div>
+							<div class="col-md-6">
+								<label class="form-label">
+									<i class="fas fa-file-import me-1"></i>
+									Supported Formats
+								</label>
+								<div class="form-control-plaintext">
+									<span class="badge bg-success me-1">Images</span>
+									<span class="badge bg-danger me-1">Audio</span>
+									<span class="badge bg-secondary me-1">Video</span>
+									<span class="badge bg-warning">Text</span>
+								</div>
+							</div>
+						</div>
+
+						<!-- File Upload Zone -->
+						<div class="upload-zone" id="uploadZone" ondrop="dropHandler(event);" ondragover="dragOverHandler(event);" ondragleave="dragLeaveHandler(event);">
+							<i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+							<h5>Drop files here or click to browse</h5>
+							<p class="text-muted mb-3">Upload images, audio, video, or text files for analysis</p>
+							<input type="file" id="fileInput" class="d-none" multiple 
+								   accept=".jpg,.jpeg,.png,.gif,.bmp,.tiff,.webp,.mp3,.wav,.flac,.ogg,.m4a,.aac,.mp4,.avi,.mov,.mkv,.wmv,.flv,.webm,.txt,.json,.csv,.xml,.html,.md,.pdf"
+								   onchange="handleFileSelect(event)">
+							<button class="btn btn-outline-primary" onclick="document.getElementById('fileInput').click()">
+								<i class="fas fa-folder-open me-1"></i>
+								Browse Files
+							</button>
+							<div class="mt-2 small text-muted">
+								Maximum file size: {{ max_file_size_mb }}MB per file
+							</div>
+						</div>
+
+						<!-- File Preview -->
+						<div class="file-preview" id="filePreview">
+							<h6><i class="fas fa-list me-2"></i>Selected Files</h6>
+							<div id="fileList">
+								<!-- File list will be populated here -->
+							</div>
+						</div>
+
+						<!-- Processing Controls -->
+						<div class="d-flex justify-content-between align-items-center">
+							<div>
+								<button class="process-button" onclick="processFiles()" id="processBtn">
+									<i class="fas fa-cogs me-1"></i>
+									Process Media Files
+								</button>
+								<button class="btn btn-outline-secondary ms-2" onclick="clearFiles()">
+									<i class="fas fa-trash me-1"></i>
+									Clear
+								</button>
+							</div>
+							<div>
+								<button class="btn btn-outline-info" onclick="previewFeatures()">
+									<i class="fas fa-eye me-1"></i>
+									Preview Features
+								</button>
+							</div>
+						</div>
+
+						<!-- Progress Bar -->
+						<div class="progress-container" id="progressContainer">
+							<div class="progress mb-2">
+								<div class="progress-bar progress-bar-striped progress-bar-animated" 
+									 id="progressBar" role="progressbar" style="width: 0%"></div>
+							</div>
+							<div class="text-center">
+								<small class="text-muted" id="progressText">Processing...</small>
+							</div>
+						</div>
+
+						<!-- Processing Status -->
+						<div class="processing-status" id="processingStatus">
+							<!-- Status messages will appear here -->
+						</div>
+
+						<!-- Results Preview -->
+						<div class="similarity-preview" id="resultsPreview">
+							<h6>
+								<i class="fas fa-chart-bar me-2"></i>
+								Processing Results
+							</h6>
+							<div id="resultsContent">
+								<!-- Results content will be loaded here -->
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Available Graphs & Recent Activity -->
+			<div class="col-md-4">
+				<!-- Available Graphs -->
+				<div class="card multimodal-card">
+					<div class="card-header">
+						<h6 class="mb-0">
+							<i class="fas fa-project-diagram text-info me-2"></i>
+							Available Graphs
+						</h6>
+					</div>
+					<div class="card-body">
+						{% for graph in available_graphs %}
+							<div class="media-type-card mb-2" onclick="selectGraph('{{ graph }}')">
+								<div class="d-flex justify-content-between align-items-center">
+									<div>
+										<h6 class="mb-1">{{ graph|title }}</h6>
+										<small class="text-muted">Active Graph</small>
+									</div>
+									<div class="btn-group-vertical btn-group-sm">
+										<a href="{{ url_for('MultiModalView.analyze_media', graph_name=graph) }}" 
+										   class="btn btn-outline-primary">
+											<i class="fas fa-chart-line"></i>
+										</a>
+									</div>
+								</div>
+							</div>
+						{% endfor %}
+					</div>
+				</div>
+
+				<!-- Recent Activity -->
+				<div class="card multimodal-card">
+					<div class="card-header">
+						<h6 class="mb-0">
+							<i class="fas fa-history text-warning me-2"></i>
+							Recent Activity
+						</h6>
+					</div>
+					<div class="card-body">
+						<div class="activity-feed">
+							{% for activity in recent_activities %}
+								<div class="activity-item">
+									<div class="d-flex justify-content-between align-items-start">
+										<div class="flex-grow-1">
+											<strong>{{ activity.action }}</strong>
+											<div class="small text-muted">{{ activity.graph }}</div>
+											<div class="small">{{ activity.details }}</div>
+										</div>
+										<div class="activity-timestamp">
+											{{ activity.timestamp[:16] }}
+										</div>
+									</div>
+								</div>
+							{% endfor %}
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Batch Processing Modal -->
+	<div class="modal fade" id="batchModal" tabindex="-1">
+		<div class="modal-dialog modal-lg">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title">
+						<i class="fas fa-tasks text-info me-2"></i>
+						Batch Media Processing
+					</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+				</div>
+				<div class="modal-body">
+					<div class="mb-3">
+						<label for="batchGraph" class="form-label">Target Graph</label>
+						<select id="batchGraph" class="form-select">
+							{% for graph in available_graphs %}
+								<option value="{{ graph }}">{{ graph|title }}</option>
+							{% endfor %}
+						</select>
+					</div>
+					
+					<div class="mb-3">
+						<label for="batchFiles" class="form-label">Select Multiple Files</label>
+						<input type="file" id="batchFiles" class="form-control" multiple 
+							   accept=".jpg,.jpeg,.png,.gif,.bmp,.tiff,.webp,.mp3,.wav,.flac,.ogg,.m4a,.aac,.mp4,.avi,.mov,.mkv,.wmv,.flv,.webm,.txt,.json,.csv,.xml,.html,.md,.pdf">
+					</div>
+					
+					<div class="mb-3">
+						<label for="maxWorkers" class="form-label">
+							Max Parallel Workers (1-8)
+						</label>
+						<input type="number" id="maxWorkers" class="form-control" 
+							   min="1" max="8" value="4">
+					</div>
+					
+					<div id="batchProgress" style="display: none;">
+						<div class="progress mb-2">
+							<div class="progress-bar" id="batchProgressBar" style="width: 0%"></div>
+						</div>
+						<div id="batchStatus" class="text-center small text-muted"></div>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+					<button type="button" class="btn btn-info" onclick="processBatch()">
+						<i class="fas fa-rocket me-1"></i>
+						Start Batch Processing
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Similarity Analysis Modal -->
+	<div class="modal fade" id="similarityModal" tabindex="-1">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title">
+						<i class="fas fa-project-diagram text-primary me-2"></i>
+						Similarity Analysis
+					</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+				</div>
+				<div class="modal-body">
+					<div class="mb-3">
+						<label for="similarityGraph" class="form-label">Target Graph</label>
+						<select id="similarityGraph" class="form-select">
+							{% for graph in available_graphs %}
+								<option value="{{ graph }}">{{ graph|title }}</option>
+							{% endfor %}
+						</select>
+					</div>
+					
+					<div class="mb-3">
+						<label for="mediaType" class="form-label">Media Type</label>
+						<select id="mediaType" class="form-select">
+							<option value="all">All Media Types</option>
+							<option value="image">Images Only</option>
+							<option value="audio">Audio Only</option>
+							<option value="video">Video Only</option>
+							<option value="text">Text Only</option>
+						</select>
+					</div>
+					
+					<div class="mb-3">
+						<label for="similarityThreshold" class="form-label">
+							Similarity Threshold: <span id="thresholdValue">0.7</span>
+						</label>
+						<input type="range" id="similarityThreshold" class="form-range" 
+							   min="0.1" max="1.0" step="0.1" value="0.7"
+							   oninput="document.getElementById('thresholdValue').textContent = this.value">
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+					<button type="button" class="btn btn-primary" onclick="analyzeSimilarity()">
+						<i class="fas fa-search me-1"></i>
+						Analyze Similarity
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Bootstrap JS -->
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+	
+	<script>
+		// Global variables
+		let selectedFiles = [];
+		let isProcessing = false;
+		
+		// File handling
+		function dropHandler(ev) {
+			ev.preventDefault();
+			
+			const uploadZone = document.getElementById('uploadZone');
+			uploadZone.classList.remove('dragover');
+			
+			const files = Array.from(ev.dataTransfer.files);
+			handleFiles(files);
+		}
+		
+		function dragOverHandler(ev) {
+			ev.preventDefault();
+			document.getElementById('uploadZone').classList.add('dragover');
+		}
+		
+		function dragLeaveHandler(ev) {
+			ev.preventDefault();
+			document.getElementById('uploadZone').classList.remove('dragover');
+		}
+		
+		function handleFileSelect(event) {
+			const files = Array.from(event.target.files);
+			handleFiles(files);
+		}
+		
+		function handleFiles(files) {
+			selectedFiles = files;
+			
+			if (files.length > 0) {
+				showFilePreview(files);
+			}
+		}
+		
+		function showFilePreview(files) {
+			const previewDiv = document.getElementById('filePreview');
+			const fileList = document.getElementById('fileList');
+			
+			let html = '';
+			files.forEach((file, index) => {
+				const fileType = getFileType(file.name);
+				const iconClass = getFileIconClass(fileType);
+				
+				html += `
+					<div class="file-item">
+						<div class="file-icon ${iconClass}">
+							<i class="${getFileIcon(fileType)}"></i>
+						</div>
+						<div class="flex-grow-1">
+							<div class="fw-bold">${file.name}</div>
+							<div class="small text-muted">
+								${fileType} • ${formatFileSize(file.size)}
+							</div>
+						</div>
+						<button class="btn btn-outline-danger btn-sm" onclick="removeFile(${index})">
+							<i class="fas fa-times"></i>
+						</button>
+					</div>
+				`;
+			});
+			
+			fileList.innerHTML = html;
+			previewDiv.style.display = 'block';
+		}
+		
+		function getFileType(filename) {
+			const ext = filename.toLowerCase().split('.').pop();
+			
+			if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff', 'webp'].includes(ext)) {
+				return 'image';
+			} else if (['mp3', 'wav', 'flac', 'ogg', 'm4a', 'aac'].includes(ext)) {
+				return 'audio';
+			} else if (['mp4', 'avi', 'mov', 'mkv', 'wmv', 'flv', 'webm'].includes(ext)) {
+				return 'video';
+			} else {
+				return 'text';
+			}
+		}
+		
+		function getFileIconClass(fileType) {
+			const classes = {
+				'image': 'file-icon-image',
+				'audio': 'file-icon-audio',
+				'video': 'file-icon-video',
+				'text': 'file-icon-text'
+			};
+			return classes[fileType] || 'file-icon-text';
+		}
+		
+		function getFileIcon(fileType) {
+			const icons = {
+				'image': 'fas fa-image',
+				'audio': 'fas fa-volume-up',
+				'video': 'fas fa-video',
+				'text': 'fas fa-file-alt'
+			};
+			return icons[fileType] || 'fas fa-file';
+		}
+		
+		function formatFileSize(bytes) {
+			if (bytes === 0) return '0 Bytes';
+			const k = 1024;
+			const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+			const i = Math.floor(Math.log(bytes) / Math.log(k));
+			return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+		}
+		
+		function removeFile(index) {
+			selectedFiles.splice(index, 1);
+			
+			if (selectedFiles.length > 0) {
+				showFilePreview(selectedFiles);
+			} else {
+				clearFiles();
+			}
+		}
+		
+		function clearFiles() {
+			selectedFiles = [];
+			document.getElementById('fileInput').value = '';
+			document.getElementById('filePreview').style.display = 'none';
+			document.getElementById('processingStatus').style.display = 'none';
+			document.getElementById('resultsPreview').style.display = 'none';
+			document.getElementById('progressContainer').style.display = 'none';
+		}
+		
+		// Media processing
+		async function processFiles() {
+			if (isProcessing) return;
+			
+			if (selectedFiles.length === 0) {
+				alert('Please select files to process');
+				return;
+			}
+			
+			const graphName = document.getElementById('targetGraph').value;
+			
+			isProcessing = true;
+			showProcessingStatus('Uploading and processing media files...', 'processing');
+			updateProgress(10);
+			
+			try {
+				const formData = new FormData();
+				
+				// Add files to form data
+				selectedFiles.forEach((file, index) => {
+					formData.append('files', file);
+				});
+				
+				formData.append('graph_name', graphName);
+				
+				updateProgress(30);
+				
+				const response = await fetch('/multimodal/api/upload-media/', {
+					method: 'POST',
+					body: formData
+				});
+				
+				updateProgress(70);
+				
+				if (!response.ok) {
+					throw new Error(`HTTP error! status: ${response.status}`);
+				}
+				
+				const result = await response.json();
+				
+				updateProgress(100);
+				
+				if (result.success) {
+					showProcessingStatus(
+						`Success! Processed ${result.summary.files_processed} files, extracted ${result.summary.total_features_extracted} features`,
+						'success'
+					);
+					showResults(result);
+				} else {
+					throw new Error(result.error);
+				}
+				
+			} catch (error) {
+				console.error('Processing failed:', error);
+				showProcessingStatus(`Error: ${error.message}`, 'error');
+			} finally {
+				isProcessing = false;
+				setTimeout(() => {
+					document.getElementById('progressContainer').style.display = 'none';
+					updateProgress(0);
+				}, 3000);
+			}
+		}
+		
+		function showProcessingStatus(message, type) {
+			const statusDiv = document.getElementById('processingStatus');
+			statusDiv.className = `processing-status status-${type}`;
+			statusDiv.innerHTML = `
+				<i class="fas fa-${type === 'processing' ? 'spinner fa-spin' : (type === 'success' ? 'check-circle' : 'exclamation-triangle')} me-2"></i>
+				${message}
+			`;
+			statusDiv.style.display = 'block';
+			
+			document.getElementById('progressContainer').style.display = 'block';
+		}
+		
+		function updateProgress(percent) {
+			const progressBar = document.getElementById('progressBar');
+			progressBar.style.width = `${percent}%`;
+			progressBar.setAttribute('aria-valuenow', percent);
+			
+			const progressText = document.getElementById('progressText');
+			progressText.textContent = `${percent}% Complete`;
+		}
+		
+		function showResults(result) {
+			const previewDiv = document.getElementById('resultsPreview');
+			const contentDiv = document.getElementById('resultsContent');
+			
+			const fileTypes = result.summary.file_types_processed.join(', ');
+			
+			contentDiv.innerHTML = `
+				<div class="row">
+					<div class="col-md-6">
+						<h6><i class="fas fa-files me-1"></i> Files: ${result.summary.files_processed}</h6>
+						<div class="small text-muted">Types processed: ${fileTypes}</div>
+					</div>
+					<div class="col-md-6">
+						<h6><i class="fas fa-cogs me-1"></i> Features: ${result.summary.total_features_extracted}</h6>
+						<div class="small text-muted">Advanced AI feature extraction completed</div>
+					</div>
+				</div>
+				<div class="mt-3">
+					<button class="btn btn-outline-primary btn-sm" onclick="analyzeSimilarity()">
+						<i class="fas fa-project-diagram me-1"></i>
+						Find Similar Media
+					</button>
+				</div>
+			`;
+			
+			previewDiv.style.display = 'block';
+		}
+		
+		// Graph selection
+		function selectGraph(graphName) {
+			document.getElementById('targetGraph').value = graphName;
+		}
+		
+		// Batch processing
+		function showBatchProcessor() {
+			const modal = new bootstrap.Modal(document.getElementById('batchModal'));
+			modal.show();
+		}
+		
+		async function processBatch() {
+			const batchFiles = document.getElementById('batchFiles').files;
+			const graphName = document.getElementById('batchGraph').value;
+			const maxWorkers = parseInt(document.getElementById('maxWorkers').value);
+			
+			if (batchFiles.length === 0) {
+				alert('Please select files for batch processing');
+				return;
+			}
+			
+			// Show progress
+			document.getElementById('batchProgress').style.display = 'block';
+			document.getElementById('batchStatus').textContent = 'Preparing batch processing...';
+			
+			try {
+				// Create file paths array (in real implementation, files would be uploaded first)
+				const filePaths = Array.from(batchFiles).map(file => file.name);
+				
+				const response = await fetch('/multimodal/api/batch-process/', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						graph_name: graphName,
+						file_paths: filePaths,
+						max_workers: maxWorkers
+					})
+				});
+				
+				const result = await response.json();
+				
+				if (result.success) {
+					document.getElementById('batchStatus').textContent = 
+						`Success! Processed ${result.batch_results.files_processed} files with ${result.batch_results.total_features_extracted} features extracted`;
+					
+					// Update progress bar to 100%
+					document.getElementById('batchProgressBar').style.width = '100%';
+				} else {
+					throw new Error(result.error);
+				}
+				
+			} catch (error) {
+				console.error('Batch processing failed:', error);
+				document.getElementById('batchStatus').textContent = `Error: ${error.message}`;
+			}
+		}
+		
+		// Similarity analysis
+		function showSimilarityAnalyzer() {
+			const modal = new bootstrap.Modal(document.getElementById('similarityModal'));
+			modal.show();
+		}
+		
+		async function analyzeSimilarity() {
+			const graphName = document.getElementById('similarityGraph').value;
+			const mediaType = document.getElementById('mediaType').value;
+			const threshold = parseFloat(document.getElementById('similarityThreshold').value);
+			
+			try {
+				const response = await fetch('/multimodal/api/analyze-similarity/', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						graph_name: graphName,
+						media_type: mediaType,
+						similarity_threshold: threshold
+					})
+				});
+				
+				const result = await response.json();
+				
+				if (result.success) {
+					alert(`Similarity Analysis Complete!\n\nClusters Found: ${result.similarity_results.clusters?.length || 0}\nRelationships Created: ${result.similarity_results.relationships_created || 0}`);
+					
+					// Close modal
+					bootstrap.Modal.getInstance(document.getElementById('similarityModal')).hide();
+					
+					// Refresh page to show updated results
+					setTimeout(() => location.reload(), 2000);
+				} else {
+					throw new Error(result.error);
+				}
+				
+			} catch (error) {
+				console.error('Similarity analysis failed:', error);
+				alert(`Error: ${error.message}`);
+			}
+		}
+		
+		function previewFeatures() {
+			if (selectedFiles.length === 0) {
+				alert('Please select files first');
+				return;
+			}
+			
+			alert('Feature preview would show extracted features like:\n\n• Image: Color histograms, texture patterns, edge features\n• Audio: MFCC coefficients, spectral features, tempo\n• Video: Frame analysis, motion vectors, scene detection\n• Text: Embeddings, sentiment, topics, entities');
+		}
+	</script>
+</body>
+</html>

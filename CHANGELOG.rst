@@ -1,6 +1,25 @@
 Flask-AppBuilder ChangeLog
 ==========================
 
+Improvements and Bug fixes on 4.8.1 (SQLAlchemy 2.x Upgrade)
+-------------------------------------------------------------
+
+- **BREAKING**: Upgrade to SQLAlchemy 2.x and Flask-SQLAlchemy 3.x
+- **BREAKING**: Minimum Python version is now 3.7 (required for SQLAlchemy 2.x)
+- feat: Full compatibility with SQLAlchemy 2.0.42+ and Flask-SQLAlchemy 3.1.1+
+- feat: Automatic compatibility layer for Flask-SQLAlchemy 2.x vs 3.x detection
+- feat: Modern query patterns using ``session.execute(select())`` internally
+- feat: Enhanced performance and debugging with SQLAlchemy 2.x
+- fix: Updated all query methods in SecurityManager for SQLAlchemy 2.x compatibility
+- fix: Fixed declarative imports for SQLAlchemy 2.x (``declared_attr``, ``as_declarative``)
+- fix: Updated model metaclass for automatic table name generation with SQLAlchemy 2.x
+- fix: Session handling compatibility between Flask-SQLAlchemy versions
+- docs: Updated installation, configuration, and migration documentation
+- test: Verified compatibility with SQLAlchemy 2.x patterns and functionality
+
+**Migration Notes**: Most applications should upgrade seamlessly. If you have custom SQLAlchemy
+code, refer to the `SQLAlchemy 2.0 Migration Guide <https://docs.sqlalchemy.org/en/20/changelog/migration_20.html>`_.
+
 Improvements and Bug fixes on 4.8.0
 -----------------------------------
 

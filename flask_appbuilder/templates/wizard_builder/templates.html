@@ -1,0 +1,429 @@
+{% extends "appbuilder/base.html" %}
+
+{% block head_css %}
+  {{ super() }}
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <style>
+    .template-card {
+      transition: transform 0.2s, box-shadow 0.2s;
+      cursor: pointer;
+      height: 100%;
+    }
+    
+    .template-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    }
+    
+    .template-preview {
+      height: 150px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 8px 8px 0 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 2.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .template-preview::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.3);
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    
+    .template-card:hover .template-preview::before {
+      opacity: 1;
+    }
+    
+    .template-meta {
+      font-size: 0.85rem;
+      color: #666;
+    }
+    
+    .template-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.25rem;
+      margin-top: 0.5rem;
+    }
+    
+    .template-tag {
+      background-color: #e9ecef;
+      color: #6c757d;
+      padding: 0.25rem 0.5rem;
+      border-radius: 12px;
+      font-size: 0.75rem;
+    }
+    
+    .category-filter {
+      margin-bottom: 2rem;
+    }
+    
+    .category-btn {
+      margin-right: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .search-box {
+      max-width: 400px;
+    }
+    
+    .template-stats {
+      display: flex;
+      justify-content: space-around;
+      padding: 1rem 0;
+      border-top: 1px solid #dee2e6;
+      margin-top: 1rem;
+    }
+    
+    .template-stat {
+      text-align: center;
+    }
+    
+    .template-stat-value {
+      font-weight: bold;
+      color: #007bff;
+    }
+    
+    .template-category-basic { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .template-category-authentication { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+    .template-category-surveys { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+    .template-category-ecommerce { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+    .template-category-hr { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+    .template-category-events { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-md-12">
+      <div class="card">
+        <div class="card-header">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h3 class="mb-0"><i class="fa fa-th-large"></i> Wizard Templates</h3>
+              <p class="text-muted mb-0">Choose from professionally designed wizard form templates</p>
+            </div>
+            <div class="btn-group">
+              <a href="{{ url_for('.index') }}" class="btn btn-outline-secondary">
+                <i class="fa fa-arrow-left"></i> Back
+              </a>
+              <a href="{{ url_for('.create') }}" class="btn btn-primary">
+                <i class="fa fa-plus"></i> Create Custom
+              </a>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card-body">
+          <!-- Filters and Search -->
+          <div class="row mb-4">
+            <div class="col-md-8">
+              <div class="category-filter">
+                <h6 class="mb-3">Filter by Category:</h6>
+                <button type="button" class="btn btn-outline-primary category-btn active" onclick="filterByCategory('all')">
+                  All Templates
+                </button>
+                <button type="button" class="btn btn-outline-secondary category-btn" onclick="filterByCategory('Basic')">
+                  <i class="fa fa-rocket"></i> Basic
+                </button>
+                <button type="button" class="btn btn-outline-secondary category-btn" onclick="filterByCategory('Authentication')">
+                  <i class="fa fa-lock"></i> Authentication
+                </button>
+                <button type="button" class="btn btn-outline-secondary category-btn" onclick="filterByCategory('Surveys')">
+                  <i class="fa fa-poll"></i> Surveys
+                </button>
+                <button type="button" class="btn btn-outline-secondary category-btn" onclick="filterByCategory('E-commerce')">
+                  <i class="fa fa-shopping-cart"></i> E-commerce
+                </button>
+                <button type="button" class="btn btn-outline-secondary category-btn" onclick="filterByCategory('HR')">
+                  <i class="fa fa-users"></i> HR
+                </button>
+                <button type="button" class="btn btn-outline-secondary category-btn" onclick="filterByCategory('Events')">
+                  <i class="fa fa-calendar"></i> Events
+                </button>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="search-box">
+                <div class="input-group">
+                  <input type="text" class="form-control" placeholder="Search templates..." id="searchInput" oninput="searchTemplates()">
+                  <button class="btn btn-outline-secondary" type="button">
+                    <i class="fa fa-search"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Templates Grid -->
+          <div class="row" id="templatesGrid">
+            {% for template in templates %}
+            <div class="col-lg-4 col-md-6 mb-4 template-item" data-category="{{ template.category }}" data-tags="{{ template.tags|join(' ') }}">
+              <div class="card template-card h-100" onclick="useTemplate('{{ template.id }}')">
+                <div class="template-preview template-category-{{ template.category.lower() }}">
+                  <i class="fa fa-wpforms"></i>
+                  <div class="position-absolute top-0 end-0 p-2">
+                    <span class="badge bg-white text-dark">{{ template.category }}</span>
+                  </div>
+                </div>
+                
+                <div class="card-body">
+                  <h5 class="card-title">{{ template.title }}</h5>
+                  <p class="card-text text-muted">{{ template.description }}</p>
+                  
+                  <div class="template-stats">
+                    <div class="template-stat">
+                      <div class="template-stat-value">{{ template.steps }}</div>
+                      <small class="text-muted">Steps</small>
+                    </div>
+                    <div class="template-stat">
+                      <div class="template-stat-value">{{ template.fields }}</div>
+                      <small class="text-muted">Fields</small>
+                    </div>
+                    <div class="template-stat">
+                      <i class="fa fa-star text-warning"></i>
+                      <small class="text-muted">Popular</small>
+                    </div>
+                  </div>
+                  
+                  <div class="template-tags">
+                    {% for tag in template.tags %}
+                    <span class="template-tag">{{ tag }}</span>
+                    {% endfor %}
+                  </div>
+                </div>
+                
+                <div class="card-footer bg-transparent">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <button class="btn btn-outline-primary btn-sm" onclick="previewTemplate('{{ template.id }}'); event.stopPropagation();">
+                      <i class="fa fa-eye"></i> Preview
+                    </button>
+                    <button class="btn btn-primary btn-sm" onclick="useTemplate('{{ template.id }}')">
+                      <i class="fa fa-plus"></i> Use Template
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          
+          <!-- Empty State -->
+          <div class="text-center py-5 d-none" id="emptyState">
+            <i class="fa fa-search fa-3x text-muted mb-3"></i>
+            <h5>No templates found</h5>
+            <p class="text-muted">Try adjusting your search or category filter</p>
+            <button type="button" class="btn btn-outline-primary" onclick="clearFilters()">
+              Clear Filters
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Template Preview Modal -->
+<div class="modal fade" id="templateModal" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Template Preview</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="templateModalBody">
+        <!-- Template preview content will be loaded here -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" id="useTemplateBtn">
+          <i class="fa fa-plus"></i> Use This Template
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block tail_js %}
+  {{ super() }}
+  <script>
+    let currentFilter = 'all';
+    let currentSearch = '';
+    let currentTemplateId = null;
+    
+    function filterByCategory(category) {
+      currentFilter = category;
+      
+      // Update button states
+      document.querySelectorAll('.category-btn').forEach(btn => {
+        btn.classList.remove('active', 'btn-primary');
+        btn.classList.add('btn-outline-secondary');
+      });
+      
+      event.target.classList.remove('btn-outline-secondary');
+      event.target.classList.add('btn-primary', 'active');
+      
+      applyFilters();
+    }
+    
+    function searchTemplates() {
+      currentSearch = document.getElementById('searchInput').value.toLowerCase();
+      applyFilters();
+    }
+    
+    function applyFilters() {
+      const templates = document.querySelectorAll('.template-item');
+      let visibleCount = 0;
+      
+      templates.forEach(template => {
+        const category = template.dataset.category;
+        const tags = template.dataset.tags.toLowerCase();
+        const title = template.querySelector('.card-title').textContent.toLowerCase();
+        const description = template.querySelector('.card-text').textContent.toLowerCase();
+        
+        const categoryMatch = currentFilter === 'all' || category === currentFilter;
+        const searchMatch = currentSearch === '' || 
+          title.includes(currentSearch) || 
+          description.includes(currentSearch) || 
+          tags.includes(currentSearch);
+        
+        if (categoryMatch && searchMatch) {
+          template.style.display = 'block';
+          visibleCount++;
+        } else {
+          template.style.display = 'none';
+        }
+      });
+      
+      // Show/hide empty state
+      const emptyState = document.getElementById('emptyState');
+      if (visibleCount === 0) {
+        emptyState.classList.remove('d-none');
+      } else {
+        emptyState.classList.add('d-none');
+      }
+    }
+    
+    function clearFilters() {
+      currentFilter = 'all';
+      currentSearch = '';
+      
+      document.getElementById('searchInput').value = '';
+      document.querySelector('.category-btn.active').click();
+    }
+    
+    function useTemplate(templateId) {
+      window.location.href = '{{ url_for('.create') }}?template=' + templateId;
+    }
+    
+    function previewTemplate(templateId) {
+      currentTemplateId = templateId;
+      
+      // Load template preview
+      loadTemplatePreview(templateId);
+      
+      // Show modal
+      new bootstrap.Modal(document.getElementById('templateModal')).show();
+    }
+    
+    function loadTemplatePreview(templateId) {
+      const templates = {{ templates | tojson }};
+      const template = templates.find(t => t.id === templateId);
+      
+      if (template) {
+        const modalBody = document.getElementById('templateModalBody');
+        const useBtn = document.getElementById('useTemplateBtn');
+        
+        useBtn.onclick = () => useTemplate(templateId);
+        
+        modalBody.innerHTML = `
+          <div class="row">
+            <div class="col-md-4">
+              <div class="template-preview template-category-${template.category.toLowerCase()} mb-3" style="height: 120px; font-size: 2rem;">
+                <i class="fa fa-wpforms"></i>
+              </div>
+              
+              <div class="template-stats">
+                <div class="row text-center">
+                  <div class="col-4">
+                    <div class="template-stat-value">${template.steps}</div>
+                    <small class="text-muted">Steps</small>
+                  </div>
+                  <div class="col-4">
+                    <div class="template-stat-value">${template.fields}</div>
+                    <small class="text-muted">Fields</small>
+                  </div>
+                  <div class="col-4">
+                    <div class="template-stat-value">${template.category}</div>
+                    <small class="text-muted">Category</small>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="mt-3">
+                <h6>Tags:</h6>
+                <div class="template-tags">
+                  ${template.tags.map(tag => `<span class="template-tag">${tag}</span>`).join('')}
+                </div>
+              </div>
+            </div>
+            
+            <div class="col-md-8">
+              <h4>${template.title}</h4>
+              <p class="text-muted">${template.description}</p>
+              
+              <div class="mt-4">
+                <h6>What's included:</h6>
+                <ul class="list-unstyled">
+                  <li><i class="fa fa-check text-success me-2"></i> ${template.steps} pre-configured steps</li>
+                  <li><i class="fa fa-check text-success me-2"></i> ${template.fields} form fields with validation</li>
+                  <li><i class="fa fa-check text-success me-2"></i> Professional styling and layout</li>
+                  <li><i class="fa fa-check text-success me-2"></i> Mobile-responsive design</li>
+                  <li><i class="fa fa-check text-success me-2"></i> Built-in accessibility features</li>
+                  <li><i class="fa fa-check text-success me-2"></i> Customizable configuration</li>
+                </ul>
+              </div>
+              
+              <div class="mt-4">
+                <h6>Perfect for:</h6>
+                <p class="text-muted">
+                  ${getTemplateUseCases(template.category, template.tags)}
+                </p>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+    }
+    
+    function getTemplateUseCases(category, tags) {
+      const useCases = {
+        'Basic': 'Simple contact forms, feedback collection, newsletter signups, and general inquiries.',
+        'Authentication': 'User registration, account creation, profile setup, and onboarding processes.',
+        'Surveys': 'Customer feedback, employee satisfaction surveys, market research, and data collection.',
+        'E-commerce': 'Product orders, checkout processes, customer information, and payment collection.',
+        'HR': 'Job applications, employee onboarding, performance reviews, and recruitment processes.',
+        'Events': 'Event registration, attendee management, ticket booking, and conference signups.'
+      };
+      
+      return useCases[category] || 'Various business and organizational needs.';
+    }
+    
+    // Initialize filters on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      applyFilters();
+    });
+  </script>
+{% endblock %}

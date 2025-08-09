@@ -1,0 +1,467 @@
+<!-- SAML Setup Modal -->
+<div class="modal fade" id="samlSetupModal" tabindex="-1">
+	<div class="modal-dialog modal-lg">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title">
+					<i class="fas fa-rocket text-primary me-2"></i>
+					SAML SSO Setup
+				</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+			</div>
+			<div class="modal-body">
+				<form id="samlSetupForm">
+					<div class="row">
+						<div class="col-md-6">
+							<div class="mb-3">
+								<label class="form-label">Provider Name</label>
+								<input type="text" class="form-control" name="provider_name" placeholder="e.g., CompanySSO" required>
+							</div>
+							<div class="mb-3">
+								<label class="form-label">Entity ID</label>
+								<input type="url" class="form-control" name="entity_id" placeholder="https://company.com/saml/entity" required>
+							</div>
+							<div class="mb-3">
+								<label class="form-label">SSO URL</label>
+								<input type="url" class="form-control" name="sso_url" placeholder="https://company.com/saml/sso" required>
+							</div>
+						</div>
+						<div class="col-md-6">
+							<div class="mb-3">
+								<label class="form-label">X.509 Certificate</label>
+								<textarea class="form-control" name="certificate" rows="8" placeholder="-----BEGIN CERTIFICATE-----" required></textarea>
+							</div>
+						</div>
+					</div>
+					<div class="row">
+						<div class="col-12">
+							<div class="mb-3">
+								<label class="form-label">Attribute Mappings</label>
+								<div class="row">
+									<div class="col-md-4">
+										<input type="text" class="form-control" name="email_attr" placeholder="Email Attribute" value="http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress">
+									</div>
+									<div class="col-md-4">
+										<input type="text" class="form-control" name="first_name_attr" placeholder="First Name Attribute" value="http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname">
+									</div>
+									<div class="col-md-4">
+										<input type="text" class="form-control" name="last_name_attr" placeholder="Last Name Attribute" value="http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname">
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</form>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+				<button type="button" class="btn btn-primary" onclick="saveSAMLConfig()">
+					<i class="fas fa-save me-1"></i> Save Configuration
+				</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!-- LDAP Setup Modal -->
+<div class="modal fade" id="ldapSetupModal" tabindex="-1">
+	<div class="modal-dialog modal-lg">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title">
+					<i class="fas fa-users text-success me-2"></i>
+					LDAP/Active Directory Setup
+				</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+			</div>
+			<div class="modal-body">
+				<form id="ldapSetupForm">
+					<div class="row">
+						<div class="col-md-6">
+							<div class="mb-3">
+								<label class="form-label">LDAP Server</label>
+								<input type="text" class="form-control" name="server" placeholder="ldap://company.com:389" required>
+							</div>
+							<div class="mb-3">
+								<label class="form-label">Base DN</label>
+								<input type="text" class="form-control" name="base_dn" placeholder="DC=company,DC=com" required>
+							</div>
+							<div class="mb-3">
+								<label class="form-label">Bind DN</label>
+								<input type="text" class="form-control" name="bind_dn" placeholder="CN=service,DC=company,DC=com">
+							</div>
+						</div>
+						<div class="col-md-6">
+							<div class="mb-3">
+								<label class="form-label">Bind Password</label>
+								<input type="password" class="form-control" name="bind_password">
+							</div>
+							<div class="mb-3">
+								<label class="form-label">User Filter</label>
+								<input type="text" class="form-control" name="user_filter" placeholder="(objectClass=person)" value="(objectClass=person)">
+							</div>
+							<div class="mb-3">
+								<label class="form-label">User Search Base</label>
+								<input type="text" class="form-control" name="user_search_base" placeholder="OU=Users,DC=company,DC=com">
+							</div>
+						</div>
+					</div>
+					<div class="row">
+						<div class="col-12">
+							<div class="mb-3">
+								<label class="form-label">Attribute Mappings</label>
+								<div class="row">
+									<div class="col-md-3">
+										<input type="text" class="form-control" name="username_attr" placeholder="Username" value="sAMAccountName">
+									</div>
+									<div class="col-md-3">
+										<input type="text" class="form-control" name="email_attr" placeholder="Email" value="mail">
+									</div>
+									<div class="col-md-3">
+										<input type="text" class="form-control" name="first_name_attr" placeholder="First Name" value="givenName">
+									</div>
+									<div class="col-md-3">
+										<input type="text" class="form-control" name="last_name_attr" placeholder="Last Name" value="sn">
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="row">
+						<div class="col-12">
+							<div class="form-check">
+								<input class="form-check-input" type="checkbox" name="use_ssl" id="ldapSSL">
+								<label class="form-check-label" for="ldapSSL">
+									Use SSL/TLS Connection
+								</label>
+							</div>
+						</div>
+					</div>
+				</form>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-outline-success" onclick="testLDAPConnection()">
+					<i class="fas fa-plug me-1"></i> Test Connection
+				</button>
+				<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+				<button type="button" class="btn btn-success" onclick="saveLDAPConfig()">
+					<i class="fas fa-save me-1"></i> Save Configuration
+				</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!-- API Key Setup Modal -->
+<div class="modal fade" id="apiSetupModal" tabindex="-1">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title">
+					<i class="fas fa-key text-warning me-2"></i>
+					Generate API Key
+				</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+			</div>
+			<div class="modal-body">
+				<form id="apiSetupForm">
+					<div class="mb-3">
+						<label class="form-label">Key Name</label>
+						<input type="text" class="form-control" name="name" placeholder="e.g., External Integration" required>
+					</div>
+					<div class="mb-3">
+						<label class="form-label">Permissions</label>
+						<div class="row">
+							<div class="col-md-6">
+								<div class="form-check">
+									<input class="form-check-input" type="checkbox" name="permissions" value="read" id="apiRead" checked>
+									<label class="form-check-label" for="apiRead">Read Access</label>
+								</div>
+								<div class="form-check">
+									<input class="form-check-input" type="checkbox" name="permissions" value="write" id="apiWrite">
+									<label class="form-check-label" for="apiWrite">Write Access</label>
+								</div>
+							</div>
+							<div class="col-md-6">
+								<div class="form-check">
+									<input class="form-check-input" type="checkbox" name="permissions" value="admin" id="apiAdmin">
+									<label class="form-check-label" for="apiAdmin">Admin Access</label>
+								</div>
+								<div class="form-check">
+									<input class="form-check-input" type="checkbox" name="permissions" value="delete" id="apiDelete">
+									<label class="form-check-label" for="apiDelete">Delete Access</label>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="mb-3">
+						<label class="form-label">Expiration</label>
+						<select class="form-select" name="expiration">
+							<option value="">Never</option>
+							<option value="30">30 Days</option>
+							<option value="90">90 Days</option>
+							<option value="365">1 Year</option>
+						</select>
+					</div>
+				</form>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+				<button type="button" class="btn btn-warning" onclick="generateAPIKey()">
+					<i class="fas fa-plus me-1"></i> Generate Key
+				</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!-- Connector Setup Modal -->
+<div class="modal fade" id="connectorSetupModal" tabindex="-1">
+	<div class="modal-dialog modal-lg">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title">
+					<i class="fas fa-plug text-info me-2"></i>
+					Add External Connector
+				</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+			</div>
+			<div class="modal-body">
+				<div class="mb-3">
+					<label class="form-label">Connector Type</label>
+					<select class="form-select" id="connectorType" onchange="updateConnectorForm()">
+						<option value="">Select Type...</option>
+						<option value="database">Database Connection</option>
+						<option value="rest_api">REST API</option>
+						<option value="file_system">File System</option>
+						<option value="cloud_storage">Cloud Storage</option>
+					</select>
+				</div>
+				
+				<div id="connectorFormContainer">
+					<div class="text-center text-muted py-4">
+						<i class="fas fa-arrow-up fa-2x mb-2"></i>
+						<p>Please select a connector type above</p>
+					</div>
+				</div>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-outline-info" onclick="testConnection()" style="display: none;" id="testConnectorBtn">
+					<i class="fas fa-plug me-1"></i> Test Connection
+				</button>
+				<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+				<button type="button" class="btn btn-info" onclick="saveConnector()" style="display: none;" id="saveConnectorBtn">
+					<i class="fas fa-save me-1"></i> Save Connector
+				</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+<script>
+	// Setup modal functions
+	async function saveSAMLConfig() {
+		const formData = new FormData(document.getElementById('samlSetupForm'));
+		const config = {
+			provider_type: 'saml',
+			provider_name: formData.get('provider_name'),
+			configuration: {
+				entity_id: formData.get('entity_id'),
+				sso_url: formData.get('sso_url'),
+				certificate: formData.get('certificate'),
+				attribute_mapping: {
+					email: formData.get('email_attr'),
+					first_name: formData.get('first_name_attr'),
+					last_name: formData.get('last_name_attr')
+				}
+			}
+		};
+		
+		try {
+			const response = await fetch('/enterprise/api/sso-provider/', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(config)
+			});
+			const result = await response.json();
+			
+			if (result.success) {
+				alert('SAML configuration saved successfully!');
+				bootstrap.Modal.getInstance(document.getElementById('samlSetupModal')).hide();
+				location.reload();
+			} else {
+				alert('Error saving SAML configuration: ' + result.error);
+			}
+		} catch (error) {
+			alert('Error: ' + error.message);
+		}
+	}
+	
+	async function testLDAPConnection() {
+		const formData = new FormData(document.getElementById('ldapSetupForm'));
+		const config = {
+			server: formData.get('server'),
+			base_dn: formData.get('base_dn'),
+			bind_dn: formData.get('bind_dn'),
+			bind_password: formData.get('bind_password'),
+			use_ssl: formData.get('use_ssl') === 'on'
+		};
+		
+		// Mock test - would normally test actual LDAP connection
+		alert('LDAP connection test would be performed here');
+	}
+	
+	async function saveLDAPConfig() {
+		const formData = new FormData(document.getElementById('ldapSetupForm'));
+		// Implementation would save LDAP configuration
+		alert('LDAP configuration would be saved here');
+		bootstrap.Modal.getInstance(document.getElementById('ldapSetupModal')).hide();
+	}
+	
+	async function generateAPIKey() {
+		const formData = new FormData(document.getElementById('apiSetupForm'));
+		const permissions = Array.from(formData.getAll('permissions'));
+		
+		const keyData = {
+			name: formData.get('name'),
+			permissions: permissions,
+			expires_at: formData.get('expiration') ? 
+				new Date(Date.now() + parseInt(formData.get('expiration')) * 24 * 60 * 60 * 1000).toISOString() : 
+				null
+		};
+		
+		try {
+			const response = await fetch('/enterprise/api/api-keys/', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(keyData)
+			});
+			const result = await response.json();
+			
+			if (result.success) {
+				alert(`API Key Generated!\nKey: ${result.api_key}\nSecret: ${result.api_secret}\n\nPlease save these securely - the secret will not be shown again.`);
+				bootstrap.Modal.getInstance(document.getElementById('apiSetupModal')).hide();
+				location.reload();
+			} else {
+				alert('Error generating API key: ' + result.error);
+			}
+		} catch (error) {
+			alert('Error: ' + error.message);
+		}
+	}
+	
+	function updateConnectorForm() {
+		const type = document.getElementById('connectorType').value;
+		const container = document.getElementById('connectorFormContainer');
+		const testBtn = document.getElementById('testConnectorBtn');
+		const saveBtn = document.getElementById('saveConnectorBtn');
+		
+		if (!type) {
+			container.innerHTML = `
+				<div class="text-center text-muted py-4">
+					<i class="fas fa-arrow-up fa-2x mb-2"></i>
+					<p>Please select a connector type above</p>
+				</div>
+			`;
+			testBtn.style.display = 'none';
+			saveBtn.style.display = 'none';
+			return;
+		}
+		
+		testBtn.style.display = 'inline-block';
+		saveBtn.style.display = 'inline-block';
+		
+		let formHTML = '';
+		
+		switch(type) {
+			case 'database':
+				formHTML = `
+					<form id="connectorForm">
+						<div class="row">
+							<div class="col-md-6">
+								<div class="mb-3">
+									<label class="form-label">Connection Name</label>
+									<input type="text" class="form-control" name="name" required>
+								</div>
+								<div class="mb-3">
+									<label class="form-label">Database Type</label>
+									<select class="form-select" name="database_type" required>
+										<option value="postgresql">PostgreSQL</option>
+										<option value="mysql">MySQL</option>
+										<option value="oracle">Oracle</option>
+										<option value="mssql">SQL Server</option>
+									</select>
+								</div>
+								<div class="mb-3">
+									<label class="form-label">Host</label>
+									<input type="text" class="form-control" name="host" required>
+								</div>
+							</div>
+							<div class="col-md-6">
+								<div class="mb-3">
+									<label class="form-label">Port</label>
+									<input type="number" class="form-control" name="port" value="5432" required>
+								</div>
+								<div class="mb-3">
+									<label class="form-label">Database</label>
+									<input type="text" class="form-control" name="database" required>
+								</div>
+								<div class="mb-3">
+									<label class="form-label">Username</label>
+									<input type="text" class="form-control" name="username" required>
+								</div>
+								<div class="mb-3">
+									<label class="form-label">Password</label>
+									<input type="password" class="form-control" name="password" required>
+								</div>
+							</div>
+						</div>
+					</form>
+				`;
+				break;
+			case 'rest_api':
+				formHTML = `
+					<form id="connectorForm">
+						<div class="mb-3">
+							<label class="form-label">API Name</label>
+							<input type="text" class="form-control" name="name" required>
+						</div>
+						<div class="mb-3">
+							<label class="form-label">Base URL</label>
+							<input type="url" class="form-control" name="base_url" required>
+						</div>
+						<div class="mb-3">
+							<label class="form-label">Authentication Type</label>
+							<select class="form-select" name="auth_type" required>
+								<option value="none">None</option>
+								<option value="api_key">API Key</option>
+								<option value="bearer">Bearer Token</option>
+								<option value="basic">Basic Auth</option>
+							</select>
+						</div>
+						<div class="mb-3">
+							<label class="form-label">Headers (JSON)</label>
+							<textarea class="form-control" name="headers" rows="3" placeholder='{"Content-Type": "application/json"}'></textarea>
+						</div>
+					</form>
+				`;
+				break;
+		}
+		
+		container.innerHTML = formHTML;
+	}
+	
+	async function testConnection() {
+		const type = document.getElementById('connectorType').value;
+		alert(`Testing ${type} connection...`);
+	}
+	
+	async function saveConnector() {
+		const type = document.getElementById('connectorType').value;
+		const formData = new FormData(document.getElementById('connectorForm'));
+		
+		// Implementation would save connector configuration
+		alert(`Saving ${type} connector...`);
+		bootstrap.Modal.getInstance(document.getElementById('connectorSetupModal')).hide();
+	}
+</script>

@@ -1,6 +1,52 @@
 Version Migration
 =================
 
+Migrating to SQLAlchemy 2.x (Flask-AppBuilder 4.8.1+)
+------------------------------------------------------
+
+Flask-AppBuilder has been updated to support **SQLAlchemy 2.x** and **Flask-SQLAlchemy 3.x** for improved performance and modern ORM features.
+
+**Compatibility Notes:**
+
+- **Python >= 3.7** is now required (previously 3.6+)
+- **SQLAlchemy >= 2.0.0** replaces SQLAlchemy 1.4.x
+- **Flask-SQLAlchemy >= 3.0** replaces Flask-SQLAlchemy 2.x
+- **Automatic Migration**: Most applications will work without code changes thanks to the compatibility layer
+
+**What Changed:**
+
+1. **Query Patterns** (handled automatically by the framework):
+   - ``session.query()`` → ``session.execute(select())`` internally
+   - ``session.query().get()`` → ``session.get()`` internally
+   - Modern SQLAlchemy 2.x patterns used throughout the framework
+
+2. **Import Changes** (handled automatically):
+   - Declarative imports updated for SQLAlchemy 2.x compatibility
+   - Automatic fallback to SQLAlchemy 1.4.x imports when needed
+
+3. **Performance Improvements**:
+   - Better query optimization with SQLAlchemy 2.x
+   - Improved type checking and modern Python features
+   - Enhanced error messages and debugging
+
+**Upgrade Steps:**
+
+1. **Update your requirements**::
+
+    pip install flask-appbuilder>=4.8.1
+
+2. **Verify Python version**::
+
+    python --version  # Should be 3.7 or higher
+
+3. **Test your application**: The upgrade should be seamless for most applications
+
+**Troubleshooting:**
+
+- If you have custom SQLAlchemy code in your application, you may need to update it to SQLAlchemy 2.x patterns
+- See the `SQLAlchemy 2.0 Migration Guide <https://docs.sqlalchemy.org/en/20/changelog/migration_20.html>`_ for custom code migration
+- Flask-AppBuilder framework code has been fully updated and tested
+
 Migrating to 1.9.0
 ------------------
 

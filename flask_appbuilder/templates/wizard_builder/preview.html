@@ -1,0 +1,522 @@
+{% extends "appbuilder/base.html" %}
+
+{% block head_css %}
+  {{ super() }}
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <style>
+    .wizard-preview {
+      max-width: 800px;
+      margin: 2rem auto;
+    }
+    
+    .wizard-header {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+    
+    .wizard-progress {
+      margin-bottom: 3rem;
+    }
+    
+    .progress-step {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background-color: #dee2e6;
+      color: #6c757d;
+      font-weight: bold;
+      position: relative;
+    }
+    
+    .progress-step.active {
+      background-color: #007bff;
+      color: white;
+    }
+    
+    .progress-step.completed {
+      background-color: #28a745;
+      color: white;
+    }
+    
+    .progress-connector {
+      flex: 1;
+      height: 2px;
+      background-color: #dee2e6;
+      margin: 0 1rem;
+    }
+    
+    .progress-connector.completed {
+      background-color: #28a745;
+    }
+    
+    .step-content {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      padding: 2rem;
+      margin-bottom: 2rem;
+    }
+    
+    .step-header {
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+    
+    .step-navigation {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 2rem;
+      padding-top: 2rem;
+      border-top: 1px solid #dee2e6;
+    }
+    
+    .field-group {
+      margin-bottom: 2rem;
+    }
+    
+    .rating-stars {
+      display: flex;
+      gap: 0.25rem;
+    }
+    
+    .rating-star {
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+    
+    .rating-star:hover,
+    .rating-star.active {
+      color: #ffc107;
+    }
+    
+    .divider-section {
+      margin: 2rem 0;
+      text-align: center;
+    }
+    
+    .divider-line {
+      border: none;
+      height: 1px;
+      background: linear-gradient(to right, transparent, #dee2e6, transparent);
+      margin: 1rem 0;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="wizard-preview">
+    <!-- Header -->
+    <div class="wizard-header">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <a href="{{ url_for('.edit', wizard_id=wizard_config.title) }}" class="btn btn-outline-secondary">
+          <i class="fa fa-arrow-left"></i> Back to Editor
+        </a>
+        <h2 class="mb-0">{{ wizard_config.title }}</h2>
+        <div class="btn-group">
+          <button type="button" class="btn btn-outline-primary" onclick="resetPreview()">
+            <i class="fa fa-refresh"></i> Reset
+          </button>
+        </div>
+      </div>
+      {% if wizard_config.description %}
+      <p class="text-muted">{{ wizard_config.description }}</p>
+      {% endif %}
+    </div>
+    
+    <!-- Progress Bar -->
+    <div class="wizard-progress">
+      <div class="d-flex align-items-center justify-content-center">
+        {% for step in preview_form.steps %}
+        <div class="progress-step {% if loop.first %}active{% endif %}" id="progress-step-{{ loop.index0 }}">
+          {{ loop.index }}
+        </div>
+        {% if not loop.last %}
+        <div class="progress-connector" id="connector-{{ loop.index0 }}"></div>
+        {% endif %}
+        {% endfor %}
+      </div>
+      
+      <div class="text-center mt-3">
+        <div class="d-flex justify-content-center">
+          {% for step in preview_form.steps %}
+          <div class="text-center {% if not loop.last %}me-4{% endif %}" style="min-width: 120px;">
+            <small class="text-muted d-block">{{ step.title }}</small>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    
+    <!-- Step Content -->
+    {% for step in preview_form.steps %}
+    <div class="step-content {% if not loop.first %}d-none{% endif %}" id="step-{{ loop.index0 }}">
+      <div class="step-header">
+        <h4>{{ step.title }}</h4>
+        {% if step.description %}
+        <p class="text-muted">{{ step.description }}</p>
+        {% endif %}
+      </div>
+      
+      <form id="step-form-{{ loop.index0 }}">
+        {% set step_fields = wizard_config.field_definitions[step.name] %}
+        {% for field in step_fields %}
+        <div class="field-group">
+          {% if field.type == 'divider' %}
+            <div class="divider-section">
+              {% if field.title %}
+              <h6>{{ field.title }}</h6>
+              {% endif %}
+              <hr class="divider-line">
+              {% if field.description %}
+              <p class="text-muted">{{ field.description }}</p>
+              {% endif %}
+            </div>
+          {% elif field.type == 'html' %}
+            <div class="html-content">
+              {{ field.content | safe }}
+            </div>
+          {% else %}
+            <label class="form-label" for="{{ field.id }}">
+              {{ field.label }}
+              {% if field.required %}<span class="text-danger">*</span>{% endif %}
+            </label>
+            
+            {% if field.type == 'text' %}
+              <input type="text" class="form-control" id="{{ field.id }}" name="{{ field.id }}" 
+                     placeholder="{{ field.placeholder or '' }}" 
+                     {% if field.required %}required{% endif %}>
+            {% elif field.type == 'email' %}
+              <input type="email" class="form-control" id="{{ field.id }}" name="{{ field.id }}" 
+                     placeholder="{{ field.placeholder or '' }}" 
+                     {% if field.required %}required{% endif %}>
+            {% elif field.type == 'password' %}
+              <input type="password" class="form-control" id="{{ field.id }}" name="{{ field.id }}" 
+                     placeholder="{{ field.placeholder or '' }}" 
+                     {% if field.required %}required{% endif %}>
+            {% elif field.type == 'number' %}
+              <input type="number" class="form-control" id="{{ field.id }}" name="{{ field.id }}" 
+                     placeholder="{{ field.placeholder or '' }}"
+                     {% if field.min_value %}min="{{ field.min_value }}"{% endif %}
+                     {% if field.max_value %}max="{{ field.max_value }}"{% endif %}
+                     {% if field.step %}step="{{ field.step }}"{% endif %}
+                     {% if field.required %}required{% endif %}>
+            {% elif field.type == 'textarea' %}
+              <textarea class="form-control" id="{{ field.id }}" name="{{ field.id }}" 
+                        rows="{{ field.rows or 3 }}"
+                        placeholder="{{ field.placeholder or '' }}" 
+                        {% if field.required %}required{% endif %}></textarea>
+            {% elif field.type == 'select' %}
+              <select class="form-select" id="{{ field.id }}" name="{{ field.id }}" 
+                      {% if field.required %}required{% endif %}>
+                <option value="">Choose...</option>
+                {% for option in field.options %}
+                <option value="{{ option }}">{{ option }}</option>
+                {% endfor %}
+              </select>
+            {% elif field.type == 'radio' %}
+              {% for option in field.options %}
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="{{ field.id }}" 
+                       id="{{ field.id }}_{{ loop.index }}" value="{{ option }}"
+                       {% if field.required %}required{% endif %}>
+                <label class="form-check-label" for="{{ field.id }}_{{ loop.index }}">
+                  {{ option }}
+                </label>
+              </div>
+              {% endfor %}
+            {% elif field.type == 'checkbox' %}
+              {% for option in field.options %}
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" 
+                       id="{{ field.id }}_{{ loop.index }}" value="{{ option }}">
+                <label class="form-check-label" for="{{ field.id }}_{{ loop.index }}">
+                  {{ option }}
+                </label>
+              </div>
+              {% endfor %}
+            {% elif field.type == 'boolean' %}
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="{{ field.id }}" name="{{ field.id }}"
+                       {% if field.required %}required{% endif %}>
+                <label class="form-check-label" for="{{ field.id }}">
+                  {{ field.label }}
+                </label>
+              </div>
+            {% elif field.type == 'date' %}
+              <input type="date" class="form-control" id="{{ field.id }}" name="{{ field.id }}"
+                     {% if field.min_date %}min="{{ field.min_date }}"{% endif %}
+                     {% if field.max_date %}max="{{ field.max_date }}"{% endif %}
+                     {% if field.required %}required{% endif %}>
+            {% elif field.type == 'time' %}
+              <input type="time" class="form-control" id="{{ field.id }}" name="{{ field.id }}"
+                     {% if field.required %}required{% endif %}>
+            {% elif field.type == 'datetime' %}
+              <input type="datetime-local" class="form-control" id="{{ field.id }}" name="{{ field.id }}"
+                     {% if field.required %}required{% endif %}>
+            {% elif field.type == 'file' %}
+              <input type="file" class="form-control" id="{{ field.id }}" name="{{ field.id }}"
+                     {% if field.accept %}accept="{{ field.accept }}"{% endif %}
+                     {% if field.multiple %}multiple{% endif %}
+                     {% if field.required %}required{% endif %}>
+            {% elif field.type == 'url' %}
+              <input type="url" class="form-control" id="{{ field.id }}" name="{{ field.id }}" 
+                     placeholder="{{ field.placeholder or 'https://example.com' }}" 
+                     {% if field.required %}required{% endif %}>
+            {% elif field.type == 'phone' %}
+              <input type="tel" class="form-control" id="{{ field.id }}" name="{{ field.id }}" 
+                     placeholder="{{ field.placeholder or '+1 (555) 123-4567' }}" 
+                     {% if field.required %}required{% endif %}>
+            {% elif field.type == 'rating' %}
+              <div class="rating-stars" data-field="{{ field.id }}" data-max="{{ field.max_stars or 5 }}">
+                {% for i in range(1, (field.max_stars or 5) + 1) %}
+                <i class="fa fa-star rating-star" data-rating="{{ i }}" onclick="setRating('{{ field.id }}', {{ i }})"></i>
+                {% endfor %}
+              </div>
+              <input type="hidden" id="{{ field.id }}" name="{{ field.id }}" {% if field.required %}required{% endif %}>
+            {% elif field.type == 'slider' %}
+              <input type="range" class="form-range" id="{{ field.id }}" name="{{ field.id }}" 
+                     min="{{ field.min_value or 0 }}" max="{{ field.max_value or 100 }}" 
+                     step="{{ field.step or 1 }}" value="{{ field.min_value or 0 }}"
+                     oninput="updateSliderValue('{{ field.id }}', this.value)">
+              <div class="d-flex justify-content-between">
+                <small class="text-muted">{{ field.min_value or 0 }}</small>
+                <small id="{{ field.id }}_value" class="text-primary fw-bold">{{ field.min_value or 0 }}</small>
+                <small class="text-muted">{{ field.max_value or 100 }}</small>
+              </div>
+            {% endif %}
+            
+            {% if field.description %}
+            <small class="form-text text-muted">{{ field.description }}</small>
+            {% endif %}
+          {% endif %}
+        </div>
+        {% endfor %}
+      </form>
+      
+      <!-- Navigation -->
+      <div class="step-navigation">
+        <button type="button" class="btn btn-outline-secondary" 
+                onclick="previousStep()" 
+                {% if loop.first %}disabled{% endif %}>
+          <i class="fa fa-arrow-left"></i> Previous
+        </button>
+        
+        <div>
+          <span class="text-muted me-3">Step {{ loop.index }} of {{ preview_form.steps|length }}</span>
+          {% if loop.last %}
+          <button type="button" class="btn btn-success" onclick="submitWizard()">
+            <i class="fa fa-check"></i> Submit
+          </button>
+          {% else %}
+          <button type="button" class="btn btn-primary" onclick="nextStep()">
+            Next <i class="fa fa-arrow-right"></i>
+          </button>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Success Modal -->
+<div class="modal fade" id="successModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fa fa-check-circle text-success"></i> Form Submitted
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p>Your form has been successfully submitted! This is a preview - no data was actually saved.</p>
+        <div class="alert alert-info">
+          <strong>Form Data Preview:</strong>
+          <pre id="formDataPreview" class="mt-2" style="max-height: 200px; overflow-y: auto;"></pre>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" onclick="resetPreview(); bootstrap.Modal.getInstance(document.getElementById('successModal')).hide();">
+          Try Again
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block tail_js %}
+  {{ super() }}
+  <script>
+    let currentStep = 0;
+    const totalSteps = {{ preview_form.steps|length }};
+    const formData = {};
+    
+    function nextStep() {
+      if (validateCurrentStep() && currentStep < totalSteps - 1) {
+        saveCurrentStepData();
+        currentStep++;
+        showStep(currentStep);
+        updateProgress();
+      }
+    }
+    
+    function previousStep() {
+      if (currentStep > 0) {
+        saveCurrentStepData();
+        currentStep--;
+        showStep(currentStep);
+        updateProgress();
+      }
+    }
+    
+    function showStep(stepIndex) {
+      // Hide all steps
+      document.querySelectorAll('.step-content').forEach(step => {
+        step.classList.add('d-none');
+      });
+      
+      // Show current step
+      document.getElementById(`step-${stepIndex}`).classList.remove('d-none');
+    }
+    
+    function updateProgress() {
+      // Update progress indicators
+      document.querySelectorAll('.progress-step').forEach((step, index) => {
+        step.classList.remove('active', 'completed');
+        if (index < currentStep) {
+          step.classList.add('completed');
+        } else if (index === currentStep) {
+          step.classList.add('active');
+        }
+      });
+      
+      // Update connectors
+      document.querySelectorAll('.progress-connector').forEach((connector, index) => {
+        connector.classList.toggle('completed', index < currentStep);
+      });
+    }
+    
+    function validateCurrentStep() {
+      const currentForm = document.getElementById(`step-form-${currentStep}`);
+      const requiredFields = currentForm.querySelectorAll('[required]');
+      let isValid = true;
+      
+      requiredFields.forEach(field => {
+        if (!field.value.trim()) {
+          field.classList.add('is-invalid');
+          isValid = false;
+        } else {
+          field.classList.remove('is-invalid');
+        }
+      });
+      
+      if (!isValid) {
+        alert('Please fill in all required fields before continuing.');
+      }
+      
+      return isValid;
+    }
+    
+    function saveCurrentStepData() {
+      const currentForm = document.getElementById(`step-form-${currentStep}`);
+      const formElements = currentForm.elements;
+      
+      for (let element of formElements) {
+        if (element.name) {
+          if (element.type === 'checkbox') {
+            if (element.name.includes('_')) {
+              // Multiple checkboxes with same base name
+              const baseName = element.name.split('_')[0];
+              if (!formData[baseName]) formData[baseName] = [];
+              if (element.checked) {
+                formData[baseName].push(element.value);
+              }
+            } else {
+              formData[element.name] = element.checked;
+            }
+          } else if (element.type === 'radio') {
+            if (element.checked) {
+              formData[element.name] = element.value;
+            }
+          } else {
+            formData[element.name] = element.value;
+          }
+        }
+      }
+    }
+    
+    function submitWizard() {
+      if (validateCurrentStep()) {
+        saveCurrentStepData();
+        
+        // Show success modal with form data
+        document.getElementById('formDataPreview').textContent = JSON.stringify(formData, null, 2);
+        new bootstrap.Modal(document.getElementById('successModal')).show();
+      }
+    }
+    
+    function resetPreview() {
+      currentStep = 0;
+      Object.keys(formData).forEach(key => delete formData[key]);
+      
+      // Reset all form fields
+      document.querySelectorAll('input, select, textarea').forEach(field => {
+        if (field.type === 'checkbox' || field.type === 'radio') {
+          field.checked = false;
+        } else {
+          field.value = '';
+        }
+        field.classList.remove('is-invalid');
+      });
+      
+      // Reset rating stars
+      document.querySelectorAll('.rating-star').forEach(star => {
+        star.classList.remove('active');
+      });
+      
+      // Reset sliders
+      document.querySelectorAll('input[type="range"]').forEach(slider => {
+        const min = slider.getAttribute('min') || 0;
+        slider.value = min;
+        const valueDisplay = document.getElementById(slider.id + '_value');
+        if (valueDisplay) {
+          valueDisplay.textContent = min;
+        }
+      });
+      
+      showStep(0);
+      updateProgress();
+    }
+    
+    function setRating(fieldId, rating) {
+      const stars = document.querySelectorAll(`[data-field="${fieldId}"] .rating-star`);
+      const hiddenInput = document.getElementById(fieldId);
+      
+      stars.forEach((star, index) => {
+        star.classList.toggle('active', index < rating);
+      });
+      
+      hiddenInput.value = rating;
+    }
+    
+    function updateSliderValue(fieldId, value) {
+      const valueDisplay = document.getElementById(fieldId + '_value');
+      if (valueDisplay) {
+        valueDisplay.textContent = value;
+      }
+    }
+    
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      showStep(0);
+      updateProgress();
+    });
+  </script>
+{% endblock %}

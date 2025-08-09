@@ -1,0 +1,338 @@
+{% extends "appbuilder/base.html" %}
+
+{% block head_css %}
+  {{ super() }}
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <style>
+    .wizard-card {
+      transition: transform 0.2s, box-shadow 0.2s;
+      cursor: pointer;
+    }
+    .wizard-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    }
+    .wizard-stats {
+      font-size: 0.9rem;
+      color: #666;
+    }
+    .status-badge {
+      font-size: 0.75rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: 12px;
+    }
+    .status-active {
+      background-color: #28a745;
+      color: white;
+    }
+    .status-draft {
+      background-color: #ffc107;
+      color: #212529;
+    }
+    .template-preview {
+      height: 60px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      margin-bottom: 1rem;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-md-12">
+      <div class="card">
+        <div class="card-header">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h3 class="mb-0"><i class="fa fa-magic"></i> Wizard Form Builder</h3>
+              <p class="text-muted mb-0">Create powerful multi-step forms with drag-and-drop ease</p>
+            </div>
+            <div class="btn-group">
+              <a href="{{ url_for('.create') }}" class="btn btn-primary">
+                <i class="fa fa-plus"></i> Create New Wizard
+              </a>
+              <button type="button" class="btn btn-outline-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown">
+                <span class="sr-only">Toggle Dropdown</span>
+              </button>
+              <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="{{ url_for('.create') }}?preset=minimal">
+                  <i class="fa fa-rocket"></i> Quick Start (Minimal)
+                </a></li>
+                <li><a class="dropdown-item" href="{{ url_for('.create') }}?preset=professional">
+                  <i class="fa fa-briefcase"></i> Professional
+                </a></li>
+                <li><a class="dropdown-item" href="{{ url_for('.create') }}?preset=accessible">
+                  <i class="fa fa-universal-access"></i> Accessible
+                </a></li>
+                <li><a class="dropdown-item" href="{{ url_for('.templates') }}">
+                  <i class="fa fa-th-large"></i> Browse Templates
+                </a></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card-body">
+          {% if user_wizards %}
+          <div class="row">
+            {% for wizard in user_wizards %}
+            <div class="col-lg-4 col-md-6 mb-4">
+              <div class="card wizard-card h-100" onclick="editWizard('{{ wizard.id }}')">
+                <div class="card-body">
+                  <div class="d-flex justify-content-between align-items-start mb-3">
+                    <h5 class="card-title mb-0">{{ wizard.title }}</h5>
+                    <span class="status-badge status-{{ wizard.status }}">
+                      {{ wizard.status.title() }}
+                    </span>
+                  </div>
+                  
+                  <p class="card-text text-muted">{{ wizard.description }}</p>
+                  
+                  <div class="wizard-stats">
+                    <div class="row text-center">
+                      <div class="col-4">
+                        <i class="fa fa-list-ol text-primary"></i><br>
+                        <strong>{{ wizard.steps }}</strong><br>
+                        <small>Steps</small>
+                      </div>
+                      <div class="col-4">
+                        <i class="fa fa-wpforms text-success"></i><br>
+                        <strong>{{ wizard.fields }}</strong><br>
+                        <small>Fields</small>
+                      </div>
+                      <div class="col-4">
+                        <i class="fa fa-calendar text-info"></i><br>
+                        <strong>{{ wizard.modified_at }}</strong><br>
+                        <small>Updated</small>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="card-footer bg-transparent">
+                  <div class="btn-group w-100" role="group">
+                    <a href="{{ url_for('.edit', wizard_id=wizard.id) }}" 
+                       class="btn btn-outline-primary btn-sm" 
+                       onclick="event.stopPropagation()">
+                      <i class="fa fa-edit"></i> Edit
+                    </a>
+                    <a href="{{ url_for('.preview', wizard_id=wizard.id) }}" 
+                       class="btn btn-outline-info btn-sm"
+                       onclick="event.stopPropagation()">
+                      <i class="fa fa-eye"></i> Preview
+                    </a>
+                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" 
+                            type="button" 
+                            data-bs-toggle="dropdown"
+                            onclick="event.stopPropagation()">
+                      <i class="fa fa-ellipsis-v"></i>
+                    </button>
+                    <ul class="dropdown-menu">
+                      <li><a class="dropdown-item" href="#" onclick="duplicateWizard('{{ wizard.id }}')">
+                        <i class="fa fa-copy"></i> Duplicate
+                      </a></li>
+                      <li><a class="dropdown-item" href="#" onclick="exportWizard('{{ wizard.id }}')">
+                        <i class="fa fa-download"></i> Export
+                      </a></li>
+                      <li><hr class="dropdown-divider"></li>
+                      <li><a class="dropdown-item text-danger" href="#" onclick="deleteWizard('{{ wizard.id }}')">
+                        <i class="fa fa-trash"></i> Delete
+                      </a></li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="text-center py-5">
+            <div class="template-preview mx-auto" style="width: 100px; height: 100px; font-size: 2rem;">
+              <i class="fa fa-magic"></i>
+            </div>
+            <h4>No Wizards Created Yet</h4>
+            <p class="text-muted mb-4">Start building beautiful multi-step forms with our drag-and-drop wizard builder.</p>
+            <div class="row justify-content-center">
+              <div class="col-md-8">
+                <div class="row">
+                  <div class="col-md-4 mb-3">
+                    <a href="{{ url_for('.create') }}?preset=minimal" class="btn btn-outline-primary btn-lg w-100">
+                      <i class="fa fa-rocket mb-2"></i><br>
+                      Quick Start
+                    </a>
+                  </div>
+                  <div class="col-md-4 mb-3">
+                    <a href="{{ url_for('.templates') }}" class="btn btn-outline-info btn-lg w-100">
+                      <i class="fa fa-th-large mb-2"></i><br>
+                      From Template
+                    </a>
+                  </div>
+                  <div class="col-md-4 mb-3">
+                    <a href="{{ url_for('.create') }}" class="btn btn-outline-success btn-lg w-100">
+                      <i class="fa fa-plus mb-2"></i><br>
+                      Custom Build
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Import Wizard Modal -->
+<div class="modal fade" id="importModal" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Import Wizard</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label for="importFile" class="form-label">Choose wizard file (.json)</label>
+          <input type="file" class="form-control" id="importFile" accept=".json">
+        </div>
+        <div class="mb-3">
+          <label for="importData" class="form-label">Or paste wizard configuration</label>
+          <textarea class="form-control" id="importData" rows="10" placeholder="Paste JSON configuration here..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" onclick="importWizard()">Import Wizard</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block tail_js %}
+  {{ super() }}
+  <script>
+    function editWizard(wizardId) {
+      window.location.href = '{{ url_for('.edit', wizard_id='') }}' + wizardId;
+    }
+    
+    function duplicateWizard(wizardId) {
+      event.stopPropagation();
+      if (confirm('Are you sure you want to duplicate this wizard?')) {
+        fetch('{{ url_for('.duplicate_wizard', wizard_id='') }}' + wizardId, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            location.reload();
+          } else {
+            alert('Error duplicating wizard: ' + data.error);
+          }
+        });
+      }
+    }
+    
+    function exportWizard(wizardId) {
+      event.stopPropagation();
+      fetch('{{ url_for('.export_wizard', wizard_id='') }}' + wizardId)
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            const blob = new Blob([JSON.stringify(data.export_data, null, 2)], {
+              type: 'application/json'
+            });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `wizard_${wizardId}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+          } else {
+            alert('Error exporting wizard: ' + data.error);
+          }
+        });
+    }
+    
+    function deleteWizard(wizardId) {
+      event.stopPropagation();
+      if (confirm('Are you sure you want to delete this wizard? This action cannot be undone.')) {
+        fetch('{{ url_for('.delete_wizard', wizard_id='') }}' + wizardId, {
+          method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            location.reload();
+          } else {
+            alert('Error deleting wizard: ' + data.error);
+          }
+        });
+      }
+    }
+    
+    function showImportModal() {
+      new bootstrap.Modal(document.getElementById('importModal')).show();
+    }
+    
+    function importWizard() {
+      const fileInput = document.getElementById('importFile');
+      const textInput = document.getElementById('importData');
+      
+      let importData = null;
+      
+      if (fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          try {
+            importData = JSON.parse(e.target.result);
+            submitImport(importData);
+          } catch (error) {
+            alert('Error parsing JSON file: ' + error.message);
+          }
+        };
+        reader.readAsText(file);
+      } else if (textInput.value.trim()) {
+        try {
+          importData = JSON.parse(textInput.value);
+          submitImport(importData);
+        } catch (error) {
+          alert('Error parsing JSON data: ' + error.message);
+        }
+      } else {
+        alert('Please select a file or paste JSON data.');
+      }
+    }
+    
+    function submitImport(data) {
+      fetch('{{ url_for('.import_wizard') }}', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      })
+      .then(response => response.json())
+      .then(result => {
+        if (result.success) {
+          bootstrap.Modal.getInstance(document.getElementById('importModal')).hide();
+          location.reload();
+        } else {
+          alert('Error importing wizard: ' + result.error);
+        }
+      });
+    }
+  </script>
+{% endblock %}

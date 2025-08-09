@@ -17,7 +17,7 @@ from flask import (
 from flask_appbuilder.exceptions import FABException
 
 
-from ._compat import as_unicode, string_types
+from flask_appbuilder._compat import as_unicode, string_types
 from .baseviews import BaseCRUDView, BaseFormView, BaseView, expose, expose_api
 from .const import FLAMSG_ERR_SEC_ACCESS_DENIED, PERMISSION_PREFIX
 from .filemanager import uuid_originalname

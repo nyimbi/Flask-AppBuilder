@@ -6,12 +6,15 @@ Configuration keys
 
 Use config.py to configure the following parameters. By default it will use SQLLITE DB, and bootstrap's default theme:
 
+**Note**: Flask-AppBuilder now uses **SQLAlchemy 2.x** and **Flask-SQLAlchemy 3.x** by default. 
+The configuration remains the same, but you'll benefit from improved performance and modern features.
+
     .. cssclass:: table-bordered table-hover
 
 +----------------------------------------+--------------------------------------------+-----------+
 | Key                                    | Description                                | Mandatory |
 +========================================+============================================+===========+
-| SQLALCHEMY_DATABASE_URI                | DB connection string (flask-sqlalchemy)    |   Cond.   |
+| SQLALCHEMY_DATABASE_URI                | DB connection string (flask-sqlalchemy 3.x) |   Cond.   |
 +----------------------------------------+--------------------------------------------+-----------+
 | SECRET_KEY                             | Flask secret key used for securely signing |           |
 |                                        | the session cookie Set the secret_key on   |           |

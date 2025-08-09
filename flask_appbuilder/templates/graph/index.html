@@ -1,0 +1,1124 @@
+{% extends "appbuilder/base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block head_css %}
+{{ super() }}
+<style>
+/* Graph Analysis Dashboard Styles */
+.dashboard-container {
+    padding: 20px;
+    max-width: 1400px;
+    margin: 0 auto;
+    background: #f8fafc;
+    min-height: 100vh;
+}
+
+.dashboard-header {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    color: white;
+    padding: 30px;
+    border-radius: 12px;
+    margin-bottom: 30px;
+    position: relative;
+    overflow: hidden;
+}
+
+.dashboard-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 300px;
+    height: 300px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    transform: translate(50%, -50%);
+}
+
+.header-content {
+    position: relative;
+    z-index: 1;
+}
+
+.dashboard-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0 0 10px 0;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.dashboard-subtitle {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    margin: 0;
+}
+
+.header-actions {
+    position: absolute;
+    top: 30px;
+    right: 30px;
+    z-index: 2;
+    display: flex;
+    gap: 15px;
+}
+
+.btn-header {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: 10px 20px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.btn-header:hover {
+    background: rgba(255, 255, 255, 0.3);
+    color: white;
+    text-decoration: none;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 25px;
+    margin-bottom: 40px;
+}
+
+.stat-card {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    border: 1px solid #e2e8f0;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(90deg, #6366f1, #8b5cf6);
+}
+
+.stat-icon {
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+    margin-bottom: 15px;
+}
+
+.stat-number {
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0 0 5px 0;
+}
+
+.stat-label {
+    color: #64748b;
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin: 0 0 10px 0;
+}
+
+.stat-change {
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.stat-change.positive {
+    color: #059669;
+}
+
+.stat-change.negative {
+    color: #dc2626;
+}
+
+.main-content {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 30px;
+    margin-bottom: 40px;
+}
+
+.content-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+}
+
+.card-header {
+    background: #f8fafc;
+    padding: 20px 25px;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: between;
+}
+
+.card-title {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.card-content {
+    padding: 25px;
+}
+
+.tools-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.tool-card {
+    background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+}
+
+.tool-card:hover {
+    border-color: #6366f1;
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(99, 102, 241, 0.15);
+    color: inherit;
+    text-decoration: none;
+}
+
+.tool-icon {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.8rem;
+    margin: 0 auto 15px;
+    transition: transform 0.3s ease;
+}
+
+.tool-card:hover .tool-icon {
+    transform: scale(1.1);
+}
+
+.tool-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0 0 8px 0;
+}
+
+.tool-description {
+    font-size: 0.9rem;
+    color: #64748b;
+    margin: 0;
+    line-height: 1.4;
+}
+
+.schema-info {
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.schema-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0 0 15px 0;
+}
+
+.labels-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.labels-section {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 15px;
+}
+
+.labels-section h4 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #374151;
+    margin: 0 0 12px 0;
+}
+
+.label-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.label-tag {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 16px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.recent-activity {
+    margin-top: 20px;
+}
+
+.activity-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 12px 0;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.activity-item:last-child {
+    border-bottom: none;
+}
+
+.activity-icon {
+    width: 35px;
+    height: 35px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.9rem;
+}
+
+.activity-content {
+    flex: 1;
+}
+
+.activity-title {
+    font-weight: 500;
+    color: #1e293b;
+    margin: 0 0 2px 0;
+    font-size: 0.9rem;
+}
+
+.activity-time {
+    color: #64748b;
+    font-size: 0.8rem;
+    margin: 0;
+}
+
+.quick-actions {
+    background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 20px;
+}
+
+.quick-actions h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0 0 15px 0;
+}
+
+.action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.btn-action {
+    background: white;
+    border: 2px solid #e2e8f0;
+    color: #374151;
+    padding: 12px 16px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.btn-action:hover {
+    border-color: #6366f1;
+    color: #6366f1;
+    text-decoration: none;
+    transform: translateX(5px);
+}
+
+.footer-section {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    border: 1px solid #e2e8f0;
+    padding: 30px;
+}
+
+.footer-title {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0 0 20px 0;
+    text-align: center;
+}
+
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 25px;
+}
+
+.feature-item {
+    text-align: center;
+    padding: 20px;
+}
+
+.feature-icon {
+    width: 70px;
+    height: 70px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 2rem;
+    margin: 0 auto 15px;
+}
+
+.feature-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0 0 10px 0;
+}
+
+.feature-description {
+    color: #64748b;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .main-content {
+        grid-template-columns: 1fr;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .dashboard-container {
+        padding: 15px;
+    }
+    
+    .dashboard-header {
+        padding: 20px;
+        text-align: center;
+    }
+    
+    .header-actions {
+        position: static;
+        justify-content: center;
+        margin-top: 20px;
+    }
+    
+    .dashboard-title {
+        font-size: 2rem;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .tools-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .labels-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .features-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Animation Classes */
+.fade-in {
+    animation: fadeIn 0.6s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.slide-up {
+    animation: slideUp 0.8s ease;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(40px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container fade-in">
+    <!-- Header -->
+    <div class="dashboard-header">
+        <div class="header-content">
+            <h1 class="dashboard-title">
+                <i class="fa fa-project-diagram"></i>
+                Graph Analysis Dashboard
+            </h1>
+            <p class="dashboard-subtitle">
+                Comprehensive Apache AGE graph database analysis and visualization platform
+            </p>
+        </div>
+        <div class="header-actions">
+            <a href="{{ url_for('GraphAnalysisView.visualizer') }}" class="btn-header">
+                <i class="fa fa-eye"></i> Visualizer
+            </a>
+            <a href="{{ url_for('GraphAnalysisView.query_interface') }}" class="btn-header">
+                <i class="fa fa-code"></i> Query
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics Grid -->
+    <div class="stats-grid slide-up">
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fa fa-circle"></i>
+            </div>
+            <div class="stat-number">{{ dashboard.total_nodes | default(0) }}</div>
+            <div class="stat-label">Total Nodes</div>
+            <div class="stat-change positive">
+                <i class="fa fa-arrow-up"></i> Active
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fa fa-link"></i>
+            </div>
+            <div class="stat-number">{{ dashboard.total_edges | default(0) }}</div>
+            <div class="stat-label">Total Edges</div>
+            <div class="stat-change positive">
+                <i class="fa fa-arrow-up"></i> Connected
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fa fa-tags"></i>
+            </div>
+            <div class="stat-number">{{ dashboard.node_labels | length | default(0) }}</div>
+            <div class="stat-label">Node Types</div>
+            <div class="stat-change positive">
+                <i class="fa fa-check"></i> Diverse
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fa fa-chart-line"></i>
+            </div>
+            <div class="stat-number">{{ "%.3f" | format(dashboard.density | default(0)) }}</div>
+            <div class="stat-label">Graph Density</div>
+            <div class="stat-change {{ 'positive' if dashboard.density > 0.1 else 'negative' }}">
+                <i class="fa fa-{{ 'arrow-up' if dashboard.density > 0.1 else 'arrow-down' }}"></i> 
+                {{ 'Dense' if dashboard.density > 0.1 else 'Sparse' }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Tools Section -->
+        <div class="content-card">
+            <div class="card-header">
+                <h2 class="card-title">
+                    <i class="fa fa-tools"></i>
+                    Analysis Tools
+                </h2>
+            </div>
+            <div class="card-content">
+                <div class="tools-grid">
+                    <a href="{{ url_for('GraphAnalysisView.visualizer') }}" class="tool-card">
+                        <div class="tool-icon">
+                            <i class="fa fa-project-diagram"></i>
+                        </div>
+                        <h3 class="tool-title">Interactive Visualizer</h3>
+                        <p class="tool-description">
+                            Explore your graph with advanced 3D visualization and real-time interaction
+                        </p>
+                    </a>
+                    
+                    <a href="{{ url_for('GraphAnalysisView.query_interface') }}" class="tool-card">
+                        <div class="tool-icon">
+                            <i class="fa fa-code"></i>
+                        </div>
+                        <h3 class="tool-title">OpenCypher Queries</h3>
+                        <p class="tool-description">
+                            Execute powerful graph queries using OpenCypher language
+                        </p>
+                    </a>
+                    
+                    <a href="{{ url_for('GraphAnalysisView.algorithms') }}" class="tool-card">
+                        <div class="tool-icon">
+                            <i class="fa fa-cogs"></i>
+                        </div>
+                        <h3 class="tool-title">Graph Algorithms</h3>
+                        <p class="tool-description">
+                            Run centrality, community detection, and path finding algorithms
+                        </p>
+                    </a>
+                    
+                    <div class="tool-card" onclick="loadExampleData()">
+                        <div class="tool-icon">
+                            <i class="fa fa-database"></i>
+                        </div>
+                        <h3 class="tool-title">Sample Data</h3>
+                        <p class="tool-description">
+                            Load example graphs to explore AGE capabilities
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Schema Information -->
+        <div class="content-card">
+            <div class="card-header">
+                <h2 class="card-title">
+                    <i class="fa fa-sitemap"></i>
+                    Graph Schema
+                </h2>
+            </div>
+            <div class="card-content">
+                <div class="schema-info">
+                    <h3 class="schema-title">Graph: {{ dashboard.graph_name }}</h3>
+                    
+                    <div class="labels-grid">
+                        <div class="labels-section">
+                            <h4>Node Labels ({{ dashboard.node_labels | length }})</h4>
+                            <div class="label-list">
+                                {% for label in dashboard.node_labels[:8] %}
+                                <span class="label-tag">{{ label }}</span>
+                                {% endfor %}
+                                {% if dashboard.node_labels | length > 8 %}
+                                <span class="label-tag">+{{ dashboard.node_labels | length - 8 }} more</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="labels-section">
+                            <h4>Edge Labels ({{ dashboard.edge_labels | length }})</h4>
+                            <div class="label-list">
+                                {% for label in dashboard.edge_labels[:8] %}
+                                <span class="label-tag">{{ label }}</span>
+                                {% endfor %}
+                                {% if dashboard.edge_labels | length > 8 %}
+                                <span class="label-tag">+{{ dashboard.edge_labels | length - 8 }} more</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="recent-activity">
+                    <h4>Recent Activity</h4>
+                    {% if recent_activities %}
+                        {% for activity in recent_activities[:5] %}
+                        <div class="activity-item">
+                            <div class="activity-icon">
+                                <i class="fa fa-{{ activity.icon | default('cog') }}"></i>
+                            </div>
+                            <div class="activity-content">
+                                <div class="activity-title">{{ activity.description }}</div>
+                                <div class="activity-time">{{ activity.timestamp }}</div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                    <div class="activity-item">
+                        <div class="activity-icon">
+                            <i class="fa fa-info-circle"></i>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-title">No recent activity</div>
+                            <div class="activity-time">Start exploring your graph data</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="quick-actions">
+                    <h4>Quick Actions</h4>
+                    <div class="action-buttons">
+                        <a href="{{ url_for('GraphAnalysisView.visualizer') }}" class="btn-action">
+                            <i class="fa fa-eye"></i>
+                            Open Visualizer
+                        </a>
+                        <button onclick="runQuickAnalysis()" class="btn-action">
+                            <i class="fa fa-chart-line"></i>
+                            Quick Analysis
+                        </button>
+                        <button onclick="exportSchema()" class="btn-action">
+                            <i class="fa fa-download"></i>
+                            Export Schema
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Features Section -->
+    <div class="footer-section">
+        <h2 class="footer-title">Apache AGE Capabilities</h2>
+        <div class="features-grid">
+            <div class="feature-item">
+                <div class="feature-icon">
+                    <i class="fa fa-search"></i>
+                </div>
+                <h3 class="feature-title">Advanced Search</h3>
+                <p class="feature-description">
+                    Powerful graph traversal and pattern matching with OpenCypher query language
+                </p>
+            </div>
+            
+            <div class="feature-item">
+                <div class="feature-icon">
+                    <i class="fa fa-users"></i>
+                </div>
+                <h3 class="feature-title">Community Detection</h3>
+                <p class="feature-description">
+                    Identify clusters and communities using advanced graph algorithms
+                </p>
+            </div>
+            
+            <div class="feature-item">
+                <div class="feature-icon">
+                    <i class="fa fa-route"></i>
+                </div>
+                <h3 class="feature-title">Path Analysis</h3>
+                <p class="feature-description">
+                    Find shortest paths, analyze connectivity, and explore relationship patterns
+                </p>
+            </div>
+            
+            <div class="feature-item">
+                <div class="feature-icon">
+                    <i class="fa fa-chart-pie"></i>
+                </div>
+                <h3 class="feature-title">Centrality Metrics</h3>
+                <p class="feature-description">
+                    Calculate node importance using betweenness, closeness, and PageRank algorithms
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block tail_js %}
+{{ super() }}
+<script>
+// Dashboard JavaScript functionality
+document.addEventListener('DOMContentLoaded', function() {
+    // Add animation classes to elements as they come into view
+    const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    };
+    
+    const observer = new IntersectionObserver(function(entries) {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('fade-in');
+            }
+        });
+    }, observerOptions);
+    
+    // Observe all cards for animation
+    document.querySelectorAll('.stat-card, .content-card, .tool-card').forEach(card => {
+        observer.observe(card);
+    });
+});
+
+function runQuickAnalysis() {
+    showLoading();
+    
+    // Run basic graph analysis
+    fetch('/graph/analysis/api/analytics/summary/')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAnalysisResults(data.summary);
+            } else {
+                showNotification('Analysis failed: ' + data.error, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Analysis error:', error);
+            showNotification('Analysis error: ' + error.message, 'error');
+        })
+        .finally(() => {
+            hideLoading();
+        });
+}
+
+function showAnalysisResults(summary) {
+    const modal = createModal('Quick Analysis Results');
+    
+    const content = `
+        <div class="analysis-results">
+            <div class="result-section">
+                <h4>Graph Overview</h4>
+                <ul>
+                    <li>Nodes: ${summary.statistics.total_nodes}</li>
+                    <li>Edges: ${summary.statistics.total_edges}</li>
+                    <li>Density: ${summary.statistics.density?.toFixed(4) || 'N/A'}</li>
+                </ul>
+            </div>
+            
+            <div class="result-section">
+                <h4>Top Connected Nodes</h4>
+                <ul>
+                    ${summary.top_nodes_by_degree?.slice(0, 5).map(([nodeId, degree]) => 
+                        `<li>${nodeId}: ${degree} connections</li>`
+                    ).join('') || '<li>No data available</li>'}
+                </ul>
+            </div>
+            
+            <div class="result-section">
+                <h4>Community Analysis</h4>
+                <ul>
+                    <li>Communities: ${summary.community_analysis?.num_communities || 'N/A'}</li>
+                    <li>Modularity: ${summary.community_analysis?.modularity?.toFixed(4) || 'N/A'}</li>
+                </ul>
+            </div>
+            
+            <div class="result-actions">
+                <button onclick="window.location.href='{{ url_for('GraphAnalysisView.visualizer') }}'" 
+                        class="btn btn-primary">
+                    <i class="fa fa-eye"></i> Open in Visualizer
+                </button>
+            </div>
+        </div>
+    `;
+    
+    modal.setContent(content);
+    modal.show();
+}
+
+function exportSchema() {
+    const schemaData = {{ schema | tojson | safe }};
+    const dashboardData = {{ dashboard | tojson | safe }};
+    
+    const exportData = {
+        schema: schemaData,
+        dashboard: dashboardData,
+        exported_at: new Date().toISOString(),
+        export_type: 'graph_schema'
+    };
+    
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { 
+        type: 'application/json' 
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `graph-schema-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    showNotification('Graph schema exported successfully', 'success');
+}
+
+function loadExampleData() {
+    if (confirm('This will load example graph data. Continue?')) {
+        showLoading();
+        
+        // Simulate loading example data
+        setTimeout(() => {
+            hideLoading();
+            showNotification('Example data loading feature would be implemented here', 'info');
+        }, 2000);
+    }
+}
+
+// Utility functions
+function showLoading() {
+    if (!document.querySelector('.loading-overlay-dashboard')) {
+        const overlay = document.createElement('div');
+        overlay.className = 'loading-overlay-dashboard';
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        `;
+        overlay.innerHTML = `
+            <div style="text-align: center;">
+                <div style="width: 50px; height: 50px; border: 4px solid #f3f3f3; 
+                           border-top: 4px solid #6366f1; border-radius: 50%; 
+                           animation: spin 1s linear infinite; margin: 0 auto 16px;"></div>
+                <div style="color: #64748b; font-size: 1rem;">Processing...</div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+        
+        // Add spin animation if not already present
+        if (!document.querySelector('#spin-keyframes')) {
+            const style = document.createElement('style');
+            style.id = 'spin-keyframes';
+            style.textContent = '@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }';
+            document.head.appendChild(style);
+        }
+    }
+}
+
+function hideLoading() {
+    const overlay = document.querySelector('.loading-overlay-dashboard');
+    if (overlay) {
+        overlay.remove();
+    }
+}
+
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-left: 4px solid ${type === 'success' ? '#10b981' : 
+                                   type === 'error' ? '#ef4444' : 
+                                   type === 'warning' ? '#f59e0b' : '#3b82f6'};
+        border-radius: 6px;
+        padding: 15px 20px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 10000;
+        max-width: 400px;
+        animation: slideInRight 0.3s ease;
+    `;
+    
+    notification.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <i class="fa fa-${type === 'error' ? 'exclamation-circle' : 
+                              type === 'success' ? 'check-circle' : 
+                              type === 'warning' ? 'exclamation-triangle' :
+                              'info-circle'}" 
+               style="color: ${type === 'success' ? '#10b981' : 
+                               type === 'error' ? '#ef4444' : 
+                               type === 'warning' ? '#f59e0b' : '#3b82f6'};"></i>
+            <span style="color: #374151; font-weight: 500;">${message}</span>
+        </div>
+    `;
+    
+    // Add animation styles if not already present
+    if (!document.querySelector('#notification-keyframes')) {
+        const style = document.createElement('style');
+        style.id = 'notification-keyframes';
+        style.textContent = `
+            @keyframes slideInRight {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOutRight {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 4 seconds
+    setTimeout(() => {
+        notification.style.animation = 'slideOutRight 0.3s ease forwards';
+        setTimeout(() => notification.remove(), 300);
+    }, 4000);
+}
+
+function createModal(title) {
+    return {
+        element: null,
+        
+        show() {
+            if (this.element) return;
+            
+            this.element = document.createElement('div');
+            this.element.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+            `;
+            
+            this.element.innerHTML = `
+                <div style="background: white; border-radius: 12px; padding: 0; 
+                           max-width: 600px; max-height: 80vh; overflow-y: auto;
+                           box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+                    <div style="background: #f8fafc; padding: 20px; border-bottom: 1px solid #e5e7eb;
+                               display: flex; align-items: center; justify-content: space-between;">
+                        <h3 style="margin: 0; color: #1e293b; font-size: 1.2rem;">${title}</h3>
+                        <button onclick="this.closest('.modal').remove()" 
+                                style="background: none; border: none; font-size: 1.5rem; 
+                                       cursor: pointer; color: #64748b; padding: 5px;">
+                            <i class="fa fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-content" style="padding: 20px;"></div>
+                </div>
+            `;
+            
+            this.element.className = 'modal';
+            document.body.appendChild(this.element);
+        },
+        
+        setContent(html) {
+            if (this.element) {
+                this.element.querySelector('.modal-content').innerHTML = html;
+            }
+        },
+        
+        hide() {
+            if (this.element) {
+                this.element.remove();
+                this.element = null;
+            }
+        }
+    };
+}
+
+// Add CSS for analysis results
+const analysisStyle = document.createElement('style');
+analysisStyle.textContent = `
+    .analysis-results .result-section {
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #f1f5f9;
+    }
+    .analysis-results .result-section:last-child {
+        border-bottom: none;
+    }
+    .analysis-results h4 {
+        color: #1e293b;
+        margin: 0 0 10px 0;
+        font-size: 1rem;
+    }
+    .analysis-results ul {
+        margin: 0;
+        padding-left: 20px;
+        color: #64748b;
+    }
+    .analysis-results li {
+        margin-bottom: 5px;
+    }
+    .result-actions {
+        text-align: center;
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid #f1f5f9;
+    }
+    .btn {
+        background: #6366f1;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-weight: 500;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: background 0.2s ease;
+    }
+    .btn:hover {
+        background: #5855eb;
+        color: white;
+        text-decoration: none;
+    }
+`;
+document.head.appendChild(analysisStyle);
+</script>
+{% endblock %}

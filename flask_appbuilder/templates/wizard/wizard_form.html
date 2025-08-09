@@ -1,0 +1,882 @@
+{% extends "appbuilder/base.html" %}
+
+{% block head_css %}
+{{ super() }}
+<style>
+/* Wizard Form Styles */
+.wizard-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.wizard-header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.wizard-title {
+    font-size: 2rem;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 10px;
+}
+
+.wizard-description {
+    font-size: 1.1rem;
+    color: #6c757d;
+    line-height: 1.5;
+}
+
+/* Progress Bar */
+.wizard-progress {
+    margin-bottom: 40px;
+}
+
+.progress {
+    height: 12px;
+    border-radius: 6px;
+    background-color: #e9ecef;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.progress-bar {
+    background: linear-gradient(90deg, #007bff, #0056b3);
+    border-radius: 6px;
+    transition: width 0.6s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.progress-bar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background-image: linear-gradient(
+        -45deg,
+        rgba(255, 255, 255, .2) 25%,
+        transparent 25%,
+        transparent 50%,
+        rgba(255, 255, 255, .2) 50%,
+        rgba(255, 255, 255, .2) 75%,
+        transparent 75%,
+        transparent
+    );
+    background-size: 50px 50px;
+    animation: move 2s linear infinite;
+}
+
+@keyframes move {
+    0% { background-position: 0 0; }
+    100% { background-position: 50px 50px; }
+}
+
+.progress-text {
+    text-align: center;
+    margin-top: 10px;
+    font-weight: 500;
+    color: #495057;
+}
+
+/* Step Navigation */
+.step-navigation {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px;
+    overflow-x: auto;
+    padding: 10px 0;
+}
+
+.step-item {
+    flex: 1;
+    text-align: center;
+    position: relative;
+    cursor: pointer;
+    padding: 0 10px;
+    min-width: 120px;
+}
+
+.step-item:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 20px;
+    right: -50%;
+    width: 100%;
+    height: 2px;
+    background-color: #dee2e6;
+    z-index: 1;
+}
+
+.step-item.completed:not(:last-child)::after,
+.step-item.current:not(:last-child)::after {
+    background-color: #28a745;
+}
+
+.step-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    margin-bottom: 8px;
+    position: relative;
+    z-index: 2;
+    transition: all 0.3s ease;
+}
+
+.step-item.pending .step-icon {
+    background-color: #e9ecef;
+    color: #6c757d;
+    border: 2px solid #dee2e6;
+}
+
+.step-item.current .step-icon {
+    background-color: #007bff;
+    color: white;
+    border: 2px solid #007bff;
+    box-shadow: 0 0 0 4px rgba(0,123,255,0.25);
+}
+
+.step-item.completed .step-icon {
+    background-color: #28a745;
+    color: white;
+    border: 2px solid #28a745;
+}
+
+.step-title {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #495057;
+    margin-bottom: 4px;
+}
+
+.step-item.current .step-title {
+    color: #007bff;
+    font-weight: 600;
+}
+
+.step-item.completed .step-title {
+    color: #28a745;
+    font-weight: 600;
+}
+
+/* Form Content */
+.wizard-content {
+    min-height: 400px;
+    margin-bottom: 40px;
+}
+
+.step-content {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 30px;
+    border: 1px solid #dee2e6;
+}
+
+.step-content h3 {
+    color: #495057;
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+}
+
+.step-content h3 i {
+    margin-right: 10px;
+    color: #007bff;
+}
+
+.step-description {
+    color: #6c757d;
+    margin-bottom: 25px;
+    font-size: 1rem;
+    line-height: 1.5;
+}
+
+.form-group {
+    margin-bottom: 25px;
+}
+
+.form-group label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.form-control {
+    border-radius: 6px;
+    border: 1px solid #ced4da;
+    padding: 12px 15px;
+    font-size: 1rem;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.form-control:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+    outline: 0;
+}
+
+.form-control.is-invalid {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 0.2rem rgba(220,53,69,0.25);
+}
+
+.invalid-feedback {
+    color: #dc3545;
+    font-size: 0.875rem;
+    margin-top: 5px;
+}
+
+/* Navigation Buttons */
+.wizard-navigation {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 20px;
+    border-top: 1px solid #dee2e6;
+}
+
+.btn-wizard {
+    padding: 12px 24px;
+    font-weight: 600;
+    border-radius: 6px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-wizard::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.3);
+    transition: width 0.6s, height 0.6s, top 0.6s, left 0.6s;
+    transform: translate(-50%, -50%);
+}
+
+.btn-wizard:active::before {
+    width: 300px;
+    height: 300px;
+    top: 50%;
+    left: 50%;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    border: none;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #0056b3, #004085);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,123,255,0.3);
+}
+
+.btn-secondary {
+    background: #6c757d;
+    border: none;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #5a6268;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(108,117,125,0.3);
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #28a745, #1e7e34);
+    border: none;
+    color: white;
+}
+
+.btn-success:hover {
+    background: linear-gradient(135deg, #1e7e34, #155724);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(40,167,69,0.3);
+}
+
+.btn-outline-secondary {
+    color: #6c757d;
+    border: 2px solid #6c757d;
+    background: transparent;
+}
+
+.btn-outline-secondary:hover {
+    background: #6c757d;
+    color: white;
+}
+
+.btn:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* Auto-save indicator */
+.auto-save-indicator {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1050;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    opacity: 0;
+    transform: translateY(-20px);
+    transition: all 0.3s ease;
+}
+
+.auto-save-indicator.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.auto-save-indicator.saving {
+    background-color: #ffeaa7;
+    color: #2d3436;
+    border: 1px solid #fdcb6e;
+}
+
+.auto-save-indicator.saved {
+    background-color: #00b894;
+    color: white;
+    border: 1px solid #00a085;
+}
+
+.auto-save-indicator.error {
+    background-color: #e17055;
+    color: white;
+    border: 1px solid #d63031;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .wizard-container {
+        margin: 10px;
+        padding: 15px;
+    }
+    
+    .wizard-title {
+        font-size: 1.5rem;
+    }
+    
+    .step-navigation {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    
+    .step-item {
+        flex: none;
+        min-width: 100px;
+    }
+    
+    .step-item:not(:last-child)::after {
+        display: none;
+    }
+    
+    .step-content {
+        padding: 20px;
+    }
+    
+    .wizard-navigation {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .btn-wizard {
+        width: 100%;
+        padding: 15px;
+    }
+}
+
+@media (max-width: 576px) {
+    .wizard-title {
+        font-size: 1.25rem;
+    }
+    
+    .step-icon {
+        width: 32px;
+        height: 32px;
+        font-size: 0.875rem;
+    }
+    
+    .step-title {
+        font-size: 0.8rem;
+    }
+    
+    .step-content {
+        padding: 15px;
+    }
+    
+    .form-control {
+        padding: 10px 12px;
+    }
+}
+
+/* Animations */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.step-content {
+    animation: fadeInUp 0.5s ease;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+.step-item.current .step-icon {
+    animation: pulse 2s infinite;
+}
+
+/* Loading states */
+.loading {
+    position: relative;
+    pointer-events: none;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid transparent;
+    border-top-color: #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="wizard-container">
+    <!-- Wizard Header -->
+    <div class="wizard-header">
+        <h1 class="wizard-title">{{ wizard_title }}</h1>
+        {% if wizard_description %}
+        <p class="wizard-description">{{ wizard_description }}</p>
+        {% endif %}
+    </div>
+
+    <!-- Progress Bar -->
+    {% if show_progress_bar %}
+    <div class="wizard-progress">
+        <div class="progress">
+            <div class="progress-bar" 
+                 role="progressbar" 
+                 style="width: {{ progress_percentage }}%"
+                 aria-valuenow="{{ progress_percentage }}" 
+                 aria-valuemin="0" 
+                 aria-valuemax="100">
+            </div>
+        </div>
+        <div class="progress-text">
+            Step {{ current_step_index + 1 }} of {{ total_steps }} 
+            ({{ "%.0f"|format(progress_percentage) }}% complete)
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Step Navigation -->
+    {% if show_step_list %}
+    <div class="step-navigation">
+        {% for step in steps %}
+        <div class="step-item {{ step_statuses[loop.index0] }}" 
+             data-step-index="{{ loop.index0 }}"
+             {% if wizard_form.can_navigate_to_step(loop.index0) %}onclick="navigateToStep({{ loop.index0 }})"{% endif %}>
+            <div class="step-icon">
+                {% if step_statuses[loop.index0] == 'completed' %}
+                    <i class="fa fa-check"></i>
+                {% elif step_statuses[loop.index0] == 'current' %}
+                    {{ loop.index }}
+                {% else %}
+                    {{ loop.index }}
+                {% endif %}
+            </div>
+            <div class="step-title">{{ step.title }}</div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Form Content -->
+    <form id="wizardForm" method="post" enctype="multipart/form-data">
+        {{ form.hidden_tag() }}
+        
+        <div class="wizard-content">
+            <div class="step-content">
+                {% set current_step = wizard_form.get_current_step() %}
+                <h3>
+                    <i class="{{ current_step.icon if current_step.icon else 'fa fa-edit' }}"></i>
+                    {{ current_step.title if current_step else 'Step' }}
+                </h3>
+                
+                {% if current_step and current_step.description %}
+                <p class="step-description">{{ current_step.description }}</p>
+                {% endif %}
+
+                <!-- Render form fields for current step -->
+                {% if current_step %}
+                    {% for field_name in current_step.fields %}
+                        {% set field = form[field_name] %}
+                        {% if field %}
+                        <div class="form-group">
+                            {{ field.label(class="form-label") }}
+                            {{ field(class="form-control" + (" is-invalid" if field.errors else "")) }}
+                            {% if field.errors %}
+                                {% for error in field.errors %}
+                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                {% endfor %}
+                            {% endif %}
+                            {% if field.description %}
+                            <small class="form-text text-muted">{{ field.description }}</small>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Navigation Buttons -->
+        {% if show_navigation_buttons %}
+        <div class="wizard-navigation">
+            <div>
+                {% if not wizard_form.current_step_index == 0 %}
+                <button type="submit" name="wizard_action" value="previous" 
+                        class="btn btn-outline-secondary btn-wizard">
+                    <i class="fa fa-chevron-left"></i> Previous
+                </button>
+                {% endif %}
+            </div>
+
+            <div class="text-center">
+                <button type="submit" name="wizard_action" value="save_draft" 
+                        class="btn btn-outline-secondary btn-wizard me-2">
+                    <i class="fa fa-save"></i> Save Draft
+                </button>
+                
+                {% if wizard_form.is_final_step() %}
+                <button type="submit" name="wizard_action" value="submit" 
+                        class="btn btn-success btn-wizard">
+                    <i class="fa fa-check"></i> Submit Form
+                </button>
+                {% else %}
+                <button type="submit" name="wizard_action" value="next" 
+                        class="btn btn-primary btn-wizard">
+                    Next <i class="fa fa-chevron-right"></i>
+                </button>
+                {% endif %}
+            </div>
+
+            <div>
+                <!-- Placeholder for right alignment -->
+            </div>
+        </div>
+        {% endif %}
+    </form>
+</div>
+
+<!-- Auto-save Indicator -->
+{% if enable_auto_save %}
+<div id="autoSaveIndicator" class="auto-save-indicator">
+    <i class="fa fa-spinner fa-spin"></i> <span class="indicator-text">Saving...</span>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block tail_js %}
+{{ super() }}
+<script>
+$(document).ready(function() {
+    // Wizard Form JavaScript
+    const wizardForm = {
+        autoSaveInterval: {{ auto_save_interval if enable_auto_save else 0 }},
+        autoSaveTimer: null,
+        isSubmitting: false,
+
+        init: function() {
+            console.log('Initializing Wizard Form');
+            
+            // Setup auto-save if enabled
+            {% if enable_auto_save %}
+            this.setupAutoSave();
+            {% endif %}
+
+            // Setup form validation
+            this.setupValidation();
+
+            // Setup keyboard navigation
+            this.setupKeyboardNavigation();
+
+            // Setup form change detection
+            this.setupChangeDetection();
+
+            // Prevent accidental navigation away
+            this.setupUnloadWarning();
+        },
+
+        setupAutoSave: function() {
+            if (this.autoSaveInterval <= 0) return;
+
+            const self = this;
+            
+            // Auto-save on form changes
+            $('#wizardForm').on('input change', 'input, select, textarea', function() {
+                self.scheduleAutoSave();
+            });
+
+            // Initial auto-save schedule
+            this.scheduleAutoSave();
+        },
+
+        scheduleAutoSave: function() {
+            if (this.isSubmitting) return;
+
+            clearTimeout(this.autoSaveTimer);
+            const self = this;
+            
+            this.autoSaveTimer = setTimeout(function() {
+                self.performAutoSave();
+            }, this.autoSaveInterval);
+        },
+
+        performAutoSave: function() {
+            if (this.isSubmitting) return;
+
+            const formData = this.serializeFormData();
+            const currentStep = parseInt($('input[name="current_step"]').val() || '0');
+            const wizardId = $('input[name="wizard_id"]').val();
+
+            this.showAutoSaveIndicator('saving');
+
+            $.ajax({
+                url: '{{ url_for(request.endpoint.replace("wizard", "save_draft_api")) }}',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    wizard_id: wizardId,
+                    form_data: formData,
+                    current_step: currentStep
+                }),
+                success: (response) => {
+                    if (response.success) {
+                        this.showAutoSaveIndicator('saved');
+                    } else {
+                        this.showAutoSaveIndicator('error');
+                        console.error('Auto-save failed:', response.error);
+                    }
+                },
+                error: (xhr, status, error) => {
+                    this.showAutoSaveIndicator('error');
+                    console.error('Auto-save error:', error);
+                }
+            });
+        },
+
+        serializeFormData: function() {
+            const formData = {};
+            $('#wizardForm').find('input, select, textarea').each(function() {
+                const $field = $(this);
+                const name = $field.attr('name');
+                
+                if (name && !name.startsWith('wizard_') && !name.startsWith('csrf_')) {
+                    if ($field.is(':checkbox')) {
+                        formData[name] = $field.is(':checked');
+                    } else if ($field.is(':radio')) {
+                        if ($field.is(':checked')) {
+                            formData[name] = $field.val();
+                        }
+                    } else {
+                        formData[name] = $field.val();
+                    }
+                }
+            });
+            return formData;
+        },
+
+        showAutoSaveIndicator: function(state) {
+            const $indicator = $('#autoSaveIndicator');
+            const $icon = $indicator.find('i');
+            const $text = $indicator.find('.indicator-text');
+
+            $indicator.removeClass('saving saved error').addClass(state + ' show');
+
+            switch (state) {
+                case 'saving':
+                    $icon.removeClass().addClass('fa fa-spinner fa-spin');
+                    $text.text('Saving...');
+                    break;
+                case 'saved':
+                    $icon.removeClass().addClass('fa fa-check');
+                    $text.text('Saved');
+                    setTimeout(() => $indicator.removeClass('show'), 2000);
+                    break;
+                case 'error':
+                    $icon.removeClass().addClass('fa fa-exclamation-triangle');
+                    $text.text('Save Failed');
+                    setTimeout(() => $indicator.removeClass('show'), 3000);
+                    break;
+            }
+        },
+
+        setupValidation: function() {
+            // Real-time validation for required fields
+            $('#wizardForm').find('input[required], select[required], textarea[required]').on('blur change', function() {
+                const $field = $(this);
+                const value = $field.val();
+                const $formGroup = $field.closest('.form-group');
+
+                if (!value || value.trim() === '') {
+                    $field.addClass('is-invalid');
+                    if (!$formGroup.find('.invalid-feedback').length) {
+                        $formGroup.append('<div class="invalid-feedback d-block">This field is required</div>');
+                    }
+                } else {
+                    $field.removeClass('is-invalid');
+                    $formGroup.find('.invalid-feedback').remove();
+                }
+            });
+
+            // Form submission validation
+            $('#wizardForm').on('submit', function(e) {
+                const action = $(document.activeElement).val();
+                
+                if (action === 'submit') {
+                    // Validate entire form for final submission
+                    let isValid = true;
+                    $(this).find('input[required], select[required], textarea[required]').each(function() {
+                        const value = $(this).val();
+                        if (!value || value.trim() === '') {
+                            $(this).addClass('is-invalid');
+                            isValid = false;
+                        }
+                    });
+
+                    if (!isValid) {
+                        e.preventDefault();
+                        alert('Please complete all required fields before submitting.');
+                        return false;
+                    }
+                }
+
+                // Set loading state
+                wizardForm.isSubmitting = true;
+                const $btn = $(document.activeElement);
+                $btn.addClass('loading').prop('disabled', true);
+            });
+        },
+
+        setupKeyboardNavigation: function() {
+            $(document).on('keydown', function(e) {
+                // Alt + Left: Previous step
+                if (e.altKey && e.keyCode === 37) {
+                    e.preventDefault();
+                    $('button[value="previous"]').click();
+                }
+                // Alt + Right: Next step  
+                else if (e.altKey && e.keyCode === 39) {
+                    e.preventDefault();
+                    $('button[value="next"]').click();
+                }
+                // Ctrl + S: Save draft
+                else if (e.ctrlKey && e.keyCode === 83) {
+                    e.preventDefault();
+                    $('button[value="save_draft"]').click();
+                }
+            });
+        },
+
+        setupChangeDetection: function() {
+            let hasChanges = false;
+            
+            $('#wizardForm').on('input change', 'input, select, textarea', function() {
+                hasChanges = true;
+            });
+
+            $('#wizardForm').on('submit', function() {
+                hasChanges = false;
+            });
+
+            this.hasUnsavedChanges = function() {
+                return hasChanges;
+            };
+        },
+
+        setupUnloadWarning: function() {
+            const self = this;
+            
+            window.addEventListener('beforeunload', function(e) {
+                if (self.hasUnsavedChanges && self.hasUnsavedChanges() && !self.isSubmitting) {
+                    const message = 'You have unsaved changes. Are you sure you want to leave?';
+                    e.returnValue = message;
+                    return message;
+                }
+            });
+        }
+    };
+
+    // Global functions for step navigation
+    window.navigateToStep = function(stepIndex) {
+        const currentStep = parseInt($('input[name="current_step"]').val() || '0');
+        if (stepIndex !== currentStep) {
+            $('input[name="current_step"]').val(stepIndex);
+            $('<input>').attr({
+                type: 'hidden',
+                name: 'wizard_action',
+                value: 'goto'
+            }).appendTo('#wizardForm');
+            $('<input>').attr({
+                type: 'hidden',
+                name: 'target_step',
+                value: stepIndex
+            }).appendTo('#wizardForm');
+            $('#wizardForm').submit();
+        }
+    };
+
+    // Initialize wizard
+    wizardForm.init();
+});
+</script>
+{% endblock %}

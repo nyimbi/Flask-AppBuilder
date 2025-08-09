@@ -13,7 +13,10 @@ from sqlalchemy import (
     Table,
     UniqueConstraint,
 )
-from sqlalchemy.ext.declarative import declared_attr
+try:
+    from sqlalchemy.orm import declared_attr
+except ImportError:
+    from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import backref, relationship
 
 from ... import Model

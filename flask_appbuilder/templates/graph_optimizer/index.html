@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>{{ title }} - Graph Optimization & Healing</title>
+	
+	<!-- Bootstrap CSS -->
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+	
+	<!-- Chart.js -->
+	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+	
+	<style>
+		.optimizer-card {
+			transition: all 0.3s ease-in-out;
+			border-left: 4px solid #6c757d;
+			margin-bottom: 1rem;
+		}
+		
+		.optimizer-card:hover {
+			transform: translateY(-2px);
+			box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+		}
+		
+		.health-excellent { border-left-color: #28a745; }
+		.health-good { border-left-color: #20c997; }
+		.health-warning { border-left-color: #ffc107; }
+		.health-critical { border-left-color: #dc3545; }
+		
+		.health-overview {
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			color: white;
+			border-radius: 1rem;
+			padding: 2rem;
+			margin-bottom: 2rem;
+		}
+		
+		.stat-card {
+			background: rgba(255, 255, 255, 0.1);
+			backdrop-filter: blur(10px);
+			border-radius: 0.5rem;
+			padding: 1.5rem;
+			text-align: center;
+			border: 1px solid rgba(255, 255, 255, 0.2);
+		}
+		
+		.stat-number {
+			font-size: 2.5rem;
+			font-weight: bold;
+			line-height: 1;
+			margin-bottom: 0.5rem;
+		}
+		
+		.stat-label {
+			font-size: 0.875rem;
+			opacity: 0.9;
+		}
+		
+		.graph-health-card {
+			background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+			border-radius: 1rem;
+			padding: 1.5rem;
+			margin-bottom: 1rem;
+			transition: all 0.2s ease-in-out;
+		}
+		
+		.graph-health-card:hover {
+			transform: scale(1.02);
+			box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+		}
+		
+		.health-score {
+			font-size: 2rem;
+			font-weight: bold;
+			margin-bottom: 0.5rem;
+		}
+		
+		.health-indicator {
+			width: 12px;
+			height: 12px;
+			border-radius: 50%;
+			display: inline-block;
+			margin-right: 0.5rem;
+			animation: pulse 2s infinite;
+		}
+		
+		.status-healthy { background-color: #28a745; }
+		.status-warning { background-color: #ffc107; }
+		.status-critical { background-color: #dc3545; }
+		
+		@keyframes pulse {
+			0% { opacity: 1; }
+			50% { opacity: 0.7; }
+			100% { opacity: 1; }
+		}
+		
+		.optimization-action {
+			background: linear-gradient(135deg, #28a745, #20c997);
+			border: none;
+			border-radius: 50px;
+			padding: 0.75rem 1.5rem;
+			color: white;
+			font-weight: 600;
+			text-transform: uppercase;
+			letter-spacing: 0.5px;
+			transition: all 0.2s ease-in-out;
+		}
+		
+		.optimization-action:hover {
+			transform: scale(1.05);
+			box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+		}
+		
+		.recommendation-item {
+			padding: 1rem;
+			border-left: 3px solid;
+			margin-bottom: 0.5rem;
+			background-color: #f8f9fa;
+			border-radius: 0 0.5rem 0.5rem 0;
+		}
+		
+		.priority-high { border-left-color: #dc3545; }
+		.priority-medium { border-left-color: #ffc107; }
+		.priority-low { border-left-color: #28a745; }
+		
+		.optimization-level-selector {
+			background-color: #fff;
+			border: 2px solid #e9ecef;
+			border-radius: 0.5rem;
+			padding: 0.75rem;
+			transition: border-color 0.2s ease-in-out;
+		}
+		
+		.optimization-level-selector:focus {
+			border-color: #007bff;
+			outline: none;
+			box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+		}
+		
+		.recent-activity {
+			max-height: 400px;
+			overflow-y: auto;
+		}
+		
+		.activity-item {
+			display: flex;
+			align-items: center;
+			padding: 0.75rem;
+			border-bottom: 1px solid #e9ecef;
+			transition: background-color 0.2s ease-in-out;
+		}
+		
+		.activity-item:hover {
+			background-color: #f8f9fa;
+		}
+		
+		.activity-icon {
+			width: 40px;
+			height: 40px;
+			border-radius: 50%;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			margin-right: 1rem;
+			font-size: 1.25rem;
+		}
+		
+		.activity-completed {
+			background-color: #d4edda;
+			color: #155724;
+		}
+		
+		.activity-running {
+			background-color: #d1ecf1;
+			color: #0c5460;
+		}
+		
+		.activity-failed {
+			background-color: #f8d7da;
+			color: #721c24;
+		}
+		
+		.progress-ring {
+			transform: rotate(-90deg);
+		}
+		
+		.progress-ring-circle {
+			stroke-dasharray: 251.2;
+			stroke-dashoffset: 0;
+			transition: stroke-dashoffset 0.35s;
+		}
+		
+		.schedule-grid {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+			gap: 1rem;
+			margin: 2rem 0;
+		}
+		
+		.schedule-card {
+			background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+			border-radius: 0.5rem;
+			padding: 1.5rem;
+			text-align: center;
+			transition: transform 0.2s ease-in-out;
+		}
+		
+		.schedule-card:hover {
+			transform: translateY(-3px);
+		}
+		
+		.modal-header-optimizer {
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			color: white;
+		}
+		
+		.issue-type-badge {
+			padding: 0.25rem 0.5rem;
+			border-radius: 1rem;
+			font-size: 0.75rem;
+			font-weight: 500;
+		}
+		
+		.issue-duplicate { background-color: #fff3cd; color: #856404; }
+		.issue-orphaned { background-color: #d1ecf1; color: #0c5460; }
+		.issue-performance { background-color: #f8d7da; color: #721c24; }
+		.issue-redundant { background-color: #e2e3e5; color: #495057; }
+	</style>
+</head>
+
+<body>
+	<div class="container-fluid p-4">
+		<!-- Header -->
+		<div class="row mb-4">
+			<div class="col-12">
+				<div class="d-flex justify-content-between align-items-center">
+					<div>
+						<h1 class="h2 mb-0">
+							<i class="fas fa-tools text-primary me-2"></i>
+							{{ title }}
+						</h1>
+						<p class="text-muted mb-0">Automated graph health monitoring, issue detection, and optimization</p>
+					</div>
+					<div class="btn-group">
+						<button class="btn btn-outline-success" onclick="runGlobalHealthCheck()">
+							<i class="fas fa-stethoscope me-1"></i> Global Health Check
+						</button>
+						<button class="btn btn-outline-primary" onclick="showScheduler()">
+							<i class="fas fa-calendar-alt me-1"></i> Schedule Optimizations
+						</button>
+						<button class="btn btn-success" onclick="showBatchOptimizer()">
+							<i class="fas fa-magic me-1"></i> Batch Optimize
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Health Overview -->
+		<div class="health-overview">
+			<div class="row">
+				<div class="col-md-8">
+					<h3 class="mb-3">System Health Overview</h3>
+					<p class="mb-4">Comprehensive monitoring and automated healing for all graph databases</p>
+					
+					<div class="row">
+						<div class="col-md-3">
+							<div class="stat-card">
+								<div class="stat-number">{{ health_statistics.total_graphs }}</div>
+								<div class="stat-label">Total Graphs</div>
+							</div>
+						</div>
+						<div class="col-md-3">
+							<div class="stat-card">
+								<div class="stat-number">{{ health_statistics.healthy_graphs }}</div>
+								<div class="stat-label">Healthy Graphs</div>
+							</div>
+						</div>
+						<div class="col-md-3">
+							<div class="stat-card">
+								<div class="stat-number">{{ health_statistics.total_issues }}</div>
+								<div class="stat-label">Total Issues</div>
+							</div>
+						</div>
+						<div class="col-md-3">
+							<div class="stat-card">
+								<div class="stat-number">{{ "%.0f"|format(health_statistics.overall_health_score) }}%</div>
+								<div class="stat-label">Overall Health Score</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-md-4">
+					<div class="text-center">
+						<div class="position-relative d-inline-block">
+							<svg class="progress-ring" width="120" height="120">
+								<circle class="progress-ring-circle" 
+										stroke="rgba(255, 255, 255, 0.3)" 
+										stroke-width="8" 
+										fill="transparent" 
+										r="40" 
+										cx="60" 
+										cy="60"/>
+								<circle class="progress-ring-circle" 
+										stroke="white" 
+										stroke-width="8" 
+										fill="transparent" 
+										r="40" 
+										cx="60" 
+										cy="60" 
+										style="stroke-dashoffset: {{ 251.2 - (health_statistics.overall_health_score * 2.512) }}"/>
+							</svg>
+							<div class="position-absolute top-50 start-50 translate-middle text-center">
+								<div class="fw-bold" style="font-size: 1.5rem;">{{ "%.0f"|format(health_statistics.overall_health_score) }}%</div>
+								<div class="small">Health Score</div>
+							</div>
+						</div>
+						<h5 class="mt-3">System Status</h5>
+						<p class="mb-0">
+							{% if health_statistics.overall_health_score > 90 %}
+								<span class="health-indicator status-healthy"></span>
+								Excellent Health
+							{% elif health_statistics.overall_health_score > 70 %}
+								<span class="health-indicator status-warning"></span>
+								Good Health
+							{% else %}
+								<span class="health-indicator status-critical"></span>
+								Needs Attention
+							{% endif %}
+						</p>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="row">
+			<!-- Graph Health Status -->
+			<div class="col-md-6">
+				<div class="card optimizer-card">
+					<div class="card-header">
+						<h5 class="mb-0">
+							<i class="fas fa-project-diagram text-success me-2"></i>
+							Graph Health Status
+						</h5>
+					</div>
+					<div class="card-body">
+						{% for graph in available_graphs %}
+							<div class="graph-health-card">
+								<div class="d-flex justify-content-between align-items-center">
+									<div class="flex-grow-1">
+										<h6 class="mb-1">{{ graph|title }}</h6>
+										<div class="small text-muted">Last checked: 5 minutes ago</div>
+									</div>
+									<div class="text-center">
+										<div class="health-score text-success">92%</div>
+										<div class="small">Health Score</div>
+									</div>
+									<div class="ms-3">
+										<div class="btn-group-vertical btn-group-sm">
+											<a href="{{ url_for('GraphOptimizerView.health_monitor', graph_name=graph) }}" 
+											   class="btn btn-outline-info">
+												<i class="fas fa-stethoscope"></i> Monitor
+											</a>
+											<a href="{{ url_for('GraphOptimizerView.optimization_interface', graph_name=graph) }}" 
+											   class="btn btn-outline-success">
+												<i class="fas fa-tools"></i> Optimize
+											</a>
+										</div>
+									</div>
+								</div>
+								
+								<!-- Issue Summary -->
+								<div class="mt-2">
+									<span class="issue-type-badge issue-duplicate me-1">2 Duplicates</span>
+									<span class="issue-type-badge issue-performance me-1">1 Performance</span>
+									<span class="issue-type-badge issue-orphaned">3 Orphaned</span>
+								</div>
+							</div>
+						{% endfor %}
+						
+						<div class="text-center mt-3">
+							<button class="optimization-action" onclick="runBatchOptimization()">
+								<i class="fas fa-magic me-1"></i>
+								Optimize All Graphs
+							</button>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Recommendations & Recent Activity -->
+			<div class="col-md-6">
+				<!-- Optimization Recommendations -->
+				<div class="card optimizer-card mb-3">
+					<div class="card-header">
+						<h6 class="mb-0">
+							<i class="fas fa-lightbulb text-warning me-2"></i>
+							Optimization Recommendations
+						</h6>
+					</div>
+					<div class="card-body">
+						{% if recommendations %}
+							{% for rec in recommendations[:5] %}
+								<div class="recommendation-item priority-{{ rec.priority }}">
+									<div class="d-flex justify-content-between align-items-center">
+										<div class="flex-grow-1">
+											<strong>{{ rec.graph|title }}</strong>
+											<div class="small">{{ rec.recommendation }}</div>
+											<div class="small text-muted">
+												{{ rec.issues_count }} issues • Health: {{ rec.health_score }}%
+											</div>
+										</div>
+										<div class="ms-2">
+											<button class="btn btn-sm btn-outline-primary" 
+													onclick="quickOptimize('{{ rec.graph }}')">
+												<i class="fas fa-bolt"></i>
+											</button>
+										</div>
+									</div>
+								</div>
+							{% endfor %}
+						{% else %}
+							<div class="text-center text-muted py-3">
+								<i class="fas fa-check-circle fa-2x mb-2 text-success"></i>
+								<p>No optimization recommendations</p>
+								<small>All graphs are performing optimally</small>
+							</div>
+						{% endif %}
+					</div>
+				</div>
+
+				<!-- Recent Activity -->
+				<div class="card optimizer-card">
+					<div class="card-header">
+						<h6 class="mb-0">
+							<i class="fas fa-history text-info me-2"></i>
+							Recent Optimization Activity
+						</h6>
+					</div>
+					<div class="card-body p-0">
+						<div class="recent-activity">
+							{% for activity in recent_optimizations %}
+								<div class="activity-item">
+									<div class="activity-icon activity-completed">
+										<i class="fas fa-check"></i>
+									</div>
+									<div class="flex-grow-1">
+										<div class="fw-bold">{{ activity.operation }}</div>
+										<div class="small text-muted">{{ activity.graph }} • {{ activity.timestamp[:16] }}</div>
+										<div class="small">
+											Fixed {{ activity.items_fixed }} items • 
+											{{ activity.performance_improvement }}% improvement
+										</div>
+									</div>
+									<div class="text-muted">
+										<span class="badge bg-success">{{ activity.status }}</span>
+									</div>
+								</div>
+							{% endfor %}
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Quick Actions -->
+		<div class="row mt-4">
+			<div class="col-12">
+				<div class="card optimizer-card">
+					<div class="card-header">
+						<h6 class="mb-0">
+							<i class="fas fa-bolt text-primary me-2"></i>
+							Quick Actions
+						</h6>
+					</div>
+					<div class="card-body">
+						<div class="row">
+							<div class="col-md-3">
+								<div class="schedule-card">
+									<i class="fas fa-stethoscope fa-2x text-info mb-2"></i>
+									<h6>Health Check</h6>
+									<p class="small text-muted">Run comprehensive health analysis</p>
+									<button class="btn btn-outline-info btn-sm" onclick="runGlobalHealthCheck()">
+										Run Check
+									</button>
+								</div>
+							</div>
+							<div class="col-md-3">
+								<div class="schedule-card">
+									<i class="fas fa-magic fa-2x text-success mb-2"></i>
+									<h6>Auto Optimize</h6>
+									<p class="small text-muted">Fix all auto-detectable issues</p>
+									<button class="btn btn-outline-success btn-sm" onclick="showBatchOptimizer()">
+										Optimize
+									</button>
+								</div>
+							</div>
+							<div class="col-md-3">
+								<div class="schedule-card">
+									<i class="fas fa-calendar-alt fa-2x text-warning mb-2"></i>
+									<h6>Schedule Tasks</h6>
+									<p class="small text-muted">Set up automated maintenance</p>
+									<button class="btn btn-outline-warning btn-sm" onclick="showScheduler()">
+										Schedule
+									</button>
+								</div>
+							</div>
+							<div class="col-md-3">
+								<div class="schedule-card">
+									<i class="fas fa-chart-line fa-2x text-primary mb-2"></i>
+									<h6>View Reports</h6>
+									<p class="small text-muted">Detailed optimization analytics</p>
+									<button class="btn btn-outline-primary btn-sm" onclick="showReports()">
+										View Reports
+									</button>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Batch Optimization Modal -->
+	<div class="modal fade" id="batchOptimizerModal" tabindex="-1">
+		<div class="modal-dialog modal-lg">
+			<div class="modal-content">
+				<div class="modal-header modal-header-optimizer">
+					<h5 class="modal-title">
+						<i class="fas fa-magic me-2"></i>
+						Batch Graph Optimization
+					</h5>
+					<button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+				</div>
+				<div class="modal-body">
+					<div class="mb-3">
+						<label class="form-label">Select Graphs to Optimize</label>
+						<div class="row">
+							{% for graph in available_graphs %}
+								<div class="col-md-6 mb-2">
+									<div class="form-check">
+										<input class="form-check-input" type="checkbox" 
+											   id="graph_{{ loop.index }}" value="{{ graph }}" checked>
+										<label class="form-check-label" for="graph_{{ loop.index }}">
+											{{ graph|title }}
+											<small class="text-muted">(Health: 92%)</small>
+										</label>
+									</div>
+								</div>
+							{% endfor %}
+						</div>
+					</div>
+					
+					<div class="mb-3">
+						<label for="batchOptimizationLevel" class="form-label">Optimization Level</label>
+						<select id="batchOptimizationLevel" class="form-select optimization-level-selector">
+							{% for level in optimization_levels %}
+								<option value="{{ level.value }}" {% if level.value == 'moderate' %}selected{% endif %}>
+									{{ level.name }} - {{ level.description }}
+								</option>
+							{% endfor %}
+						</select>
+					</div>
+					
+					<div class="mb-3">
+						<div class="form-check">
+							<input class="form-check-input" type="checkbox" id="runHealthCheckFirst" checked>
+							<label class="form-check-label" for="runHealthCheckFirst">
+								Run health check before optimization
+							</label>
+						</div>
+					</div>
+					
+					<div id="batchProgress" style="display: none;">
+						<div class="progress mb-2">
+							<div class="progress-bar progress-bar-striped progress-bar-animated" 
+								 id="batchProgressBar" style="width: 0%"></div>
+						</div>
+						<div id="batchStatus" class="text-center small text-muted"></div>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+					<button type="button" class="btn btn-success" onclick="executeBatchOptimization()">
+						<i class="fas fa-rocket me-1"></i>
+						Start Optimization
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Scheduler Modal -->
+	<div class="modal fade" id="schedulerModal" tabindex="-1">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header modal-header-optimizer">
+					<h5 class="modal-title">
+						<i class="fas fa-calendar-alt me-2"></i>
+						Schedule Optimizations
+					</h5>
+					<button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+				</div>
+				<div class="modal-body">
+					<div class="mb-3">
+						<label class="form-label">Select Graphs</label>
+						<select id="scheduleGraphs" class="form-select" multiple>
+							{% for graph in available_graphs %}
+								<option value="{{ graph }}">{{ graph|title }}</option>
+							{% endfor %}
+						</select>
+						<small class="text-muted">Hold Ctrl/Cmd to select multiple graphs</small>
+					</div>
+					
+					<div class="mb-3">
+						<label for="scheduleFrequency" class="form-label">Frequency</label>
+						<select id="scheduleFrequency" class="form-select">
+							<option value="daily">Daily</option>
+							<option value="weekly" selected>Weekly</option>
+							<option value="monthly">Monthly</option>
+						</select>
+					</div>
+					
+					<div class="mb-3">
+						<label for="scheduleOptimizationLevel" class="form-label">Optimization Level</label>
+						<select id="scheduleOptimizationLevel" class="form-select">
+							{% for level in optimization_levels %}
+								<option value="{{ level.value }}" {% if level.value == 'moderate' %}selected{% endif %}>
+									{{ level.name }}
+								</option>
+							{% endfor %}
+						</select>
+					</div>
+					
+					<div class="form-check">
+						<input class="form-check-input" type="checkbox" id="scheduleEnabled" checked>
+						<label class="form-check-label" for="scheduleEnabled">
+							Enable scheduled optimizations
+						</label>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+					<button type="button" class="btn btn-primary" onclick="createSchedule()">
+						<i class="fas fa-save me-1"></i>
+						Create Schedule
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Bootstrap JS -->
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+	
+	<script>
+		// Global variables
+		let currentOptimizations = new Set();
+		
+		// Health check functions
+		async function runGlobalHealthCheck() {
+			const graphs = {{ available_graphs | tojson }};
+			const results = {};
+			
+			for (const graph of graphs) {
+				try {
+					const response = await fetch(`/graph-optimizer/api/run-health-check/${graph}/`, {
+						method: 'POST'
+					});
+					
+					const result = await response.json();
+					results[graph] = result;
+					
+					console.log(`Health check for ${graph}:`, result);
+				} catch (error) {
+					console.error(`Health check failed for ${graph}:`, error);
+				}
+			}
+			
+			// Show summary
+			showHealthCheckResults(results);
+		}
+		
+		function showHealthCheckResults(results) {
+			let totalIssues = 0;
+			let healthyGraphs = 0;
+			
+			for (const [graph, result] of Object.entries(results)) {
+				if (result.success) {
+					totalIssues += result.issues.length;
+					if (result.issues.length === 0) {
+						healthyGraphs++;
+					}
+				}
+			}
+			
+			alert(`Global Health Check Complete\n\nHealthy Graphs: ${healthyGraphs}/${Object.keys(results).length}\nTotal Issues Found: ${totalIssues}\n\nCheck individual graph monitors for details.`);
+			
+			// Refresh page to show updated stats
+			setTimeout(() => location.reload(), 2000);
+		}
+		
+		// Quick optimization
+		async function quickOptimize(graphName) {
+			if (currentOptimizations.has(graphName)) {
+				alert(`Optimization already running for ${graphName}`);
+				return;
+			}
+			
+			currentOptimizations.add(graphName);
+			
+			try {
+				const response = await fetch(`/graph-optimizer/api/run-optimization/${graphName}/`, {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						optimization_level: 'moderate'
+					})
+				});
+				
+				const result = await response.json();
+				
+				if (result.success) {
+					alert(`Optimization Complete for ${graphName}\n\nOperations: ${result.summary.operations_completed}\nItems Fixed: ${result.summary.items_fixed}\nPerformance Improvement: ${result.summary.average_performance_improvement.toFixed(1)}%`);
+				} else {
+					alert(`Optimization Failed: ${result.error}`);
+				}
+			} catch (error) {
+				console.error('Quick optimization failed:', error);
+				alert(`Optimization Error: ${error.message}`);
+			} finally {
+				currentOptimizations.delete(graphName);
+			}
+		}
+		
+		// Batch optimization
+		function showBatchOptimizer() {
+			const modal = new bootstrap.Modal(document.getElementById('batchOptimizerModal'));
+			modal.show();
+		}
+		
+		async function executeBatchOptimization() {
+			const selectedGraphs = Array.from(document.querySelectorAll('input[type="checkbox"]:checked'))
+				.map(cb => cb.value)
+				.filter(val => val && val !== 'on'); // Filter out checkbox values
+			
+			if (selectedGraphs.length === 0) {
+				alert('Please select at least one graph to optimize');
+				return;
+			}
+			
+			const optimizationLevel = document.getElementById('batchOptimizationLevel').value;
+			const runHealthFirst = document.getElementById('runHealthCheckFirst').checked;
+			
+			// Show progress
+			document.getElementById('batchProgress').style.display = 'block';
+			document.getElementById('batchStatus').textContent = 'Starting batch optimization...';
+			
+			let completed = 0;
+			const total = selectedGraphs.length;
+			const results = [];
+			
+			for (const graph of selectedGraphs) {
+				try {
+					document.getElementById('batchStatus').textContent = `Optimizing ${graph}... (${completed + 1}/${total})`;
+					updateBatchProgress((completed / total) * 100);
+					
+					const response = await fetch(`/graph-optimizer/api/run-optimization/${graph}/`, {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({
+							optimization_level: optimizationLevel
+						})
+					});
+					
+					const result = await response.json();
+					results.push({ graph, result });
+					
+				} catch (error) {
+					console.error(`Optimization failed for ${graph}:`, error);
+					results.push({ graph, error: error.message });
+				}
+				
+				completed++;
+				updateBatchProgress((completed / total) * 100);
+			}
+			
+			// Show completion summary
+			updateBatchProgress(100);
+			document.getElementById('batchStatus').textContent = 'Batch optimization completed!';
+			
+			setTimeout(() => {
+				showBatchResults(results);
+				bootstrap.Modal.getInstance(document.getElementById('batchOptimizerModal')).hide();
+			}, 1000);
+		}
+		
+		function updateBatchProgress(percent) {
+			document.getElementById('batchProgressBar').style.width = `${percent}%`;
+		}
+		
+		function showBatchResults(results) {
+			let totalFixed = 0;
+			let successCount = 0;
+			
+			for (const { graph, result, error } of results) {
+				if (result && result.success) {
+					successCount++;
+					totalFixed += result.summary.items_fixed;
+				}
+			}
+			
+			alert(`Batch Optimization Complete\n\nGraphs Optimized: ${successCount}/${results.length}\nTotal Items Fixed: ${totalFixed}\n\nRefreshing dashboard...`);
+			
+			setTimeout(() => location.reload(), 2000);
+		}
+		
+		// Scheduler
+		function showScheduler() {
+			const modal = new bootstrap.Modal(document.getElementById('schedulerModal'));
+			modal.show();
+		}
+		
+		async function createSchedule() {
+			const selectedGraphs = Array.from(document.getElementById('scheduleGraphs').selectedOptions)
+				.map(option => option.value);
+			
+			if (selectedGraphs.length === 0) {
+				alert('Please select at least one graph');
+				return;
+			}
+			
+			const frequency = document.getElementById('scheduleFrequency').value;
+			const optimizationLevel = document.getElementById('scheduleOptimizationLevel').value;
+			const enabled = document.getElementById('scheduleEnabled').checked;
+			
+			try {
+				const response = await fetch('/graph-optimizer/api/schedule-optimization/', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						graph_names: selectedGraphs,
+						schedule: frequency,
+						optimization_level: optimizationLevel,
+						enabled: enabled
+					})
+				});
+				
+				const result = await response.json();
+				
+				if (result.success) {
+					alert(`Schedule Created Successfully\n\nGraphs: ${selectedGraphs.join(', ')}\nFrequency: ${frequency}\nLevel: ${optimizationLevel}\nTasks Created: ${result.scheduled_tasks.length}`);
+					bootstrap.Modal.getInstance(document.getElementById('schedulerModal')).hide();
+				} else {
+					alert(`Schedule Creation Failed: ${result.error}`);
+				}
+			} catch (error) {
+				console.error('Schedule creation failed:', error);
+				alert(`Schedule Error: ${error.message}`);
+			}
+		}
+		
+		function runBatchOptimization() {
+			showBatchOptimizer();
+		}
+		
+		function showReports() {
+			// Navigate to reports page or show reports modal
+			alert('Reports functionality would show detailed optimization analytics and trends');
+		}
+	</script>
+</body>
+</html>

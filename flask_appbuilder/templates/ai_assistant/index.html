@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>{{ title }} - AI-Powered Graph Analytics</title>
+	
+	<!-- Bootstrap CSS -->
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+	
+	<!-- Chart.js -->
+	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+	
+	<style>
+		.ai-card {
+			transition: transform 0.2s ease-in-out;
+			border-left: 4px solid #6f42c1;
+		}
+		
+		.ai-card:hover {
+			transform: translateY(-2px);
+			box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+		}
+		
+		.insight-card {
+			border-left: 4px solid;
+			margin-bottom: 1rem;
+			transition: all 0.2s ease-in-out;
+		}
+		
+		.insight-card:hover {
+			transform: translateX(5px);
+		}
+		
+		.insight-priority-low { border-left-color: #6c757d; }
+		.insight-priority-medium { border-left-color: #17a2b8; }
+		.insight-priority-high { border-left-color: #ffc107; }
+		.insight-priority-critical { border-left-color: #dc3545; }
+		
+		.confidence-bar {
+			height: 8px;
+			border-radius: 4px;
+			background-color: #e9ecef;
+			overflow: hidden;
+		}
+		
+		.confidence-fill {
+			height: 100%;
+			border-radius: 4px;
+			transition: width 0.3s ease;
+		}
+		
+		.confidence-high { background: linear-gradient(90deg, #28a745, #20c997); }
+		.confidence-medium { background: linear-gradient(90deg, #ffc107, #fd7e14); }
+		.confidence-low { background: linear-gradient(90deg, #dc3545, #e83e8c); }
+		
+		.ai-brain {
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			color: white;
+		}
+		
+		.natural-language {
+			background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+			color: white;
+		}
+		
+		.automated-insights {
+			background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+			color: white;
+		}
+		
+		.smart-recommendations {
+			background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+			color: white;
+		}
+		
+		.stats-card {
+			text-align: center;
+			padding: 1.5rem;
+		}
+		
+		.stats-number {
+			font-size: 2.5rem;
+			font-weight: bold;
+			line-height: 1;
+		}
+		
+		.stats-label {
+			font-size: 0.875rem;
+			color: #6c757d;
+			text-transform: uppercase;
+			letter-spacing: 0.5px;
+		}
+		
+		.query-input-area {
+			border: 2px dashed #dee2e6;
+			border-radius: 0.5rem;
+			padding: 2rem;
+			text-align: center;
+			background: linear-gradient(45deg, #f8f9fa, #ffffff);
+			transition: all 0.2s ease-in-out;
+		}
+		
+		.query-input-area:hover {
+			border-color: #6f42c1;
+			background: linear-gradient(45deg, #f0f0ff, #ffffff);
+		}
+		
+		.quick-action-btn {
+			border-radius: 50px;
+			padding: 0.75rem 1.5rem;
+			font-weight: 600;
+			text-transform: uppercase;
+			letter-spacing: 0.5px;
+			transition: all 0.2s ease-in-out;
+		}
+		
+		.quick-action-btn:hover {
+			transform: scale(1.05);
+		}
+		
+		.analysis-type-badge {
+			font-size: 0.75rem;
+			padding: 0.25rem 0.5rem;
+			border-radius: 1rem;
+			background-color: #6f42c1;
+			color: white;
+			margin: 0.125rem;
+		}
+		
+		.complexity-indicator {
+			display: inline-flex;
+			align-items: center;
+			gap: 0.25rem;
+		}
+		
+		.complexity-dot {
+			width: 8px;
+			height: 8px;
+			border-radius: 50%;
+		}
+		
+		.complexity-simple .complexity-dot { background-color: #28a745; }
+		.complexity-moderate .complexity-dot { background-color: #ffc107; }
+		.complexity-complex .complexity-dot { background-color: #fd7e14; }
+		.complexity-expert .complexity-dot { background-color: #dc3545; }
+		
+		.ai-thinking {
+			animation: pulse 2s infinite;
+		}
+		
+		@keyframes pulse {
+			0% { opacity: 1; }
+			50% { opacity: 0.5; }
+			100% { opacity: 1; }
+		}
+		
+		.insight-actions {
+			display: flex;
+			gap: 0.5rem;
+			flex-wrap: wrap;
+		}
+		
+		.insight-evidence {
+			background-color: #f8f9fa;
+			border: 1px solid #dee2e6;
+			border-radius: 0.375rem;
+			padding: 0.75rem;
+			margin: 0.5rem 0;
+			font-family: 'Courier New', monospace;
+			font-size: 0.875rem;
+		}
+		
+		.chat-interface {
+			max-height: 400px;
+			overflow-y: auto;
+			border: 1px solid #dee2e6;
+			border-radius: 0.5rem;
+			padding: 1rem;
+			background-color: #f8f9fa;
+		}
+		
+		.chat-message {
+			margin-bottom: 1rem;
+			display: flex;
+			align-items: flex-start;
+			gap: 0.75rem;
+		}
+		
+		.chat-avatar {
+			width: 40px;
+			height: 40px;
+			border-radius: 50%;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-weight: bold;
+			flex-shrink: 0;
+		}
+		
+		.user-avatar {
+			background: linear-gradient(45deg, #007bff, #0056b3);
+			color: white;
+		}
+		
+		.ai-avatar {
+			background: linear-gradient(45deg, #6f42c1, #495057);
+			color: white;
+		}
+		
+		.chat-content {
+			flex-grow: 1;
+			background: white;
+			border-radius: 0.5rem;
+			padding: 0.75rem;
+			border: 1px solid #dee2e6;
+		}
+		
+		.chat-timestamp {
+			font-size: 0.75rem;
+			color: #6c757d;
+			margin-top: 0.25rem;
+		}
+	</style>
+</head>
+
+<body>
+	<div class="container-fluid p-4">
+		<!-- Header -->
+		<div class="row mb-4">
+			<div class="col-12">
+				<div class="d-flex justify-content-between align-items-center">
+					<h1 class="h2 mb-0">
+						<i class="fas fa-robot text-primary me-2"></i>
+						{{ title }}
+					</h1>
+					<div class="btn-group">
+						<a href="{{ url_for('AIAssistantView.query') }}" class="btn btn-outline-primary">
+							<i class="fas fa-comment-dots me-1"></i> Natural Language
+						</a>
+						<a href="{{ url_for('AIAssistantView.insights') }}" class="btn btn-outline-info">
+							<i class="fas fa-lightbulb me-1"></i> Insights
+						</a>
+						<a href="{{ url_for('AIAssistantView.recommendations') }}" class="btn btn-outline-success">
+							<i class="fas fa-magic me-1"></i> Recommendations
+						</a>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- AI Assistant Statistics -->
+		<div class="row mb-4">
+			<div class="col-md-3">
+				<div class="card ai-card stats-card">
+					<div class="stats-number text-primary">{{ dashboard_summary.query_statistics.recent_query_count }}</div>
+					<div class="stats-label">Recent Queries</div>
+					<div class="mt-2">
+						<small class="text-muted">
+							Avg Confidence: {{ "%.1f"|format(dashboard_summary.query_statistics.average_confidence * 100) }}%
+						</small>
+					</div>
+				</div>
+			</div>
+			<div class="col-md-3">
+				<div class="card ai-card stats-card">
+					<div class="stats-number text-success">{{ dashboard_summary.insights_summary.total_insights }}</div>
+					<div class="stats-label">Generated Insights</div>
+					<div class="mt-2">
+						<small class="text-danger">
+							{{ dashboard_summary.insights_summary.high_priority_insights }} High Priority
+						</small>
+					</div>
+				</div>
+			</div>
+			<div class="col-md-3">
+				<div class="card ai-card stats-card">
+					<div class="stats-number text-info">{{ dashboard_summary.insights_summary.cached_graphs }}</div>
+					<div class="stats-label">Analyzed Graphs</div>
+					<div class="mt-2">
+						<small class="text-muted">
+							{{ dashboard_summary.ai_assistant_stats.nlp_patterns }} NLP Patterns
+						</small>
+					</div>
+				</div>
+			</div>
+			<div class="col-md-3">
+				<div class="card ai-card stats-card">
+					<div class="stats-number text-warning">{{ "%.0f"|format(dashboard_summary.ai_assistant_stats.cache_hit_rate * 100) }}%</div>
+					<div class="stats-label">Cache Hit Rate</div>
+					<div class="mt-2">
+						<small class="text-muted">
+							{{ dashboard_summary.ai_assistant_stats.analysis_types }} Analysis Types
+						</small>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Quick Actions -->
+		<div class="row mb-4">
+			<div class="col-md-3">
+				<div class="card ai-card ai-brain">
+					<div class="card-body text-center">
+						<i class="fas fa-brain fa-3x mb-3"></i>
+						<h5>AI Analysis</h5>
+						<p class="mb-3">Get intelligent insights and automated analysis of your graph data.</p>
+						<button class="btn btn-light quick-action-btn" onclick="triggerAIAnalysis()">
+							Analyze Now
+						</button>
+					</div>
+				</div>
+			</div>
+			
+			<div class="col-md-3">
+				<div class="card ai-card natural-language">
+					<div class="card-body text-center">
+						<i class="fas fa-comment-dots fa-3x mb-3"></i>
+						<h5>Ask Questions</h5>
+						<p class="mb-3">Use natural language to query your graphs - no Cypher knowledge needed.</p>
+						<a href="{{ url_for('AIAssistantView.query') }}" class="btn btn-light quick-action-btn">
+							Ask AI
+						</a>
+					</div>
+				</div>
+			</div>
+			
+			<div class="col-md-3">
+				<div class="card ai-card automated-insights">
+					<div class="card-body text-center">
+						<i class="fas fa-lightbulb fa-3x mb-3"></i>
+						<h5>Auto Insights</h5>
+						<p class="mb-3">Discover patterns, anomalies, and opportunities automatically.</p>
+						<a href="{{ url_for('AIAssistantView.insights') }}" class="btn btn-light quick-action-btn">
+							View Insights
+						</a>
+					</div>
+				</div>
+			</div>
+			
+			<div class="col-md-3">
+				<div class="card ai-card smart-recommendations">
+					<div class="card-body text-center">
+						<i class="fas fa-magic fa-3x mb-3"></i>
+						<h5>Smart Recommendations</h5>
+						<p class="mb-3">Get personalized analysis recommendations based on your data.</p>
+						<a href="{{ url_for('AIAssistantView.recommendations') }}" class="btn btn-light quick-action-btn">
+							Get Recommendations
+						</a>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Quick Query Interface -->
+		<div class="row mb-4">
+			<div class="col-12">
+				<div class="card ai-card">
+					<div class="card-header">
+						<h6 class="mb-0">
+							<i class="fas fa-comments text-primary me-2"></i>
+							Quick Query Assistant
+						</h6>
+					</div>
+					<div class="card-body">
+						<div class="query-input-area">
+							<i class="fas fa-robot fa-2x text-primary mb-3"></i>
+							<h5>Ask me anything about your graphs!</h5>
+							<p class="text-muted mb-3">Try questions like "Find nodes with high connectivity" or "Show me anomalies in the data"</p>
+							
+							<div class="row">
+								<div class="col-md-8">
+									<div class="input-group">
+										<select class="form-select" id="quickQueryGraph" style="max-width: 200px;">
+											<option value="">Select Graph...</option>
+											{% for graph in graphs %}
+												<option value="{{ graph.name }}">{{ graph.name }}</option>
+											{% endfor %}
+										</select>
+										<input type="text" class="form-control" id="quickQueryInput" 
+											   placeholder="Ask a natural language question about your graph...">
+										<button class="btn btn-primary" type="button" onclick="processQuickQuery()">
+											<i class="fas fa-paper-plane me-1"></i> Ask AI
+										</button>
+									</div>
+								</div>
+								<div class="col-md-4 text-end">
+									<button class="btn btn-outline-secondary" onclick="showQueryExamples()">
+										<i class="fas fa-question-circle me-1"></i> Examples
+									</button>
+								</div>
+							</div>
+						</div>
+						
+						<div id="quickQueryResult" class="mt-3" style="display: none;"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Recent Insights and Complexity Distribution -->
+		<div class="row mb-4">
+			<div class="col-md-8">
+				<div class="card ai-card">
+					<div class="card-header">
+						<h6 class="mb-0">
+							<i class="fas fa-lightbulb text-warning me-2"></i>
+							Recent AI Insights
+						</h6>
+					</div>
+					<div class="card-body" style="max-height: 500px; overflow-y: auto;">
+						{% if recent_insights %}
+							{% for insight in recent_insights %}
+								<div class="insight-card insight-priority-{{ insight.priority }} p-3">
+									<div class="d-flex justify-content-between align-items-start mb-2">
+										<div class="flex-grow-1">
+											<h6 class="mb-1">
+												{{ insight.title }}
+												<small class="text-muted">({{ insight.graph_name }})</small>
+											</h6>
+											<div class="analysis-type-badge">
+												{{ insight.analysis_type.replace('_', ' ')|title }}
+											</div>
+										</div>
+										<div class="text-end">
+											<span class="badge bg-{{ insight.priority }} mb-1">{{ insight.priority|title }}</span>
+											<div class="confidence-bar" style="width: 80px;">
+												<div class="confidence-fill {% if insight.confidence_score > 0.7 %}confidence-high{% elif insight.confidence_score > 0.4 %}confidence-medium{% else %}confidence-low{% endif %}" 
+													 style="width: {{ (insight.confidence_score * 100)|int }}%"></div>
+											</div>
+											<small class="text-muted d-block">{{ "%.0f"|format(insight.confidence_score * 100) }}% confidence</small>
+										</div>
+									</div>
+									
+									<p class="mb-2">{{ insight.description }}</p>
+									
+									{% if insight.data_evidence %}
+										<div class="insight-evidence">
+											<small><strong>Evidence:</strong></small>
+											<pre class="mb-0"><small>{{ insight.data_evidence | tojsonpretty }}</small></pre>
+										</div>
+									{% endif %}
+									
+									{% if insight.recommended_actions %}
+										<div class="insight-actions">
+											{% for action in insight.recommended_actions[:3] %}
+												<small class="badge bg-info">{{ action }}</small>
+											{% endfor %}
+										</div>
+									{% endif %}
+									
+									<div class="mt-2">
+										<small class="text-muted">{{ insight.created_at[:16] }}</small>
+										{% if insight.cypher_queries %}
+											<button class="btn btn-sm btn-outline-primary ms-2" 
+													onclick="showInsightQueries('{{ insight.insight_id }}')">
+												<i class="fas fa-code me-1"></i> View Queries
+											</button>
+										{% endif %}
+									</div>
+								</div>
+							{% endfor %}
+						{% else %}
+							<div class="text-center text-muted py-5">
+								<i class="fas fa-lightbulb fa-3x mb-3"></i>
+								<h5>No Insights Yet</h5>
+								<p>Run AI analysis on your graphs to get intelligent insights.</p>
+								<button class="btn btn-primary" onclick="triggerAIAnalysis()">
+									<i class="fas fa-play me-1"></i> Start Analysis
+								</button>
+							</div>
+						{% endif %}
+					</div>
+				</div>
+			</div>
+			
+			<div class="col-md-4">
+				<div class="card ai-card">
+					<div class="card-header">
+						<h6 class="mb-0">
+							<i class="fas fa-chart-pie text-info me-2"></i>
+							Query Complexity Distribution
+						</h6>
+					</div>
+					<div class="card-body">
+						<canvas id="complexityChart" width="300" height="300"></canvas>
+						
+						<div class="mt-3">
+							<div class="d-flex justify-content-between align-items-center mb-2">
+								<div class="complexity-indicator complexity-simple">
+									<div class="complexity-dot"></div>
+									<small>Simple</small>
+								</div>
+								<small class="text-muted">{{ dashboard_summary.query_statistics.complexity_distribution.get('simple', 0) }}</small>
+							</div>
+							<div class="d-flex justify-content-between align-items-center mb-2">
+								<div class="complexity-indicator complexity-moderate">
+									<div class="complexity-dot"></div>
+									<small>Moderate</small>
+								</div>
+								<small class="text-muted">{{ dashboard_summary.query_statistics.complexity_distribution.get('moderate', 0) }}</small>
+							</div>
+							<div class="d-flex justify-content-between align-items-center mb-2">
+								<div class="complexity-indicator complexity-complex">
+									<div class="complexity-dot"></div>
+									<small>Complex</small>
+								</div>
+								<small class="text-muted">{{ dashboard_summary.query_statistics.complexity_distribution.get('complex', 0) }}</small>
+							</div>
+							<div class="d-flex justify-content-between align-items-center">
+								<div class="complexity-indicator complexity-expert">
+									<div class="complexity-dot"></div>
+									<small>Expert</small>
+								</div>
+								<small class="text-muted">{{ dashboard_summary.query_statistics.complexity_distribution.get('expert', 0) }}</small>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Available Graphs for Analysis -->
+		<div class="row">
+			<div class="col-12">
+				<div class="card ai-card">
+					<div class="card-header">
+						<h6 class="mb-0">
+							<i class="fas fa-project-diagram text-secondary me-2"></i>
+							Available Graphs for AI Analysis
+						</h6>
+					</div>
+					<div class="card-body">
+						{% if graphs %}
+							<div class="row">
+								{% for graph in graphs %}
+									<div class="col-md-4 mb-3">
+										<div class="card border">
+											<div class="card-body">
+												<h6 class="card-title">{{ graph.name }}</h6>
+												<p class="card-text">
+													<small class="text-muted">
+														Nodes: {{ graph.node_count }} | Edges: {{ graph.edge_count }}
+													</small>
+												</p>
+												<div class="btn-group btn-group-sm w-100">
+													<button class="btn btn-outline-primary" onclick="analyzeGraph('{{ graph.name }}')">
+														<i class="fas fa-brain me-1"></i> Analyze
+													</button>
+													<button class="btn btn-outline-info" onclick="getInsights('{{ graph.name }}')">
+														<i class="fas fa-lightbulb me-1"></i> Insights
+													</button>
+													<button class="btn btn-outline-success" onclick="getRecommendations('{{ graph.name }}')">
+														<i class="fas fa-magic me-1"></i> Recommendations
+													</button>
+												</div>
+											</div>
+										</div>
+									</div>
+								{% endfor %}
+							</div>
+						{% else %}
+							<div class="text-center text-muted py-3">
+								<i class="fas fa-database fa-2x mb-2"></i>
+								<p>No graphs available for analysis</p>
+							</div>
+						{% endif %}
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Query Examples Modal -->
+	<div class="modal fade" id="queryExamplesModal" tabindex="-1">
+		<div class="modal-dialog modal-lg">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title">Natural Language Query Examples</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+				</div>
+				<div class="modal-body">
+					<div class="row">
+						<div class="col-md-6">
+							<h6>Basic Queries</h6>
+							<ul class="list-unstyled">
+								<li class="mb-2">
+									<button class="btn btn-sm btn-outline-primary w-100 text-start" onclick="useExampleQuery('Find all nodes')">
+										"Find all nodes"
+									</button>
+								</li>
+								<li class="mb-2">
+									<button class="btn btn-sm btn-outline-primary w-100 text-start" onclick="useExampleQuery('Count the number of edges')">
+										"Count the number of edges"
+									</button>
+								</li>
+								<li class="mb-2">
+									<button class="btn btn-sm btn-outline-primary w-100 text-start" onclick="useExampleQuery('Show nodes with name John')">
+										"Show nodes with name John"
+									</button>
+								</li>
+							</ul>
+						</div>
+						<div class="col-md-6">
+							<h6>Advanced Queries</h6>
+							<ul class="list-unstyled">
+								<li class="mb-2">
+									<button class="btn btn-sm btn-outline-info w-100 text-start" onclick="useExampleQuery('Find the most connected nodes')">
+										"Find the most connected nodes"
+									</button>
+								</li>
+								<li class="mb-2">
+									<button class="btn btn-sm btn-outline-info w-100 text-start" onclick="useExampleQuery('Path from Alice to Bob')">
+										"Path from Alice to Bob"
+									</button>
+								</li>
+								<li class="mb-2">
+									<button class="btn btn-sm btn-outline-info w-100 text-start" onclick="useExampleQuery('Detect communities in the graph')">
+										"Detect communities in the graph"
+									</button>
+								</li>
+							</ul>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Analysis Results Modal -->
+	<div class="modal fade" id="analysisResultsModal" tabindex="-1">
+		<div class="modal-dialog modal-xl">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title">AI Analysis Results</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+				</div>
+				<div class="modal-body" id="analysisResultsContent">
+					<div class="text-center ai-thinking">
+						<i class="fas fa-brain fa-3x text-primary mb-3"></i>
+						<h4>AI is analyzing your graph...</h4>
+						<div class="spinner-border text-primary" role="status"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Bootstrap JS -->
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+	
+	<script>
+		// Initialize complexity chart
+		function initializeComplexityChart() {
+			const ctx = document.getElementById('complexityChart').getContext('2d');
+			
+			const complexityData = {{ dashboard_summary.query_statistics.complexity_distribution | tojson }};
+			
+			new Chart(ctx, {
+				type: 'doughnut',
+				data: {
+					labels: ['Simple', 'Moderate', 'Complex', 'Expert'],
+					datasets: [{
+						data: [
+							complexityData.simple || 0,
+							complexityData.moderate || 0,
+							complexityData.complex || 0,
+							complexityData.expert || 0
+						],
+						backgroundColor: ['#28a745', '#ffc107', '#fd7e14', '#dc3545'],
+						borderWidth: 2,
+						borderColor: '#ffffff'
+					}]
+				},
+				options: {
+					responsive: true,
+					maintainAspectRatio: false,
+					plugins: {
+						legend: {
+							display: false
+						}
+					}
+				}
+			});
+		}
+
+		// Quick query processing
+		async function processQuickQuery() {
+			const query = document.getElementById('quickQueryInput').value.trim();
+			const graphName = document.getElementById('quickQueryGraph').value;
+			
+			if (!query) {
+				alert('Please enter a question');
+				return;
+			}
+			
+			if (!graphName) {
+				alert('Please select a graph');
+				return;
+			}
+			
+			const resultDiv = document.getElementById('quickQueryResult');
+			resultDiv.style.display = 'block';
+			resultDiv.innerHTML = `
+				<div class="text-center ai-thinking p-3">
+					<i class="fas fa-robot fa-2x text-primary mb-2"></i>
+					<p>AI is processing your question...</p>
+					<div class="spinner-border text-primary" role="status"></div>
+				</div>
+			`;
+			
+			try {
+				const response = await fetch('/graph/ai-assistant/api/natural-language-query/', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify({
+						query: query,
+						graph_name: graphName
+					})
+				});
+				
+				const result = await response.json();
+				
+				if (result.success) {
+					const suggestion = result.suggestion;
+					resultDiv.innerHTML = `
+						<div class="card">
+							<div class="card-header">
+								<h6 class="mb-0">
+									<i class="fas fa-lightbulb text-warning me-2"></i>
+									AI Suggestion
+									<span class="badge bg-secondary ms-2">${suggestion.complexity}</span>
+									<span class="badge bg-info ms-1">${Math.round(suggestion.confidence_score * 100)}% confidence</span>
+								</h6>
+							</div>
+							<div class="card-body">
+								<p class="mb-3">${suggestion.explanation}</p>
+								
+								<div class="mb-3">
+									<label class="form-label"><strong>Generated Cypher Query:</strong></label>
+									<div class="insight-evidence">
+										<pre><code>${suggestion.cypher_query}</code></pre>
+									</div>
+								</div>
+								
+								${suggestion.performance_notes && suggestion.performance_notes.length > 0 ? `
+									<div class="mb-3">
+										<label class="form-label"><strong>Performance Notes:</strong></label>
+										<ul class="list-unstyled">
+											${suggestion.performance_notes.map(note => `<li><small class="text-muted">• ${note}</small></li>`).join('')}
+										</ul>
+									</div>
+								` : ''}
+								
+								<div class="d-flex gap-2">
+									<button class="btn btn-primary" onclick="executeQuery('${graphName}', '${suggestion.cypher_query.replace(/'/g, "\\'")}')">
+										<i class="fas fa-play me-1"></i> Execute Query
+									</button>
+									<button class="btn btn-outline-secondary" onclick="copyToClipboard('${suggestion.cypher_query.replace(/'/g, "\\'")}')">
+										<i class="fas fa-copy me-1"></i> Copy Query
+									</button>
+								</div>
+							</div>
+						</div>
+					`;
+				} else {
+					resultDiv.innerHTML = `
+						<div class="alert alert-danger">
+							<i class="fas fa-exclamation-triangle me-2"></i>
+							Error processing query: ${result.error}
+						</div>
+					`;
+				}
+			} catch (error) {
+				console.error('Error processing query:', error);
+				resultDiv.innerHTML = `
+					<div class="alert alert-danger">
+						<i class="fas fa-exclamation-triangle me-2"></i>
+						Error processing query: ${error.message}
+					</div>
+				`;
+			}
+		}
+		
+		async function executeQuery(graphName, cypherQuery) {
+			try {
+				const response = await fetch('/graph/ai-assistant/api/execute-suggested-query/', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify({
+						graph_name: graphName,
+						cypher_query: cypherQuery,
+						parameters: {}
+					})
+				});
+				
+				const result = await response.json();
+				
+				if (result.success && result.result.success) {
+					const queryResult = result.result;
+					alert(`Query executed successfully! Found ${queryResult.results ? queryResult.results.length : 0} results.`);
+					
+					// Could show results in a modal here
+					console.log('Query results:', queryResult);
+				} else {
+					alert('Query execution failed: ' + (result.error || result.result.error));
+				}
+			} catch (error) {
+				console.error('Error executing query:', error);
+				alert('Error executing query: ' + error.message);
+			}
+		}
+		
+		function copyToClipboard(text) {
+			navigator.clipboard.writeText(text).then(function() {
+				alert('Query copied to clipboard!');
+			});
+		}
+		
+		function showQueryExamples() {
+			new bootstrap.Modal(document.getElementById('queryExamplesModal')).show();
+		}
+		
+		function useExampleQuery(query) {
+			document.getElementById('quickQueryInput').value = query;
+			bootstrap.Modal.getInstance(document.getElementById('queryExamplesModal')).hide();
+		}
+		
+		// Analysis functions
+		async function triggerAIAnalysis() {
+			const graphName = prompt('Enter graph name to analyze:');
+			if (!graphName) return;
+			
+			analyzeGraph(graphName);
+		}
+		
+		async function analyzeGraph(graphName) {
+			const modal = new bootstrap.Modal(document.getElementById('analysisResultsModal'));
+			modal.show();
+			
+			try {
+				const response = await fetch('/graph/ai-assistant/api/analyze-graph/', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify({
+						graph_name: graphName,
+						analysis_types: [] // All types
+					})
+				});
+				
+				const result = await response.json();
+				
+				if (result.success) {
+					let content = `<h5>Analysis Results for: ${graphName}</h5>`;
+					
+					for (const [analysisType, analysisResult] of Object.entries(result.results)) {
+						content += `
+							<div class="card mb-3">
+								<div class="card-header">
+									<h6 class="mb-0">${analysisType.replace('_', ' ').toUpperCase()}</h6>
+								</div>
+								<div class="card-body">
+						`;
+						
+						if (analysisResult.error) {
+							content += `<div class="text-danger">Error: ${analysisResult.error}</div>`;
+						} else if (Array.isArray(analysisResult)) {
+							content += `<p>Found ${analysisResult.length} insights:</p>`;
+							analysisResult.forEach((insight, index) => {
+								content += `
+									<div class="insight-card insight-priority-${insight.priority} p-2 mb-2">
+										<h6>${insight.title}</h6>
+										<p>${insight.description}</p>
+									</div>
+								`;
+							});
+						} else {
+							content += `
+								<h6>${analysisResult.title}</h6>
+								<p>${analysisResult.description}</p>
+								<span class="badge bg-${analysisResult.priority}">${analysisResult.priority}</span>
+							`;
+						}
+						
+						content += `
+								</div>
+							</div>
+						`;
+					}
+					
+					document.getElementById('analysisResultsContent').innerHTML = content;
+				} else {
+					document.getElementById('analysisResultsContent').innerHTML = `
+						<div class="alert alert-danger">
+							Analysis failed: ${result.error}
+						</div>
+					`;
+				}
+			} catch (error) {
+				console.error('Analysis error:', error);
+				document.getElementById('analysisResultsContent').innerHTML = `
+					<div class="alert alert-danger">
+						Analysis failed: ${error.message}
+					</div>
+				`;
+			}
+		}
+		
+		function getInsights(graphName) {
+			window.location.href = `/graph/ai-assistant/insights/?graph=${graphName}`;
+		}
+		
+		function getRecommendations(graphName) {
+			window.location.href = `/graph/ai-assistant/recommendations/?graph=${graphName}`;
+		}
+		
+		function showInsightQueries(insightId) {
+			alert(`Show queries for insight: ${insightId}`);
+		}
+		
+		// Initialize page
+		document.addEventListener('DOMContentLoaded', function() {
+			initializeComplexityChart();
+			
+			// Enable Enter key for quick query
+			document.getElementById('quickQueryInput').addEventListener('keypress', function(e) {
+				if (e.key === 'Enter') {
+					processQuickQuery();
+				}
+			});
+		});
+	</script>
+</body>
+</html>

@@ -84,3 +84,9 @@ class DeleteRoleWithUsersException(FABException):
     """
     When trying to delete a role with users
     """
+
+
+class ValidationError(FABException):
+    """
+    Profile validation error
+    """

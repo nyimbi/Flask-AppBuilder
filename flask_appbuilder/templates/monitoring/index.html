@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>{{ title }} - System Monitoring</title>
+	
+	<!-- Bootstrap CSS -->
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+	
+	<!-- Chart.js -->
+	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+	
+	<style>
+		.monitoring-card {
+			transition: transform 0.2s ease-in-out;
+			border-left: 4px solid #6c757d;
+		}
+		
+		.monitoring-card:hover {
+			transform: translateY(-2px);
+			box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+		}
+		
+		.health-excellent { border-left-color: #28a745; }
+		.health-good { border-left-color: #20c997; }
+		.health-warning { border-left-color: #ffc107; }
+		.health-critical { border-left-color: #dc3545; }
+		
+		.metric-card {
+			background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+			border: 1px solid #dee2e6;
+			transition: all 0.2s ease-in-out;
+		}
+		
+		.metric-card:hover {
+			transform: scale(1.02);
+			box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+		}
+		
+		.status-indicator {
+			width: 12px;
+			height: 12px;
+			border-radius: 50%;
+			display: inline-block;
+			margin-right: 0.5rem;
+			animation: pulse 2s infinite;
+		}
+		
+		.status-healthy { background-color: #28a745; }
+		.status-warning { background-color: #ffc107; }
+		.status-critical { background-color: #dc3545; }
+		
+		@keyframes pulse {
+			0% { opacity: 1; }
+			50% { opacity: 0.7; }
+			100% { opacity: 1; }
+		}
+		
+		.alert-badge {
+			position: relative;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			padding: 0.375rem 0.75rem;
+			border-radius: 1rem;
+			font-size: 0.875rem;
+			font-weight: 500;
+			text-decoration: none;
+			transition: all 0.2s ease-in-out;
+		}
+		
+		.alert-critical { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+		.alert-high { background-color: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+		.alert-medium { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+		.alert-low { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+		
+		.chart-container {
+			position: relative;
+			height: 300px;
+			margin: 1rem 0;
+		}
+		
+		.stats-grid {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+			gap: 1rem;
+			margin-bottom: 2rem;
+		}
+		
+		.stat-item {
+			text-align: center;
+			padding: 1.5rem;
+			border-radius: 0.5rem;
+		}
+		
+		.stat-number {
+			font-size: 2.5rem;
+			font-weight: bold;
+			line-height: 1;
+			margin-bottom: 0.5rem;
+		}
+		
+		.stat-label {
+			font-size: 0.875rem;
+			color: #6c757d;
+			text-transform: uppercase;
+			letter-spacing: 0.5px;
+		}
+		
+		.system-overview {
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			color: white;
+			border-radius: 1rem;
+			padding: 2rem;
+			margin-bottom: 2rem;
+		}
+		
+		.health-score {
+			font-size: 3rem;
+			font-weight: bold;
+			text-align: center;
+			margin: 1rem 0;
+		}
+		
+		.uptime-display {
+			background: rgba(255, 255, 255, 0.1);
+			border-radius: 0.5rem;
+			padding: 1rem;
+			margin: 1rem 0;
+		}
+		
+		.quick-action-btn {
+			border-radius: 50px;
+			padding: 0.75rem 1.5rem;
+			font-weight: 600;
+			text-transform: uppercase;
+			letter-spacing: 0.5px;
+			transition: all 0.2s ease-in-out;
+			margin: 0.25rem;
+		}
+		
+		.quick-action-btn:hover {
+			transform: scale(1.05);
+		}
+		
+		.real-time-indicator {
+			display: inline-flex;
+			align-items: center;
+			gap: 0.5rem;
+			padding: 0.25rem 0.5rem;
+			background-color: #28a745;
+			color: white;
+			border-radius: 1rem;
+			font-size: 0.75rem;
+			font-weight: 500;
+		}
+		
+		.real-time-dot {
+			width: 8px;
+			height: 8px;
+			border-radius: 50%;
+			background-color: white;
+			animation: pulse 1s infinite;
+		}
+	</style>
+</head>
+
+<body>
+	<div class="container-fluid p-4">
+		<!-- Header -->
+		<div class="row mb-4">
+			<div class="col-12">
+				<div class="d-flex justify-content-between align-items-center">
+					<div>
+						<h1 class="h2 mb-0">
+							<i class="fas fa-chart-line text-primary me-2"></i>
+							{{ title }}
+						</h1>
+						<div class="real-time-indicator">
+							<div class="real-time-dot"></div>
+							<span>LIVE MONITORING</span>
+						</div>
+					</div>
+					<div class="btn-group">
+						<a href="{{ url_for('MonitoringView.metrics') }}" class="btn btn-outline-primary">
+							<i class="fas fa-chart-bar me-1"></i> Metrics
+						</a>
+						<a href="{{ url_for('MonitoringView.alerts') }}" class="btn btn-outline-warning">
+							<i class="fas fa-exclamation-triangle me-1"></i> Alerts
+						</a>
+						<a href="{{ url_for('MonitoringView.health') }}" class="btn btn-outline-success">
+							<i class="fas fa-heart me-1"></i> Health
+						</a>
+						<button class="btn btn-primary" onclick="refreshDashboard()">
+							<i class="fas fa-sync me-1"></i> Refresh
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- System Overview -->
+		<div class="row mb-4">
+			<div class="col-12">
+				<div class="system-overview">
+					<div class="row align-items-center">
+						<div class="col-md-8">
+							<h3 class="mb-3">System Status Overview</h3>
+							<div class="row">
+								<div class="col-md-6">
+									<div class="health-score">
+										{{ "%.0f"|format(dashboard_data.health_summary.health_score) }}%
+									</div>
+									<div class="text-center">
+										<span class="status-indicator status-{{ 'healthy' if dashboard_data.health_summary.overall_status == 'healthy' else ('warning' if dashboard_data.health_summary.overall_status == 'degraded' else 'critical') }}"></span>
+										{{ dashboard_data.health_summary.overall_status|title }} System
+									</div>
+								</div>
+								<div class="col-md-6">
+									<div class="uptime-display">
+										<div class="d-flex justify-content-between">
+											<span>Uptime:</span>
+											<strong>{{ "%.1f"|format(system_info.uptime_hours) }} hours</strong>
+										</div>
+										<div class="d-flex justify-content-between">
+											<span>CPU Cores:</span>
+											<strong>{{ system_info.cpu_count }}</strong>
+										</div>
+										<div class="d-flex justify-content-between">
+											<span>Total Memory:</span>
+											<strong>{{ system_info.total_memory_gb }} GB</strong>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="col-md-4">
+							<div class="row">
+								<div class="col-6">
+									<div class="text-center text-white bg-transparent border border-white rounded p-2">
+										<div class="h4 mb-1">{{ dashboard_data.health_summary.healthy_checks }}</div>
+										<small class="text-white-50">Healthy Checks</small>
+									</div>
+								</div>
+								<div class="col-6">
+									<div class="text-center text-white bg-transparent border border-white rounded p-2">
+										<div class="h4 mb-1">{{ dashboard_data.active_alerts|length }}</div>
+										<small class="text-white-50">Active Alerts</small>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Key Metrics Cards -->
+		<div class="stats-grid">
+			{% if dashboard_data.key_metrics.cpu_percent %}
+				<div class="stat-item metric-card">
+					<div class="stat-number text-{{ 'danger' if dashboard_data.key_metrics.cpu_percent.current > 80 else ('warning' if dashboard_data.key_metrics.cpu_percent.current > 60 else 'success') }}">
+						{{ "%.1f"|format(dashboard_data.key_metrics.cpu_percent.current) }}%
+					</div>
+					<div class="stat-label">CPU Usage</div>
+					<small class="text-muted">P95: {{ "%.1f"|format(dashboard_data.key_metrics.cpu_percent.p95) }}%</small>
+				</div>
+			{% endif %}
+			
+			{% if dashboard_data.key_metrics.memory_percent %}
+				<div class="stat-item metric-card">
+					<div class="stat-number text-{{ 'danger' if dashboard_data.key_metrics.memory_percent.current > 85 else ('warning' if dashboard_data.key_metrics.memory_percent.current > 70 else 'success') }}">
+						{{ "%.1f"|format(dashboard_data.key_metrics.memory_percent.current) }}%
+					</div>
+					<div class="stat-label">Memory Usage</div>
+					<small class="text-muted">P95: {{ "%.1f"|format(dashboard_data.key_metrics.memory_percent.p95) }}%</small>
+				</div>
+			{% endif %}
+			
+			{% if dashboard_data.key_metrics.query_response_time %}
+				<div class="stat-item metric-card">
+					<div class="stat-number text-{{ 'danger' if dashboard_data.key_metrics.query_response_time.current > 2.0 else ('warning' if dashboard_data.key_metrics.query_response_time.current > 1.0 else 'success') }}">
+						{{ "%.2f"|format(dashboard_data.key_metrics.query_response_time.current) }}s
+					</div>
+					<div class="stat-label">Avg Response Time</div>
+					<small class="text-muted">P95: {{ "%.2f"|format(dashboard_data.key_metrics.query_response_time.p95) }}s</small>
+				</div>
+			{% endif %}
+			
+			{% if dashboard_data.key_metrics.disk_usage_percent %}
+				<div class="stat-item metric-card">
+					<div class="stat-number text-{{ 'danger' if dashboard_data.key_metrics.disk_usage_percent.current > 90 else ('warning' if dashboard_data.key_metrics.disk_usage_percent.current > 80 else 'success') }}">
+						{{ "%.1f"|format(dashboard_data.key_metrics.disk_usage_percent.current) }}%
+					</div>
+					<div class="stat-label">Disk Usage</div>
+					<small class="text-muted">P95: {{ "%.1f"|format(dashboard_data.key_metrics.disk_usage_percent.p95) }}%</small>
+				</div>
+			{% endif %}
+		</div>
+
+		<!-- Active Alerts and Charts Row -->
+		<div class="row mb-4">
+			<!-- Active Alerts -->
+			<div class="col-md-4">
+				<div class="card monitoring-card h-100">
+					<div class="card-header">
+						<h6 class="mb-0">
+							<i class="fas fa-exclamation-triangle text-warning me-2"></i>
+							Active Alerts
+							{% if alert_stats.total_active > 0 %}
+								<span class="badge bg-danger">{{ alert_stats.total_active }}</span>
+							{% endif %}
+						</h6>
+					</div>
+					<div class="card-body" style="max-height: 400px; overflow-y: auto;">
+						{% if dashboard_data.active_alerts %}
+							{% for alert in dashboard_data.active_alerts[:5] %}
+								<div class="alert-badge alert-{{ alert.severity }} w-100 mb-2">
+									<div class="d-flex justify-content-between align-items-center">
+										<div class="flex-grow-1">
+											<strong>{{ alert.name }}</strong>
+											<div class="small">{{ alert.description }}</div>
+											<div class="small text-muted">
+											{% if alert.last_triggered %}
+												Triggered: {{ alert.last_triggered[:16] }}
+											{% endif %}
+											</div>
+										</div>
+										<div class="flex-shrink-0 ms-2">
+											<button class="btn btn-sm btn-outline-secondary" onclick="acknowledgeAlert('{{ alert.alert_id }}')">
+												<i class="fas fa-check"></i>
+											</button>
+										</div>
+									</div>
+								</div>
+							{% endfor %}
+							
+							{% if dashboard_data.active_alerts|length > 5 %}
+								<div class="text-center mt-2">
+									<a href="{{ url_for('MonitoringView.alerts') }}" class="btn btn-outline-primary btn-sm">
+										View All {{ dashboard_data.active_alerts|length }} Alerts
+									</a>
+								</div>
+							{% endif %}
+						{% else %}
+							<div class="text-center text-muted py-3">
+								<i class="fas fa-check-circle fa-2x mb-2 text-success"></i>
+								<p>No Active Alerts</p>
+								<small>All systems operating normally</small>
+							</div>
+						{% endif %}
+					</div>
+				</div>
+			</div>
+
+			<!-- CPU Usage Chart -->
+			<div class="col-md-4">
+				<div class="card monitoring-card h-100">
+					<div class="card-header">
+						<h6 class="mb-0">
+							<i class="fas fa-microchip text-primary me-2"></i>
+							CPU Usage Trend
+						</h6>
+					</div>
+					<div class="card-body">
+						<div class="chart-container">
+							<canvas id="cpuChart"></canvas>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Memory Usage Chart -->
+			<div class="col-md-4">
+				<div class="card monitoring-card h-100">
+					<div class="card-header">
+						<h6 class="mb-0">
+							<i class="fas fa-memory text-success me-2"></i>
+							Memory Usage Trend
+						</h6>
+					</div>
+					<div class="card-body">
+						<div class="chart-container">
+							<canvas id="memoryChart"></canvas>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Response Time and Health Checks -->
+		<div class="row mb-4">
+			<!-- Response Time Chart -->
+			<div class="col-md-8">
+				<div class="card monitoring-card">
+					<div class="card-header">
+						<h6 class="mb-0">
+							<i class="fas fa-clock text-info me-2"></i>
+							Query Response Time
+						</h6>
+					</div>
+					<div class="card-body">
+						<div class="chart-container" style="height: 250px;">
+							<canvas id="responseTimeChart"></canvas>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Health Check Status -->
+			<div class="col-md-4">
+				<div class="card monitoring-card">
+					<div class="card-header">
+						<h6 class="mb-0">
+							<i class="fas fa-heart text-danger me-2"></i>
+							Health Check Status
+						</h6>
+					</div>
+					<div class="card-body">
+						{% if dashboard_data.health_summary.details %}
+							{% for check_name, check_result in dashboard_data.health_summary.details.items() %}
+								<div class="d-flex justify-content-between align-items-center mb-2">
+									<div>
+										<span class="status-indicator status-{{ 'healthy' if check_result.status == 'healthy' else ('warning' if check_result.status == 'warning' else 'critical') }}"></span>
+										<span>{{ check_name.replace('_', ' ')|title }}</span>
+									</div>
+									<span class="badge bg-{{ 'success' if check_result.status == 'healthy' else ('warning' if check_result.status == 'warning' else 'danger') }}">
+										{{ check_result.status|title }}
+									</span>
+								</div>
+							{% endfor %}
+						{% else %}
+							<div class="text-center text-muted py-3">
+								<i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
+								<p>Loading health checks...</p>
+							</div>
+						{% endif %}
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Quick Actions -->
+		<div class="row">
+			<div class="col-12">
+				<div class="card monitoring-card">
+					<div class="card-header">
+						<h6 class="mb-0">
+							<i class="fas fa-bolt text-warning me-2"></i>
+							Quick Actions
+						</h6>
+					</div>
+					<div class="card-body">
+						<div class="text-center">
+							<button class="btn btn-outline-primary quick-action-btn" onclick="runHealthCheck()">
+								<i class="fas fa-stethoscope me-1"></i> Run Health Check
+							</button>
+							<button class="btn btn-outline-info quick-action-btn" onclick="exportMetrics()">
+								<i class="fas fa-download me-1"></i> Export Metrics
+							</button>
+							<button class="btn btn-outline-warning quick-action-btn" onclick="testAlerts()">
+								<i class="fas fa-bell me-1"></i> Test Alerts
+							</button>
+							<button class="btn btn-outline-success quick-action-btn" onclick="viewSystemInfo()">
+								<i class="fas fa-info-circle me-1"></i> System Info
+							</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Bootstrap JS -->
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+	
+	<script>
+		// Global variables
+		let cpuChart, memoryChart, responseTimeChart;
+		let autoRefresh = true;
+		let refreshInterval;
+		
+		// Initialize dashboard
+		document.addEventListener('DOMContentLoaded', function() {
+			initializeCharts();
+			startAutoRefresh();
+		});
+		
+		// Initialize charts
+		function initializeCharts() {
+			const metricHistory = {{ dashboard_data.metric_history | tojson }};
+			
+			// CPU Usage Chart
+			if (metricHistory.cpu_percent) {
+				const cpuCtx = document.getElementById('cpuChart').getContext('2d');
+				cpuChart = new Chart(cpuCtx, {
+					type: 'line',
+					data: {
+						datasets: [{
+							label: 'CPU Usage (%)',
+							data: metricHistory.cpu_percent.map(point => ({
+								x: point.timestamp,
+								y: point.value
+							})),
+							borderColor: '#007bff',
+							backgroundColor: 'rgba(0, 123, 255, 0.1)',
+							fill: true,
+							tension: 0.4
+						}]
+					},
+					options: {
+						responsive: true,
+						maintainAspectRatio: false,
+						scales: {
+							x: {
+								type: 'time',
+								time: { unit: 'minute' }
+							},
+							y: { 
+								beginAtZero: true, 
+								max: 100,
+								ticks: {
+									callback: function(value) { return value + '%'; }
+								}
+							}
+						},
+						plugins: { legend: { display: false } }
+					}
+				});
+			}
+			
+			// Memory Usage Chart
+			if (metricHistory.memory_percent) {
+				const memoryCtx = document.getElementById('memoryChart').getContext('2d');
+				memoryChart = new Chart(memoryCtx, {
+					type: 'line',
+					data: {
+						datasets: [{
+							label: 'Memory Usage (%)',
+							data: metricHistory.memory_percent.map(point => ({
+								x: point.timestamp,
+								y: point.value
+							})),
+							borderColor: '#28a745',
+							backgroundColor: 'rgba(40, 167, 69, 0.1)',
+							fill: true,
+							tension: 0.4
+						}]
+					},
+					options: {
+						responsive: true,
+						maintainAspectRatio: false,
+						scales: {
+							x: {
+								type: 'time',
+								time: { unit: 'minute' }
+							},
+							y: { 
+								beginAtZero: true, 
+								max: 100,
+								ticks: {
+									callback: function(value) { return value + '%'; }
+								}
+							}
+						},
+						plugins: { legend: { display: false } }
+					}
+				});
+			}
+			
+			// Response Time Chart
+			if (metricHistory.query_response_time) {
+				const responseCtx = document.getElementById('responseTimeChart').getContext('2d');
+				responseTimeChart = new Chart(responseCtx, {
+					type: 'line',
+					data: {
+						datasets: [{
+							label: 'Response Time (s)',
+							data: metricHistory.query_response_time.map(point => ({
+								x: point.timestamp,
+								y: point.value
+							})),
+							borderColor: '#17a2b8',
+							backgroundColor: 'rgba(23, 162, 184, 0.1)',
+							fill: true,
+							tension: 0.4
+						}]
+					},
+					options: {
+						responsive: true,
+						maintainAspectRatio: false,
+						scales: {
+							x: {
+								type: 'time',
+								time: { unit: 'minute' }
+							},
+							y: { 
+								beginAtZero: true,
+								ticks: {
+									callback: function(value) { return value + 's'; }
+								}
+							}
+						},
+						plugins: { legend: { display: false } }
+					}
+				});
+			}
+		}
+		
+		// Auto refresh functionality
+		function startAutoRefresh() {
+			if (autoRefresh) {
+				refreshInterval = setInterval(refreshDashboard, 30000); // Refresh every 30 seconds
+			}
+		}
+		
+		function stopAutoRefresh() {
+			if (refreshInterval) {
+				clearInterval(refreshInterval);
+			}
+		}
+		
+		// Refresh dashboard data
+		async function refreshDashboard() {
+			try {
+				const response = await fetch('/monitoring/api/dashboard-data/');
+				const result = await response.json();
+				
+				if (result.success) {
+					// Update page with new data - in production, would update specific elements
+					console.log('Dashboard refreshed:', result.data);
+					// For now, just reload the page for simplicity
+					location.reload();
+				} else {
+					console.error('Failed to refresh dashboard:', result.error);
+				}
+			} catch (error) {
+				console.error('Error refreshing dashboard:', error);
+			}
+		}
+		
+		// Alert management
+		async function acknowledgeAlert(alertId) {
+			try {
+				const response = await fetch(`/monitoring/api/alerts/acknowledge/${alertId}/`, {
+					method: 'POST'
+				});
+				const result = await response.json();
+				
+				if (result.success) {
+					alert('Alert acknowledged successfully');
+					refreshDashboard();
+				} else {
+					alert('Failed to acknowledge alert: ' + result.error);
+				}
+			} catch (error) {
+				console.error('Error acknowledging alert:', error);
+				alert('Error acknowledging alert: ' + error.message);
+			}
+		}
+		
+		// Quick actions
+		async function runHealthCheck() {
+			try {
+				const response = await fetch('/monitoring/api/health-check/');
+				const result = await response.json();
+				
+				if (result.success) {
+					alert(`Health Check Complete\nOverall Status: ${result.health_summary.overall_status}\nHealth Score: ${result.health_summary.health_score.toFixed(1)}%`);
+				} else {
+					alert('Health check failed: ' + result.error);
+				}
+			} catch (error) {
+				console.error('Error running health check:', error);
+				alert('Error running health check: ' + error.message);
+			}
+		}
+		
+		function exportMetrics() {
+			// Implementation would export metrics data
+			alert('Metrics export functionality would be implemented here');
+		}
+		
+		function testAlerts() {
+			// Implementation would test alert system
+			alert('Alert testing functionality would be implemented here');
+		}
+		
+		function viewSystemInfo() {
+			const systemInfo = {{ system_info | tojson }};
+			let infoText = 'System Information:\n';
+			infoText += `Platform: ${systemInfo.platform} ${systemInfo.platform_version}\n`;
+			infoText += `Python: ${systemInfo.python_version}\n`;
+			infoText += `CPU Cores: ${systemInfo.cpu_count}\n`;
+			infoText += `Memory: ${systemInfo.total_memory_gb} GB\n`;
+			infoText += `Disk: ${systemInfo.disk_total_gb} GB\n`;
+			infoText += `Uptime: ${systemInfo.uptime_hours} hours\n`;
+			
+			alert(infoText);
+		}
+		
+		// Toggle auto-refresh
+		function toggleAutoRefresh() {
+			autoRefresh = !autoRefresh;
+			if (autoRefresh) {
+				startAutoRefresh();
+			} else {
+				stopAutoRefresh();
+			}
+		}
+	</script>
+</body>
+</html>

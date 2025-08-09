@@ -1,0 +1,1734 @@
+{% extends "appbuilder/base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block head_css %}
+{{ super() }}
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="https://unpkg.com/force-graph@1.43.0/dist/force-graph.min.js"></script>
+<style>
+/* Graph Visualizer Styles */
+.graph-container {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: #fafbfc;
+}
+
+.graph-header {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    color: white;
+    padding: 15px 25px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    z-index: 1000;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.header-title {
+    font-size: 1.4rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.graph-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.header-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.btn-header {
+    background: rgba(255,255,255,0.2);
+    color: white;
+    border: 1px solid rgba(255,255,255,0.3);
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+}
+
+.btn-header:hover {
+    background: rgba(255,255,255,0.3);
+    color: white;
+    text-decoration: none;
+}
+
+.graph-workspace {
+    flex: 1;
+    display: flex;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Left Sidebar - Controls */
+.controls-sidebar {
+    width: 320px;
+    background: white;
+    border-right: 1px solid #e5e7eb;
+    display: flex;
+    flex-direction: column;
+    z-index: 900;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.05);
+}
+
+.controls-sidebar.collapsed {
+    width: 50px;
+}
+
+.sidebar-header {
+    background: #f9fafb;
+    padding: 15px 20px;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.sidebar-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+    color: #374151;
+}
+
+.sidebar-toggle {
+    background: none;
+    border: none;
+    font-size: 1.1rem;
+    cursor: pointer;
+    color: #6b7280;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.sidebar-toggle:hover {
+    background: #f3f4f6;
+}
+
+.sidebar-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+}
+
+.controls-sidebar.collapsed .sidebar-content {
+    display: none;
+}
+
+.control-section {
+    margin-bottom: 30px;
+}
+
+.section-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #f3f4f6;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 6px;
+}
+
+.form-control {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    transition: border-color 0.2s ease;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.btn-control {
+    width: 100%;
+    padding: 10px 16px;
+    background: #6366f1;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    margin-bottom: 8px;
+}
+
+.btn-control:hover {
+    background: #5855eb;
+}
+
+.btn-control.secondary {
+    background: #6b7280;
+}
+
+.btn-control.secondary:hover {
+    background: #5b6370;
+}
+
+.slider-container {
+    margin: 10px 0;
+}
+
+.slider {
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    background: #e5e7eb;
+    outline: none;
+    appearance: none;
+}
+
+.slider::-webkit-slider-thumb {
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #6366f1;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.slider::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #6366f1;
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.checkbox-item input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #6366f1;
+}
+
+.legend {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 15px;
+    margin-top: 15px;
+}
+
+.legend-title {
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: #374151;
+}
+
+.legend-items {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.875rem;
+}
+
+.legend-color {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+/* Graph Visualization Area */
+.graph-view {
+    flex: 1;
+    position: relative;
+    background: #ffffff;
+    overflow: hidden;
+}
+
+.graph-canvas {
+    width: 100%;
+    height: 100%;
+}
+
+/* Loading State */
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.9);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #6366f1;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 16px;
+}
+
+.loading-text {
+    color: #6b7280;
+    font-size: 1rem;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Right Panel - Node Details */
+.details-panel {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 350px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    border: 1px solid #e5e7eb;
+    z-index: 800;
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+    display: none;
+}
+
+.details-panel.show {
+    display: block;
+}
+
+.details-header {
+    background: #f9fafb;
+    padding: 20px;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.details-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+    color: #111827;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    color: #6b7280;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: background 0.2s ease;
+}
+
+.close-btn:hover {
+    background: #f3f4f6;
+}
+
+.details-content {
+    padding: 20px;
+}
+
+.property-group {
+    margin-bottom: 24px;
+}
+
+.property-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.property-value {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    padding: 12px;
+    font-size: 0.875rem;
+    color: #6b7280;
+    font-family: 'Monaco', 'Consolas', monospace;
+}
+
+.property-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.property-table th,
+.property-table td {
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 1px solid #f3f4f6;
+    font-size: 0.875rem;
+}
+
+.property-table th {
+    background: #f9fafb;
+    font-weight: 600;
+    color: #374151;
+}
+
+.property-table td {
+    color: #6b7280;
+    font-family: 'Monaco', 'Consolas', monospace;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 8px;
+    margin-top: 20px;
+}
+
+.btn-action {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    background: white;
+    color: #374151;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-action:hover {
+    background: #f9fafb;
+    border-color: #6366f1;
+}
+
+.btn-action.primary {
+    background: #6366f1;
+    color: white;
+    border-color: #6366f1;
+}
+
+.btn-action.primary:hover {
+    background: #5855eb;
+}
+
+/* Search Results */
+.search-results {
+    position: absolute;
+    top: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 400px;
+    max-height: 300px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    border: 1px solid #e5e7eb;
+    z-index: 900;
+    overflow-y: auto;
+    display: none;
+}
+
+.search-results.show {
+    display: block;
+}
+
+.search-result-item {
+    padding: 12px 16px;
+    border-bottom: 1px solid #f3f4f6;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.search-result-item:hover {
+    background: #f9fafb;
+}
+
+.search-result-item:last-child {
+    border-bottom: none;
+}
+
+.result-title {
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 4px;
+}
+
+.result-subtitle {
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+/* Graph Statistics Panel */
+.stats-overlay {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    padding: 16px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    z-index: 700;
+    font-size: 0.875rem;
+}
+
+.stats-title {
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #111827;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    color: #6b7280;
+}
+
+.stat-value {
+    font-weight: 600;
+    color: #111827;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .controls-sidebar {
+        width: 280px;
+    }
+    
+    .details-panel {
+        width: 300px;
+    }
+}
+
+@media (max-width: 768px) {
+    .graph-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+    
+    .header-controls {
+        justify-content: center;
+    }
+    
+    .controls-sidebar {
+        width: 250px;
+    }
+    
+    .controls-sidebar.collapsed {
+        width: 0;
+        overflow: hidden;
+    }
+    
+    .details-panel {
+        position: fixed;
+        top: 0;
+        right: 0;
+        width: 100%;
+        height: 100%;
+        max-height: none;
+        border-radius: 0;
+    }
+    
+    .stats-overlay {
+        display: none;
+    }
+}
+
+/* Custom Scrollbar */
+.sidebar-content::-webkit-scrollbar,
+.details-panel::-webkit-scrollbar {
+    width: 6px;
+}
+
+.sidebar-content::-webkit-scrollbar-track,
+.details-panel::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb,
+.details-panel::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb:hover,
+.details-panel::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Animation Classes */
+.fade-in {
+    animation: fadeIn 0.3s ease;
+}
+
+.slide-in {
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideIn {
+    from { 
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to { 
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="graph-container">
+    <!-- Header -->
+    <div class="graph-header">
+        <div class="header-left">
+            <h1 class="header-title">
+                <i class="fa fa-project-diagram"></i>
+                Graph Visualizer
+            </h1>
+            <div class="graph-info">
+                <div class="info-item">
+                    <i class="fa fa-circle"></i>
+                    <span id="nodeCount">0 nodes</span>
+                </div>
+                <div class="info-item">
+                    <i class="fa fa-link"></i>
+                    <span id="edgeCount">0 edges</span>
+                </div>
+                <div class="info-item">
+                    <i class="fa fa-database"></i>
+                    <span id="graphName">{{ schema.name }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="header-controls">
+            <input type="text" id="searchInput" placeholder="Search nodes..." class="form-control" style="width: 250px;">
+            <button onclick="resetView()" class="btn-header">
+                <i class="fa fa-refresh"></i> Reset View
+            </button>
+            <button onclick="exportGraph()" class="btn-header">
+                <i class="fa fa-download"></i> Export
+            </button>
+            <a href="{{ url_for('GraphAnalysisView.index') }}" class="btn-header">
+                <i class="fa fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <div class="graph-workspace">
+        <!-- Left Sidebar - Controls -->
+        <div class="controls-sidebar" id="controlsSidebar">
+            <div class="sidebar-header">
+                <h3 class="sidebar-title">Controls</h3>
+                <button class="sidebar-toggle" onclick="toggleSidebar()">
+                    <i class="fa fa-chevron-left" id="sidebarIcon"></i>
+                </button>
+            </div>
+            <div class="sidebar-content">
+                <!-- Data Loading -->
+                <div class="control-section">
+                    <h4 class="section-title">
+                        <i class="fa fa-database"></i>
+                        Data Loading
+                    </h4>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Node Limit</label>
+                        <input type="number" id="nodeLimit" class="form-control" value="1000" min="10" max="5000">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Node Filter</label>
+                        <textarea id="nodeFilter" class="form-control" rows="2" placeholder="e.g., n.type = 'User'"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Edge Filter</label>
+                        <textarea id="edgeFilter" class="form-control" rows="2" placeholder="e.g., r.weight > 0.5"></textarea>
+                    </div>
+                    
+                    <button onclick="loadGraphData()" class="btn-control">
+                        <i class="fa fa-refresh"></i> Load Data
+                    </button>
+                </div>
+
+                <!-- Layout Controls -->
+                <div class="control-section">
+                    <h4 class="section-title">
+                        <i class="fa fa-sitemap"></i>
+                        Layout
+                    </h4>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Physics Strength</label>
+                        <input type="range" id="forceStrength" class="slider" min="-500" max="500" value="-100">
+                        <div class="slider-container">
+                            <span id="forceStrengthValue">-100</span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Link Distance</label>
+                        <input type="range" id="linkDistance" class="slider" min="10" max="200" value="50">
+                        <div class="slider-container">
+                            <span id="linkDistanceValue">50</span>
+                        </div>
+                    </div>
+                    
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="enablePhysics" checked>
+                            <label for="enablePhysics">Enable Physics</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="showArrows" checked>
+                            <label for="showArrows">Show Arrows</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="showLabels" checked>
+                            <label for="showLabels">Show Labels</label>
+                        </div>
+                    </div>
+                    
+                    <button onclick="applyLayout()" class="btn-control">
+                        <i class="fa fa-play"></i> Apply Layout
+                    </button>
+                </div>
+
+                <!-- Visual Settings -->
+                <div class="control-section">
+                    <h4 class="section-title">
+                        <i class="fa fa-palette"></i>
+                        Visual Settings
+                    </h4>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Node Size</label>
+                        <select id="nodeSizeBy" class="form-control">
+                            <option value="fixed">Fixed Size</option>
+                            <option value="degree">By Degree</option>
+                            <option value="centrality">By Centrality</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Node Color</label>
+                        <select id="nodeColorBy" class="form-control">
+                            <option value="label">By Label</option>
+                            <option value="community">By Community</option>
+                            <option value="centrality">By Centrality</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Edge Width</label>
+                        <select id="edgeWidthBy" class="form-control">
+                            <option value="fixed">Fixed Width</option>
+                            <option value="weight">By Weight</option>
+                        </select>
+                    </div>
+                    
+                    <button onclick="updateVisuals()" class="btn-control">
+                        <i class="fa fa-paint-brush"></i> Update Visuals
+                    </button>
+                </div>
+
+                <!-- Analysis Tools -->
+                <div class="control-section">
+                    <h4 class="section-title">
+                        <i class="fa fa-chart-line"></i>
+                        Analysis
+                    </h4>
+                    
+                    <button onclick="calculateCentrality()" class="btn-control">
+                        <i class="fa fa-bullseye"></i> Calculate Centrality
+                    </button>
+                    
+                    <button onclick="detectCommunities()" class="btn-control">
+                        <i class="fa fa-users"></i> Detect Communities
+                    </button>
+                    
+                    <button onclick="showShortestPath()" class="btn-control secondary">
+                        <i class="fa fa-route"></i> Shortest Path
+                    </button>
+                    
+                    <button onclick="showStatistics()" class="btn-control secondary">
+                        <i class="fa fa-chart-bar"></i> Statistics
+                    </button>
+                </div>
+
+                <!-- Legend -->
+                <div class="legend" id="graphLegend">
+                    <div class="legend-title">Node Types</div>
+                    <div class="legend-items" id="legendItems">
+                        <!-- Legend items will be dynamically populated -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Graph Visualization Area -->
+        <div class="graph-view">
+            <!-- Loading Overlay -->
+            <div class="loading-overlay" id="loadingOverlay">
+                <div class="loading-spinner"></div>
+                <div class="loading-text">Loading graph data...</div>
+            </div>
+            
+            <!-- Graph Canvas -->
+            <div class="graph-canvas" id="graphCanvas"></div>
+            
+            <!-- Graph Statistics Overlay -->
+            <div class="stats-overlay" id="statsOverlay">
+                <div class="stats-title">Graph Statistics</div>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <span>Nodes:</span>
+                        <span class="stat-value" id="statNodes">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Edges:</span>
+                        <span class="stat-value" id="statEdges">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Density:</span>
+                        <span class="stat-value" id="statDensity">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Components:</span>
+                        <span class="stat-value" id="statComponents">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Node/Edge Details Panel -->
+    <div class="details-panel" id="detailsPanel">
+        <div class="details-header">
+            <h3 class="details-title" id="detailsTitle">Node Details</h3>
+            <button class="close-btn" onclick="closeDetailsPanel()">
+                <i class="fa fa-times"></i>
+            </button>
+        </div>
+        <div class="details-content" id="detailsContent">
+            <!-- Details content will be dynamically populated -->
+        </div>
+    </div>
+
+    <!-- Search Results -->
+    <div class="search-results" id="searchResults">
+        <!-- Search results will be dynamically populated -->
+    </div>
+</div>
+
+<!-- Hidden data for JavaScript -->
+<script type="application/json" id="graphSchema">
+{{ schema | tojson | safe }}
+</script>
+{% endblock %}
+
+{% block tail_js %}
+{{ super() }}
+<script>
+// Global variables
+let graph = null;
+let graphData = { nodes: [], links: [] };
+let schema = JSON.parse(document.getElementById('graphSchema').textContent);
+let selectedNode = null;
+let selectedEdge = null;
+let centralityData = {};
+let communityData = {};
+let searchTimeout = null;
+
+// Color schemes
+const colorSchemes = {
+    nodes: d3.scaleOrdinal(d3.schemeSet3),
+    communities: d3.scaleOrdinal(d3.schemeCategory10),
+    centrality: d3.scaleSequential(d3.interpolateYlOrRd)
+};
+
+// Initialize graph visualizer
+document.addEventListener('DOMContentLoaded', function() {
+    initializeGraph();
+    setupEventListeners();
+    loadGraphData();
+});
+
+function initializeGraph() {
+    const container = document.getElementById('graphCanvas');
+    
+    // Initialize Force Graph
+    graph = ForceGraph()(container)
+        .width(container.clientWidth)
+        .height(container.clientHeight)
+        .backgroundColor('#ffffff')
+        .nodeLabel('id')
+        .nodeColor(node => getNodeColor(node))
+        .nodeVal(node => getNodeSize(node))
+        .linkColor(() => '#94a3b8')
+        .linkWidth(link => getEdgeWidth(link))
+        .linkDirectionalArrowLength(6)
+        .linkDirectionalArrowRelPos(1)
+        .onNodeClick(handleNodeClick)
+        .onNodeHover(handleNodeHover)
+        .onLinkClick(handleEdgeClick)
+        .onLinkHover(handleEdgeHover)
+        .onBackgroundClick(handleBackgroundClick);
+    
+    // Handle window resize
+    window.addEventListener('resize', () => {
+        graph.width(container.clientWidth)
+             .height(container.clientHeight);
+    });
+}
+
+function setupEventListeners() {
+    // Search functionality
+    const searchInput = document.getElementById('searchInput');
+    searchInput.addEventListener('input', handleSearch);
+    searchInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            hideSearchResults();
+            this.blur();
+        }
+    });
+    
+    // Control sliders
+    const forceStrength = document.getElementById('forceStrength');
+    const linkDistance = document.getElementById('linkDistance');
+    
+    forceStrength.addEventListener('input', function() {
+        document.getElementById('forceStrengthValue').textContent = this.value;
+    });
+    
+    linkDistance.addEventListener('input', function() {
+        document.getElementById('linkDistanceValue').textContent = this.value;
+    });
+    
+    // Click outside to close panels
+    document.addEventListener('click', function(e) {
+        const searchResults = document.getElementById('searchResults');
+        const searchInput = document.getElementById('searchInput');
+        
+        if (!searchResults.contains(e.target) && e.target !== searchInput) {
+            hideSearchResults();
+        }
+    });
+}
+
+function loadGraphData() {
+    showLoading();
+    
+    const limit = document.getElementById('nodeLimit').value;
+    const nodeFilter = document.getElementById('nodeFilter').value.trim();
+    const edgeFilter = document.getElementById('edgeFilter').value.trim();
+    
+    const params = new URLSearchParams({
+        limit: limit,
+        graph: schema.name
+    });
+    
+    if (nodeFilter) params.append('node_filter', nodeFilter);
+    if (edgeFilter) params.append('edge_filter', edgeFilter);
+    
+    fetch(`/graph/analysis/api/data/?${params}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                processGraphData(data);
+                updateStatistics(data.metadata);
+                updateLegend();
+                hideLoading();
+            } else {
+                showError('Failed to load graph data: ' + data.error);
+                hideLoading();
+            }
+        })
+        .catch(error => {
+            console.error('Error loading graph data:', error);
+            showError('Error loading graph data: ' + error.message);
+            hideLoading();
+        });
+}
+
+function processGraphData(data) {
+    // Process nodes
+    const nodes = data.nodes.map(node => ({
+        id: node.id,
+        label: node.label,
+        properties: node.properties,
+        degree: node.degree || 0,
+        centrality: node.centrality || 0,
+        group: node.group || node.label,
+        x: node.position?.x,
+        y: node.position?.y
+    }));
+    
+    // Process edges
+    const links = data.edges.map(edge => ({
+        id: edge.id,
+        source: edge.source,
+        target: edge.target,
+        label: edge.label,
+        properties: edge.properties,
+        weight: edge.weight || 1
+    }));
+    
+    graphData = { nodes, links };
+    
+    // Update graph
+    graph.graphData(graphData);
+    
+    // Update header info
+    document.getElementById('nodeCount').textContent = `${nodes.length} nodes`;
+    document.getElementById('edgeCount').textContent = `${links.length} edges`;
+}
+
+function getNodeColor(node) {
+    const colorBy = document.getElementById('nodeColorBy').value;
+    
+    switch (colorBy) {
+        case 'label':
+            return colorSchemes.nodes(node.label);
+        case 'community':
+            return communityData[node.id] ? 
+                   colorSchemes.communities(communityData[node.id]) : 
+                   '#94a3b8';
+        case 'centrality':
+            const centrality = centralityData[node.id] || 0;
+            return centrality > 0 ? 
+                   colorSchemes.centrality(centrality) : 
+                   '#94a3b8';
+        default:
+            return '#6366f1';
+    }
+}
+
+function getNodeSize(node) {
+    const sizeBy = document.getElementById('nodeSizeBy').value;
+    
+    switch (sizeBy) {
+        case 'degree':
+            return Math.max(4, node.degree * 2);
+        case 'centrality':
+            const centrality = centralityData[node.id] || 0;
+            return Math.max(4, centrality * 20);
+        default:
+            return 8;
+    }
+}
+
+function getEdgeWidth(link) {
+    const widthBy = document.getElementById('edgeWidthBy').value;
+    
+    switch (widthBy) {
+        case 'weight':
+            return Math.max(1, link.weight * 3);
+        default:
+            return 2;
+    }
+}
+
+function handleNodeClick(node, event) {
+    selectedNode = node;
+    selectedEdge = null;
+    showNodeDetails(node);
+    
+    // Highlight connected edges
+    highlightConnectedElements(node);
+}
+
+function handleNodeHover(node, prevNode) {
+    // Update cursor and tooltip
+    document.body.style.cursor = node ? 'pointer' : '';
+}
+
+function handleEdgeClick(link, event) {
+    selectedEdge = link;
+    selectedNode = null;
+    showEdgeDetails(link);
+}
+
+function handleEdgeHover(link, prevLink) {
+    // Update cursor
+    document.body.style.cursor = link ? 'pointer' : '';
+}
+
+function handleBackgroundClick() {
+    selectedNode = null;
+    selectedEdge = null;
+    closeDetailsPanel();
+    clearHighlights();
+}
+
+function showNodeDetails(node) {
+    const panel = document.getElementById('detailsPanel');
+    const title = document.getElementById('detailsTitle');
+    const content = document.getElementById('detailsContent');
+    
+    title.textContent = `Node: ${node.id}`;
+    
+    const propertiesTable = Object.entries(node.properties)
+        .map(([key, value]) => `
+            <tr>
+                <th>${key}</th>
+                <td>${JSON.stringify(value)}</td>
+            </tr>
+        `).join('');
+    
+    content.innerHTML = `
+        <div class="property-group">
+            <label class="property-label">Node ID</label>
+            <div class="property-value">${node.id}</div>
+        </div>
+        
+        <div class="property-group">
+            <label class="property-label">Label</label>
+            <div class="property-value">${node.label}</div>
+        </div>
+        
+        <div class="property-group">
+            <label class="property-label">Degree</label>
+            <div class="property-value">${node.degree}</div>
+        </div>
+        
+        ${centralityData[node.id] ? `
+        <div class="property-group">
+            <label class="property-label">Centrality</label>
+            <div class="property-value">${centralityData[node.id].toFixed(4)}</div>
+        </div>
+        ` : ''}
+        
+        <div class="property-group">
+            <label class="property-label">Properties</label>
+            <table class="property-table">
+                ${propertiesTable}
+            </table>
+        </div>
+        
+        <div class="action-buttons">
+            <button class="btn-action primary" onclick="expandNode('${node.id}')">
+                <i class="fa fa-expand"></i> Expand
+            </button>
+            <button class="btn-action" onclick="findNeighbors('${node.id}')">
+                <i class="fa fa-users"></i> Neighbors
+            </button>
+            <button class="btn-action" onclick="findPaths('${node.id}')">
+                <i class="fa fa-route"></i> Paths
+            </button>
+        </div>
+    `;
+    
+    panel.classList.add('show');
+}
+
+function showEdgeDetails(link) {
+    const panel = document.getElementById('detailsPanel');
+    const title = document.getElementById('detailsTitle');
+    const content = document.getElementById('detailsContent');
+    
+    title.textContent = `Edge: ${link.source.id} → ${link.target.id}`;
+    
+    const propertiesTable = Object.entries(link.properties)
+        .map(([key, value]) => `
+            <tr>
+                <th>${key}</th>
+                <td>${JSON.stringify(value)}</td>
+            </tr>
+        `).join('');
+    
+    content.innerHTML = `
+        <div class="property-group">
+            <label class="property-label">Source Node</label>
+            <div class="property-value">${link.source.id}</div>
+        </div>
+        
+        <div class="property-group">
+            <label class="property-label">Target Node</label>
+            <div class="property-value">${link.target.id}</div>
+        </div>
+        
+        <div class="property-group">
+            <label class="property-label">Label</label>
+            <div class="property-value">${link.label}</div>
+        </div>
+        
+        <div class="property-group">
+            <label class="property-label">Weight</label>
+            <div class="property-value">${link.weight}</div>
+        </div>
+        
+        <div class="property-group">
+            <label class="property-label">Properties</label>
+            <table class="property-table">
+                ${propertiesTable}
+            </table>
+        </div>
+    `;
+    
+    panel.classList.add('show');
+}
+
+function closeDetailsPanel() {
+    document.getElementById('detailsPanel').classList.remove('show');
+}
+
+function highlightConnectedElements(node) {
+    const connectedLinks = graphData.links.filter(link => 
+        link.source.id === node.id || link.target.id === node.id
+    );
+    
+    const connectedNodeIds = new Set();
+    connectedLinks.forEach(link => {
+        connectedNodeIds.add(link.source.id);
+        connectedNodeIds.add(link.target.id);
+    });
+    
+    // Update node colors temporarily
+    graph.nodeColor(n => {
+        if (n.id === node.id) return '#ef4444';
+        if (connectedNodeIds.has(n.id)) return '#f59e0b';
+        return getNodeColor(n);
+    })
+    .linkColor(link => {
+        if (connectedLinks.includes(link)) return '#ef4444';
+        return '#94a3b8';
+    });
+}
+
+function clearHighlights() {
+    graph.nodeColor(getNodeColor)
+         .linkColor(() => '#94a3b8');
+}
+
+function handleSearch(event) {
+    const query = event.target.value.trim();
+    
+    if (searchTimeout) clearTimeout(searchTimeout);
+    
+    if (query.length < 2) {
+        hideSearchResults();
+        return;
+    }
+    
+    searchTimeout = setTimeout(() => {
+        searchNodes(query);
+    }, 300);
+}
+
+function searchNodes(query) {
+    const params = new URLSearchParams({
+        q: query,
+        graph: schema.name,
+        limit: 20
+    });
+    
+    fetch(`/graph/analysis/api/search/?${params}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showSearchResults(data.results);
+            } else {
+                console.error('Search failed:', data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Search error:', error);
+        });
+}
+
+function showSearchResults(results) {
+    const container = document.getElementById('searchResults');
+    
+    if (results.length === 0) {
+        container.innerHTML = '<div class="search-result-item">No results found</div>';
+    } else {
+        container.innerHTML = results.map(node => `
+            <div class="search-result-item" onclick="focusOnNode('${node.id}')">
+                <div class="result-title">${node.id}</div>
+                <div class="result-subtitle">${node.label} - ${Object.keys(node.properties).length} properties</div>
+            </div>
+        `).join('');
+    }
+    
+    container.classList.add('show');
+}
+
+function hideSearchResults() {
+    document.getElementById('searchResults').classList.remove('show');
+}
+
+function focusOnNode(nodeId) {
+    const node = graphData.nodes.find(n => n.id === nodeId);
+    if (node) {
+        graph.centerAt(node.x, node.y, 1000);
+        graph.zoom(3, 1000);
+        
+        setTimeout(() => {
+            handleNodeClick(node);
+        }, 500);
+    }
+    hideSearchResults();
+}
+
+function applyLayout() {
+    const forceStrength = document.getElementById('forceStrength').value;
+    const linkDistance = document.getElementById('linkDistance').value;
+    const enablePhysics = document.getElementById('enablePhysics').checked;
+    
+    if (enablePhysics) {
+        graph.d3Force('charge').strength(parseInt(forceStrength));
+        graph.d3Force('link').distance(parseInt(linkDistance));
+        
+        // Restart simulation
+        graph.d3ReheatSimulation();
+    } else {
+        // Disable physics
+        graph.d3Force('charge').strength(0);
+        graph.d3Force('link').strength(0);
+    }
+}
+
+function updateVisuals() {
+    // Trigger re-rendering with new color/size settings
+    graph.nodeColor(getNodeColor)
+         .nodeVal(getNodeSize)
+         .linkWidth(getEdgeWidth);
+    
+    updateLegend();
+}
+
+function calculateCentrality() {
+    showLoading();
+    
+    const algorithm = 'betweenness'; // Default algorithm
+    
+    fetch('/graph/analysis/api/algorithms/centrality/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            algorithm: algorithm,
+            graph: schema.name,
+            limit: 500
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            centralityData = data.centrality;
+            
+            // Update visual if centrality coloring is selected
+            if (document.getElementById('nodeColorBy').value === 'centrality') {
+                updateVisuals();
+            }
+            
+            showNotification(`${algorithm} centrality calculated successfully`, 'success');
+        } else {
+            showNotification('Error calculating centrality: ' + data.error, 'error');
+        }
+        hideLoading();
+    })
+    .catch(error => {
+        console.error('Centrality calculation error:', error);
+        showNotification('Error calculating centrality: ' + error.message, 'error');
+        hideLoading();
+    });
+}
+
+function detectCommunities() {
+    showLoading();
+    
+    fetch('/graph/analysis/api/algorithms/communities/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            algorithm: 'louvain',
+            graph: schema.name,
+            resolution: 1.0
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            communityData = data.communities;
+            
+            // Update visual if community coloring is selected
+            if (document.getElementById('nodeColorBy').value === 'community') {
+                updateVisuals();
+            }
+            
+            showNotification(`Found ${data.num_communities} communities`, 'success');
+        } else {
+            showNotification('Error detecting communities: ' + data.error, 'error');
+        }
+        hideLoading();
+    })
+    .catch(error => {
+        console.error('Community detection error:', error);
+        showNotification('Error detecting communities: ' + error.message, 'error');
+        hideLoading();
+    });
+}
+
+function showShortestPath() {
+    if (!selectedNode) {
+        showNotification('Please select a source node first', 'warning');
+        return;
+    }
+    
+    const targetId = prompt('Enter target node ID:');
+    if (!targetId) return;
+    
+    showLoading();
+    
+    fetch('/graph/analysis/api/path/shortest/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            start_node: selectedNode.id,
+            end_node: targetId,
+            graph: schema.name,
+            max_length: 10
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.found) {
+            highlightPath(data.path);
+            showNotification(`Path found with ${data.path.length} steps`, 'success');
+        } else if (data.success && !data.found) {
+            showNotification('No path found between selected nodes', 'warning');
+        } else {
+            showNotification('Error finding path: ' + data.error, 'error');
+        }
+        hideLoading();
+    })
+    .catch(error => {
+        console.error('Path finding error:', error);
+        showNotification('Error finding path: ' + error.message, 'error');
+        hideLoading();
+    });
+}
+
+function highlightPath(path) {
+    const pathNodeIds = new Set(path.nodes);
+    const pathEdgeIds = new Set(path.edges);
+    
+    graph.nodeColor(node => {
+        if (pathNodeIds.has(node.id)) return '#ef4444';
+        return getNodeColor(node);
+    })
+    .linkColor(link => {
+        if (pathEdgeIds.has(link.id)) return '#ef4444';
+        return '#94a3b8';
+    });
+    
+    // Clear highlight after 5 seconds
+    setTimeout(clearHighlights, 5000);
+}
+
+function expandNode(nodeId) {
+    showLoading();
+    
+    fetch(`/graph/analysis/api/neighbors/${nodeId}/?graph=${schema.name}&depth=1&direction=both`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.neighbors.length > 0) {
+                // Add neighbors to current graph data if not already present
+                const newNodes = data.neighbors.filter(neighbor => 
+                    !graphData.nodes.find(n => n.id === neighbor.id)
+                );
+                
+                if (newNodes.length > 0) {
+                    graphData.nodes.push(...newNodes);
+                    
+                    // Would need to fetch edges between new nodes and existing nodes
+                    // This is simplified - in practice, you'd make another API call
+                    
+                    graph.graphData(graphData);
+                    showNotification(`Added ${newNodes.length} neighboring nodes`, 'success');
+                } else {
+                    showNotification('All neighbors are already visible', 'info');
+                }
+            } else {
+                showNotification('No neighbors found', 'info');
+            }
+            hideLoading();
+        })
+        .catch(error => {
+            console.error('Expand node error:', error);
+            showNotification('Error expanding node: ' + error.message, 'error');
+            hideLoading();
+        });
+}
+
+function findNeighbors(nodeId) {
+    fetch(`/graph/analysis/api/neighbors/${nodeId}/?graph=${schema.name}&depth=2&direction=both`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const message = `Node has ${data.count} neighbors within 2 hops`;
+                showNotification(message, 'info');
+            }
+        })
+        .catch(error => {
+            console.error('Find neighbors error:', error);
+        });
+}
+
+function findPaths(nodeId) {
+    showNotification('Path finding functionality - select target node and use "Shortest Path" button', 'info');
+}
+
+function updateStatistics(metadata) {
+    document.getElementById('statNodes').textContent = metadata.node_count;
+    document.getElementById('statEdges').textContent = metadata.edge_count;
+    
+    // Calculate density
+    const nodeCount = metadata.node_count;
+    const edgeCount = metadata.edge_count;
+    const density = nodeCount > 1 ? (2 * edgeCount) / (nodeCount * (nodeCount - 1)) : 0;
+    document.getElementById('statDensity').textContent = density.toFixed(3);
+    
+    // Components would need to be calculated
+    document.getElementById('statComponents').textContent = '1';
+}
+
+function updateLegend() {
+    const legendItems = document.getElementById('legendItems');
+    const colorBy = document.getElementById('nodeColorBy').value;
+    
+    if (colorBy === 'label') {
+        const labels = [...new Set(graphData.nodes.map(n => n.label))];
+        legendItems.innerHTML = labels.map(label => `
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: ${colorSchemes.nodes(label)}"></div>
+                <span>${label}</span>
+            </div>
+        `).join('');
+    } else {
+        legendItems.innerHTML = '<div class="legend-item">Dynamic coloring active</div>';
+    }
+}
+
+function showStatistics() {
+    const stats = {
+        nodes: graphData.nodes.length,
+        edges: graphData.links.length,
+        labels: [...new Set(graphData.nodes.map(n => n.label))].length,
+        avgDegree: graphData.nodes.length > 0 ? 
+                   (2 * graphData.links.length) / graphData.nodes.length : 0
+    };
+    
+    alert(`Graph Statistics:
+Nodes: ${stats.nodes}
+Edges: ${stats.edges}
+Node Labels: ${stats.labels}
+Average Degree: ${stats.avgDegree.toFixed(2)}`);
+}
+
+function resetView() {
+    graph.zoomToFit(1000);
+    clearHighlights();
+    closeDetailsPanel();
+    selectedNode = null;
+    selectedEdge = null;
+}
+
+function exportGraph() {
+    const data = {
+        nodes: graphData.nodes,
+        links: graphData.links,
+        schema: schema,
+        timestamp: new Date().toISOString()
+    };
+    
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `graph-${schema.name}-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+function toggleSidebar() {
+    const sidebar = document.getElementById('controlsSidebar');
+    const icon = document.getElementById('sidebarIcon');
+    
+    sidebar.classList.toggle('collapsed');
+    
+    if (sidebar.classList.contains('collapsed')) {
+        icon.className = 'fa fa-chevron-right';
+    } else {
+        icon.className = 'fa fa-chevron-left';
+    }
+    
+    // Resize graph after sidebar toggle
+    setTimeout(() => {
+        const container = document.getElementById('graphCanvas');
+        graph.width(container.clientWidth)
+             .height(container.clientHeight);
+    }, 300);
+}
+
+function showLoading() {
+    document.getElementById('loadingOverlay').style.display = 'flex';
+}
+
+function hideLoading() {
+    document.getElementById('loadingOverlay').style.display = 'none';
+}
+
+function showNotification(message, type = 'info') {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `
+        <i class="fa ${type === 'error' ? 'fa-exclamation-circle' : 
+                     type === 'success' ? 'fa-check-circle' : 
+                     type === 'warning' ? 'fa-exclamation-triangle' :
+                     'fa-info-circle'}"></i>
+        ${message}
+    `;
+    
+    // Add notification styles if not already present
+    if (!document.querySelector('.notification-styles')) {
+        const style = document.createElement('style');
+        style.className = 'notification-styles';
+        style.textContent = `
+            .notification {
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: white;
+                border: 1px solid #e5e7eb;
+                border-radius: 6px;
+                padding: 15px 20px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                z-index: 2000;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                max-width: 400px;
+                animation: slideIn 0.3s ease;
+            }
+            .notification.notification-success { border-left: 4px solid #10b981; }
+            .notification.notification-error { border-left: 4px solid #ef4444; }
+            .notification.notification-warning { border-left: 4px solid #f59e0b; }
+            .notification.notification-info { border-left: 4px solid #3b82f6; }
+            .notification.fade-out { animation: fadeOut 0.3s ease forwards; }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 4 seconds
+    setTimeout(() => {
+        notification.classList.add('fade-out');
+        setTimeout(() => notification.remove(), 300);
+    }, 4000);
+}
+
+function showError(message) {
+    showNotification(message, 'error');
+}
+</script>
+{% endblock %}

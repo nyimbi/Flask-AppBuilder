@@ -2,20 +2,31 @@ import datetime
 import logging
 import re
 
-from flask_sqlalchemy import (
-    _QueryProperty,
-    DefaultMeta,
-    get_state,
-    SessionBase,
-    SignallingSession,
-    SQLAlchemy,
-)
+try:
+    # Flask-SQLAlchemy 3.x (SQLAlchemy 2.x compatible)
+    from flask_sqlalchemy import SQLAlchemy
+    from sqlalchemy.orm import Session as SessionBase
+    HAS_FLASK_SQLALCHEMY_3 = True
+except ImportError:
+    # Flask-SQLAlchemy 2.x (SQLAlchemy 1.x compatible)  
+    from flask_sqlalchemy import (
+        _QueryProperty,
+        DefaultMeta,
+        get_state,
+        SessionBase,
+        SignallingSession,
+        SQLAlchemy,
+    )
+    HAS_FLASK_SQLALCHEMY_3 = False
 from sqlalchemy import orm
 
 try:
-    from sqlalchemy.ext.declarative import as_declarative
+    from sqlalchemy.orm import as_declarative
 except ImportError:
-    from sqlalchemy.ext.declarative.api import as_declarative
+    try:
+        from sqlalchemy.ext.declarative import as_declarative
+    except ImportError:
+        from sqlalchemy.ext.declarative.api import as_declarative
 
 try:
     from sqlalchemy.orm.util import identity_key  # noqa
@@ -29,7 +40,14 @@ log = logging.getLogger(__name__)
 _camelcase_re = re.compile(r"([A-Z]+)(?=[a-z0-9])")
 
 
-class CustomSignallingSession(SignallingSession):
+if HAS_FLASK_SQLALCHEMY_3:
+    # Flask-SQLAlchemy 3.x uses different session base
+    from sqlalchemy.orm import Session as _SessionBase
+else:
+    # Flask-SQLAlchemy 2.x 
+    _SessionBase = SignallingSession
+
+class CustomSignallingSession(_SessionBase):
     """
     Custom Signaling Session to support SQLALchemy>=1.4 with flask-sqlalchemy 2.X
     https://github.com/pallets/flask-sqlalchemy/issues/953
@@ -52,8 +70,13 @@ class CustomSignallingSession(SignallingSession):
             info = getattr(persist_selectable, "info", {})
             bind_key = info.get("bind_key")
             if bind_key is not None:
-                state = get_state(self.app)
-                return state.db.get_engine(self.app, bind=bind_key)
+                if HAS_FLASK_SQLALCHEMY_3:
+                    # Flask-SQLAlchemy 3.x
+                    return self.db.get_engine(bind_key=bind_key)
+                else:
+                    # Flask-SQLAlchemy 2.x
+                    state = get_state(self.app)
+                    return state.db.get_engine(self.app, bind=bind_key)
         return SessionBase.get_bind(self, mapper, *args, **kwargs)
 
 
@@ -70,7 +93,10 @@ class SQLA(SQLAlchemy):
 
     def make_declarative_base(self, model, metadata=None):
         base = Model
-        base.query = _QueryProperty(self)
+        if not HAS_FLASK_SQLALCHEMY_3:
+            # Flask-SQLAlchemy 2.x
+            base.query = _QueryProperty(self)
+        # Flask-SQLAlchemy 3.x doesn't use query property
         return base
 
     def get_tables_for_bind(self, bind=None):
@@ -90,16 +116,41 @@ class SQLA(SQLAlchemy):
 
         :param options: dict of keyword arguments passed to session class
         """
+        if HAS_FLASK_SQLALCHEMY_3:
+            # Flask-SQLAlchemy 3.x uses a different session creation approach
+            return super().create_session(options)
+        else:
+            # Flask-SQLAlchemy 2.x custom session
+            return orm.sessionmaker(class_=CustomSignallingSession, db=self, **options)
 
-        return orm.sessionmaker(class_=CustomSignallingSession, db=self, **options)
 
+if HAS_FLASK_SQLALCHEMY_3:
+    # Flask-SQLAlchemy 3.x doesn't use DefaultMeta
+    from sqlalchemy.orm import DeclarativeMeta
+    _BaseMeta = DeclarativeMeta
+else:
+    # Flask-SQLAlchemy 2.x
+    _BaseMeta = DefaultMeta
 
-class ModelDeclarativeMeta(DefaultMeta):
+class ModelDeclarativeMeta(_BaseMeta):
     """
     Base Model declarative meta for all Models definitions.
     Setups bind_keys to support multiple databases.
     Setup the table name based on the class camelcase name.
     """
+
+    def __new__(cls, name, bases, namespace, **kwargs):
+        # Auto-generate table name from class name if not specified
+        if (
+            "__tablename__" not in namespace 
+            and name != "Model"  # Skip the base Model class
+            and not namespace.get("__abstract__", False)
+        ):
+            # Convert CamelCase to snake_case
+            table_name = _camelcase_re.sub(r"_\1", name).lower().lstrip("_")
+            namespace["__tablename__"] = table_name
+            
+        return super().__new__(cls, name, bases, namespace, **kwargs)
 
 
 @as_declarative(name="Model", metaclass=ModelDeclarativeMeta)

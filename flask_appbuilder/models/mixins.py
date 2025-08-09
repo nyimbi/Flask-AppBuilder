@@ -3,7 +3,10 @@ import logging
 
 from flask import g
 from sqlalchemy import Column, DateTime, ForeignKey, Integer
-from sqlalchemy.ext.declarative import declared_attr
+try:
+    from sqlalchemy.orm import declared_attr
+except ImportError:
+    from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import relationship
 import sqlalchemy.types as types
 
