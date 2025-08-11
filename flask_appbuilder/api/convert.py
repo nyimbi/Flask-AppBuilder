@@ -76,7 +76,22 @@ class BaseModel2SchemaConverter(object):
         nested: bool = True,
         parent_schema_name: Optional[str] = None,
     ) -> SQLAlchemyAutoSchema:
-        pass
+        """
+        Convert model columns to marshmallow schema
+        
+        Args:
+            columns: List of column names to include in schema
+            model: Optional model override 
+            nested: Whether to generate nested relationship schemas
+            parent_schema_name: Name for parent schema if nested
+            
+        Returns:
+            SQLAlchemyAutoSchema: Generated schema for the model
+            
+        Raises:
+            NotImplementedError: This method must be implemented by subclasses
+        """
+        raise NotImplementedError("Subclasses must implement the convert method")
 
 
 class Model2SchemaConverter(BaseModel2SchemaConverter):

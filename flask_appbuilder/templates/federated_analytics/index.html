@@ -1,0 +1,374 @@
+{% extends "appbuilder/baselayout.html" %}
+{% block title %}Federated Graph Analytics{% endblock %}
+
+{% block head_css %}
+    {{ super() }}
+    <style>
+        .metrics-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            color: white;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .metrics-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        .node-status {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .node-active { background-color: #28a745; }
+        .node-inactive { background-color: #dc3545; }
+        .node-unknown { background-color: #6c757d; }
+        .federation-network {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .query-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 500;
+        }
+        .status-completed { background: #d4edda; color: #155724; }
+        .status-running { background: #d1ecf1; color: #0c5460; }
+        .status-failed { background: #f8d7da; color: #721c24; }
+        .status-pending { background: #fff3cd; color: #856404; }
+        .protocol-badge {
+            background: linear-gradient(45deg, #FF6B6B, #4ECDC4);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            font-weight: 600;
+        }
+        .organization-tag {
+            background: #e9ecef;
+            color: #495057;
+            padding: 2px 8px;
+            border-radius: 8px;
+            font-size: 0.75em;
+            margin-right: 5px;
+        }
+        .analytics-timeline {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .timeline-item {
+            border-left: 3px solid #007bff;
+            padding-left: 15px;
+            margin-bottom: 15px;
+            position: relative;
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -6px;
+            top: 0;
+            width: 9px;
+            height: 9px;
+            background: #007bff;
+            border-radius: 50%;
+        }
+        .network-topology {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2><i class="fas fa-network-wired"></i> Federated Graph Analytics</h2>
+                <div class="btn-group" role="group">
+                    <a href="{{ url_for('FederatedAnalyticsView.execute_query') }}" class="btn btn-primary">
+                        <i class="fas fa-play"></i> Execute Query
+                    </a>
+                    <a href="{{ url_for('FederatedAnalyticsView.register_node') }}" class="btn btn-success">
+                        <i class="fas fa-plus"></i> Register Node
+                    </a>
+                    <a href="{{ url_for('FederatedAnalyticsView.cross_organizational_analysis') }}" class="btn btn-info">
+                        <i class="fas fa-building"></i> Cross-Org Analysis
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Metrics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card metrics-card h-100">
+                <div class="card-body text-center">
+                    <div class="display-4 mb-2">
+                        <i class="fas fa-server"></i>
+                    </div>
+                    <h5 class="card-title">Active Nodes</h5>
+                    <h2 class="mb-0">{{ system_status.get('total_nodes', 0) }}</h2>
+                    <small>{{ system_status.get('active_nodes', 0) }} active</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card metrics-card h-100">
+                <div class="card-body text-center">
+                    <div class="display-4 mb-2">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <h5 class="card-title">Total Queries</h5>
+                    <h2 class="mb-0">{{ system_status.get('total_queries', 0) }}</h2>
+                    <small>{{ system_status.get('successful_queries', 0) }} successful</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card metrics-card h-100">
+                <div class="card-body text-center">
+                    <div class="display-4 mb-2">
+                        <i class="fas fa-building"></i>
+                    </div>
+                    <h5 class="card-title">Organizations</h5>
+                    <h2 class="mb-0">{{ system_status.get('organizations', 0) }}</h2>
+                    <small>federated</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card metrics-card h-100">
+                <div class="card-body text-center">
+                    <div class="display-4 mb-2">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <h5 class="card-title">Avg Response</h5>
+                    <h2 class="mb-0">{{ "%.2f"|format(system_status.get('average_response_time', 0)) }}s</h2>
+                    <small>response time</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Network Topology -->
+        <div class="col-lg-8 mb-4">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-project-diagram"></i> Federation Network</h5>
+                    <div>
+                        <span class="badge badge-primary">{{ active_nodes|length }} Active Nodes</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="network-topology">
+                        {% if active_nodes %}
+                            <div class="row">
+                                {% for node in active_nodes %}
+                                <div class="col-md-6 mb-3">
+                                    <div class="card border-0 shadow-sm">
+                                        <div class="card-body p-3">
+                                            <div class="d-flex align-items-center mb-2">
+                                                <span class="node-status node-{{ node.status }}"></span>
+                                                <strong>{{ node.name }}</strong>
+                                                <div class="ml-auto">
+                                                    <span class="protocol-badge">{{ node.protocol.value.upper() }}</span>
+                                                </div>
+                                            </div>
+                                            <div class="small text-muted mb-2">
+                                                <i class="fas fa-globe"></i> {{ node.endpoint }}
+                                            </div>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    {% if node.metadata.get('organization') %}
+                                                        <span class="organization-tag">{{ node.metadata.organization }}</span>
+                                                    {% endif %}
+                                                    <span class="badge badge-secondary badge-sm">{{ node.role.value }}</span>
+                                                </div>
+                                                <div class="small text-muted">
+                                                    {% if node.last_ping %}
+                                                        Last: {{ node.last_ping.strftime('%H:%M') }}
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="text-center py-5">
+                                <div class="display-1 text-muted mb-3">
+                                    <i class="fas fa-server"></i>
+                                </div>
+                                <h5 class="text-muted">No Active Nodes</h5>
+                                <p class="text-muted">Register federated nodes to start distributed analytics</p>
+                                <a href="{{ url_for('FederatedAnalyticsView.register_node') }}" class="btn btn-primary">
+                                    <i class="fas fa-plus"></i> Register First Node
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-history"></i> Recent Queries</h5>
+                    <a href="{{ url_for('FederatedAnalyticsView.list_queries') }}" class="btn btn-sm btn-outline-primary">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="analytics-timeline p-3">
+                        {% if recent_queries %}
+                            {% for query in recent_queries %}
+                            <div class="timeline-item">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <strong class="small">Query #{{ query.query_id[:8] }}</strong>
+                                        <div class="small text-muted">
+                                            {{ query.created_at.strftime('%Y-%m-%d %H:%M') }}
+                                        </div>
+                                    </div>
+                                    <span class="query-status status-{{ query.status.value }}">
+                                        {{ query.status.value.title() }}
+                                    </span>
+                                </div>
+                                <div class="small mb-2">
+                                    <div class="text-truncate" style="max-width: 250px;">
+                                        <code>{{ query.query_text[:60] }}{% if query.query_text|length > 60 %}...{% endif %}</code>
+                                    </div>
+                                </div>
+                                <div class="small text-muted">
+                                    <i class="fas fa-server"></i> {{ query.target_nodes|length }} nodes
+                                    <i class="fas fa-shield-alt ml-2"></i> {{ query.privacy_level.value }}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center py-4">
+                                <div class="text-muted mb-3">
+                                    <i class="fas fa-search fa-2x"></i>
+                                </div>
+                                <h6 class="text-muted">No Recent Queries</h6>
+                                <p class="small text-muted">Execute your first federated query to see activity here</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Available Graphs -->
+    {% if available_graphs %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-database"></i> Available Graphs for Federation</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for graph in available_graphs %}
+                        <div class="col-md-4 mb-3">
+                            <div class="card border-left-primary">
+                                <div class="card-body p-3">
+                                    <div class="d-flex align-items-center">
+                                        <div class="mr-3">
+                                            <i class="fas fa-project-diagram fa-2x text-primary"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-1">{{ graph.name }}</h6>
+                                            <div class="small text-muted">
+                                                {% if graph.description %}
+                                                    {{ graph.description[:50] }}{% if graph.description|length > 50 %}...{% endif %}
+                                                {% else %}
+                                                    Graph database
+                                                {% endif %}
+                                            </div>
+                                            <div class="small">
+                                                <span class="badge badge-info">{{ graph.node_count }} nodes</span>
+                                                <span class="badge badge-secondary">{{ graph.relationship_count }} edges</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Quick Actions -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-bolt"></i> Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('FederatedAnalyticsView.execute_query') }}" class="btn btn-outline-primary btn-lg btn-block">
+                                <i class="fas fa-play fa-2x mb-2"></i><br>
+                                <span>Execute Federated Query</span>
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('FederatedAnalyticsView.register_node') }}" class="btn btn-outline-success btn-lg btn-block">
+                                <i class="fas fa-plus fa-2x mb-2"></i><br>
+                                <span>Register New Node</span>
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('FederatedAnalyticsView.cross_organizational_analysis') }}" class="btn btn-outline-info btn-lg btn-block">
+                                <i class="fas fa-building fa-2x mb-2"></i><br>
+                                <span>Cross-Org Analysis</span>
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('FederatedAnalyticsView.list_nodes') }}" class="btn btn-outline-secondary btn-lg btn-block">
+                                <i class="fas fa-network-wired fa-2x mb-2"></i><br>
+                                <span>Manage Nodes</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Real-time Updates -->
+<script>
+    // Auto-refresh system status every 30 seconds
+    setInterval(function() {
+        fetch('{{ url_for("FederatedAnalyticsView.api_system_status") }}')
+            .then(response => response.json())
+            .then(data => {
+                // Update metrics if needed
+                console.log('System status updated:', data);
+            })
+            .catch(error => {
+                console.log('Status update failed:', error);
+            });
+    }, 30000);
+</script>
+{% endblock %}

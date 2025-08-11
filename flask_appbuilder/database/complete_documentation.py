@@ -57,7 +57,7 @@ CORE CLASSES DOCUMENTATION
 ==========================
 
 class GraphManager:
-    """
+    
     Central manager for all graph database operations using Apache AGE.
     
     The GraphManager provides a high-level interface for creating, querying,
@@ -97,7 +97,7 @@ class AdvancedQueryBuilder:
     """
 
 class MultiModalIntegration:
-    """
+    
     Advanced system for integrating multiple media types into graph analysis.
     
     Processes images, audio, video, and text files to extract meaningful
@@ -134,7 +134,7 @@ class FederatedAnalytics:
     Usage:
         federation = get_federated_analytics()
         query = federation.execute_federated_query(cypher, ['org1', 'org2'])
-    """
+    
 
 class GraphOptimizer:
     """
@@ -157,7 +157,7 @@ class GraphOptimizer:
     """
 
 class IntelligentRecommendationEngine:
-    """
+    
     AI-powered recommendation system for graph optimization and usage.
     
     Analyzes query patterns, schema usage, and performance metrics to

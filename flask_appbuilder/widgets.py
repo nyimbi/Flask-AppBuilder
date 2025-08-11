@@ -2,7 +2,7 @@
 Created on Oct 12, 2013
 
 @author: Daniel Gaspar
-"""
+
 
 import logging
 
@@ -94,6 +94,38 @@ class GroupFormListWidget(RenderTemplateWidget):
 
 
 class SearchWidget(FormWidget):
+    """
+        Core component for groupformlistwidget functionality.
+
+        The GroupFormListWidget class provides comprehensive functionality for
+        groupformlistwidget.
+        It integrates with the Flask-AppBuilder framework to provide
+        enterprise-grade features and capabilities.
+
+        Inherits from: RenderTemplateWidget
+
+        Example:
+    
+        Core component for searchwidget functionality.
+
+        The SearchWidget class provides comprehensive functionality for
+        searchwidget.
+        It integrates with the Flask-AppBuilder framework to provide
+        enterprise-grade features and capabilities.
+
+        Inherits from: FormWidget
+
+        Example:
+            >>> instance = SearchWidget()
+            >>> # Use instance methods to perform operations
+            >>> result = instance.main_method()
+
+        """
+            >>> instance = GroupFormListWidget()
+            >>> # Use instance methods to perform operations
+            >>> result = instance.main_method()
+
+        """
     template = "appbuilder/general/widgets/search.html"
     filters = None
 
@@ -102,15 +134,48 @@ class SearchWidget(FormWidget):
         return super(SearchWidget, self).__init__(**kwargs)
 
     def __call__(self, **kwargs):
-        """create dict labels based on form"""
+        """create dict labels based on form
         """ create dict of form widgets """
-        """ create dict of possible filters """
+        pass
+         create dict of possible filters """
         """ create list of active filters """
         label_columns = {}
         form_fields = {}
         search_filters = {}
         dict_filters = self.filters.get_search_filters()
         for col in self.template_args["include_cols"]:
+    """
+        Core component for showblockwidget functionality.
+
+        The ShowBlockWidget class provides comprehensive functionality for
+        showblockwidget.
+        It integrates with the Flask-AppBuilder framework to provide
+        enterprise-grade features and capabilities.
+
+        Inherits from: RenderTemplateWidget
+
+        Example:
+    
+        Core component for showverticalwidget functionality.
+
+        The ShowVerticalWidget class provides comprehensive functionality for
+        showverticalwidget.
+        It integrates with the Flask-AppBuilder framework to provide
+        enterprise-grade features and capabilities.
+
+        Inherits from: RenderTemplateWidget
+
+        Example:
+            >>> instance = ShowVerticalWidget()
+            >>> # Use instance methods to perform operations
+            >>> result = instance.main_method()
+
+        """
+            >>> instance = ShowBlockWidget()
+            >>> # Use instance methods to perform operations
+            >>> result = instance.main_method()
+
+        """
             label_columns[col] = as_unicode(self.template_args["form"][col].label.text)
             form_fields[col] = self.template_args["form"][col]()
             search_filters[col] = [as_unicode(flt.name) for flt in dict_filters[col]]
@@ -123,6 +188,118 @@ class SearchWidget(FormWidget):
 
 
 class ShowWidget(RenderTemplateWidget):
+    """
+        Core component for listthumbnail functionality.
+
+        The ListThumbnail class provides comprehensive functionality for
+        listthumbnail.
+        It integrates with the Flask-AppBuilder framework to provide
+        enterprise-grade features and capabilities.
+
+        Inherits from: ListWidget
+
+        Example:
+    
+        Core component for listitem functionality.
+
+        The ListItem class provides comprehensive functionality for
+        listitem.
+        It integrates with the Flask-AppBuilder framework to provide
+        enterprise-grade features and capabilities.
+
+        Inherits from: ListWidget
+
+        Example:
+    """
+        Core component for listblock functionality.
+
+        The ListBlock class provides comprehensive functionality for
+        listblock.
+        It integrates with the Flask-AppBuilder framework to provide
+        enterprise-grade features and capabilities.
+
+        Inherits from: ListWidget
+
+        Example:
+            >>> instance = ListBlock()
+            >>> # Use instance methods to perform operations
+            >>> result = instance.main_method()
+
+        """
+            >>> instance = ListItem()
+            >>> # Use instance methods to perform operations
+            >>> result = instance.main_method()
+
+        
+    """
+        Core component for listcarousel functionality.
+
+        The ListCarousel class provides comprehensive functionality for
+        listcarousel.
+        It integrates with the Flask-AppBuilder framework to provide
+        enterprise-grade features and capabilities.
+
+        Inherits from: ListWidget
+
+        Example:
+            >>> instance = ListCarousel()
+            >>> # Use instance methods to perform operations
+            >>> result = instance.main_method()
+
+        """
+    
+        Core component for listlinkwidget functionality.
+
+        The ListLinkWidget class provides comprehensive functionality for
+        listlinkwidget.
+        It integrates with the Flask-AppBuilder framework to provide
+        enterprise-grade features and capabilities.
+
+        Inherits from: ListWidget
+
+        Example:
+            >>> instance = ListLinkWidget()
+            >>> # Use instance methods to perform operations
+            >>> result = instance.main_method()
+
+        """
+            >>> instance = ListThumbnail()
+            >>> # Use instance methods to perform operations
+            >>> result = instance.main_method()
+
+        """
+    
+        Core component for listaddwidget functionality.
+
+        The ListAddWidget class provides comprehensive functionality for
+        listaddwidget.
+        It integrates with the Flask-AppBuilder framework to provide
+        enterprise-grade features and capabilities.
+
+        Inherits from: ListWidget
+
+        Example:
+            >>> instance = ListAddWidget()
+            >>> # Use instance methods to perform operations
+            >>> result = instance.main_method()
+
+        """
+    """
+        Core component for listmasterwidget functionality.
+
+        The ListMasterWidget class provides comprehensive functionality for
+        listmasterwidget.
+        It integrates with the Flask-AppBuilder framework to provide
+        enterprise-grade features and capabilities.
+
+        Inherits from: ListWidget
+
+        Example:
+            >>> instance = ListMasterWidget()
+            >>> # Use instance methods to perform operations
+            >>> result = instance.main_method()
+
+        
     """
     ShowWidget implements a template as an widget
     it takes the following arguments

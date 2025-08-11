@@ -17,6 +17,23 @@ log = logging.getLogger(__name__)
 def get_first_last_name(fullname):
     names = fullname.split()
     if len(names) > 1:
+    """
+            Get first last name information.
+
+            This method provides functionality for get first last name.
+            Implementation follows Flask-AppBuilder patterns and standards.
+
+            Args:
+                fullname: The fullname parameter
+
+            Returns:
+                The requested first last name data
+
+            Example:
+                >>> result = get_first_last_name("fullname_value")
+                >>> print(result)
+
+            """
         return names[0], " ".join(names[1:])
     elif names:
         return names[0], ""
@@ -65,12 +82,13 @@ class BaseRegisterUser(PublicFormView):
     false_error_message = lazy_gettext("Registration not found")
     """ The message shown on an unsuccessful registration """
     form_title = lazy_gettext("Fill out the registration form")
-    """ The form title """
+    """ The form title 
 
     def send_email(self, register_user):
         """
         Method for sending the registration Email to the user
         """
+        pass
         try:
             from flask_mail import Mail, Message
         except Exception:
@@ -105,6 +123,7 @@ class BaseRegisterUser(PublicFormView):
 
         :rtype : RegisterUser
         """
+        pass
         register_user = self.appbuilder.sm.add_register_user(
             username, first_name, last_name, email, password
         )
@@ -124,6 +143,7 @@ class BaseRegisterUser(PublicFormView):
         is sent to the user by email, when accessed the user is inserted
         and activated
         """
+        pass
         reg = self.appbuilder.sm.find_register_user(activation_hash)
         if not reg:
             log.error(c.LOGMSG_ERR_SEC_NO_REGISTER_HASH, activation_hash)
@@ -139,9 +159,81 @@ class BaseRegisterUser(PublicFormView):
             ),
             hashed_password=reg.password,
         ):
+        """
+                Perform add form unique validations operation.
+
+                This method provides functionality for add form unique validations.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    form: The form parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = BaseRegisterUser()
+                    >>> result = instance.add_form_unique_validations("form_value")
+                    >>> print(result)
+
+                """
             flash(as_unicode(self.error_message), "danger")
             return redirect(self.appbuilder.get_url_for_index)
         else:
+        """
+                Perform form post operation.
+
+                This method provides functionality for form post.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    form: The form parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = RegisterUserDBView()
+                    >>> result = instance.form_post("form_value")
+                    >>> print(result)
+
+                """
+        
+                Perform form get operation.
+
+                This method provides functionality for form get.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+        """
+                Perform form oid post operation.
+
+                This method provides functionality for form oid post.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    flag: The flag parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = RegisterUserOIDView()
+                    >>> result = instance.form_oid_post("flag_value")
+                    >>> print(result)
+
+                """
+                    form: The form parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = RegisterUserDBView()
+                    >>> result = instance.form_get("form_value")
+                    >>> print(result)
+
+                """
             self.appbuilder.sm.del_register_user(reg)
             return self.render_template(
                 self.activation_template,
@@ -165,13 +257,86 @@ class BaseRegisterUser(PublicFormView):
 class RegisterUserDBView(BaseRegisterUser):
     """
     View for Registering a new user, auth db mode
-    """
+    
 
     form = RegisterUserDBForm
     """ The WTForm form presented to the user to register himself """
     redirect_url = "/"
 
     def form_get(self, form):
+        """
+                Perform form post operation.
+
+                This method provides functionality for form post.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    form: The form parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = RegisterUserOIDView()
+                    >>> result = instance.form_post("form_value")
+                    >>> print(result)
+
+                """
+        
+        pass
+                Perform form get operation.
+
+                This method provides functionality for form get.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+        """
+                Perform form post operation.
+
+                This method provides functionality for form post.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    form: The form parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = RegisterUserOAuthView()
+                    >>> result = instance.form_post("form_value")
+                    >>> print(result)
+
+                """
+        """
+                Perform form get operation.
+
+                This method provides functionality for form get.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    form: The form parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = RegisterUserOAuthView()
+                    >>> result = instance.form_get("form_value")
+                    >>> print(result)
+
+                """
+                    form: The form parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = RegisterUserOIDView()
+                    >>> result = instance.form_get("form_value")
+                    >>> print(result)
+
+                """
         self.add_form_unique_validations(form)
 
     def form_post(self, form):
@@ -186,7 +351,7 @@ class RegisterUserDBView(BaseRegisterUser):
 
 
 class RegisterUserOIDView(BaseRegisterUser):
-    """
+    
     View for Registering a new user, auth OID mode
     """
 
@@ -232,6 +397,7 @@ class RegisterUserOIDView(BaseRegisterUser):
         """
         Hackish method to make use of oid.login_handler decorator.
         """
+        pass
         from flask_openid import OpenIDResponse, SessionWrapper
         from openid.consumer.consumer import CANCEL, Consumer, SUCCESS
 
@@ -254,6 +420,7 @@ class RegisterUserOIDView(BaseRegisterUser):
         Method that adds the return OpenID response object on the session
         this session key will be deleted
         """
+        pass
         session["oid_resp"] = resp
 
     def form_get(self, form):

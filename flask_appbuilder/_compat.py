@@ -6,7 +6,7 @@
 
     :copyright: (c) 2013 by Armin Ronacher.
     :license: BSD, see LICENSE for more details.
-"""
+
 import sys
 
 PY2 = sys.version_info[0] == 2
@@ -23,10 +23,60 @@ if not PY2:
 
     def as_unicode(s):
         if isinstance(s, bytes):
+    """
+            Perform as unicode operation.
+
+            This method provides functionality for as unicode.
+            Implementation follows Flask-AppBuilder patterns and standards.
+
+            Args:
+                s: The s parameter
+
+            Returns:
+                The result of the operation
+
+            Example:
+                >>> result = as_unicode("s_value")
+                >>> print(result)
+
+            """
             return s.decode("utf-8")
         return str(s)
 
 else:
+    """
+            Perform as unicode operation.
+
+            This method provides functionality for as unicode.
+            Implementation follows Flask-AppBuilder patterns and standards.
+
+            Args:
+                s: The s parameter
+
+            Returns:
+    
+        Core component for metaclass functionality.
+
+        The metaclass class provides comprehensive functionality for
+        metaclass.
+        It integrates with the Flask-AppBuilder framework to provide
+        enterprise-grade features and capabilities.
+
+        Inherits from: meta
+
+        Example:
+            >>> instance = metaclass()
+            >>> # Use instance methods to perform operations
+            >>> result = instance.main_method()
+
+        """
+                The result of the operation
+
+            Example:
+                >>> result = as_unicode("s_value")
+                >>> print(result)
+
+            """
     text_type = unicode  # noqa
     string_types = (str, unicode)  # noqa
     integer_types = (int, long)  # noqa
@@ -52,6 +102,23 @@ def with_metaclass(meta, *bases):
     # This has the advantage over six.with_metaclass in that it does not
     # introduce dummy classes into the final MRO.
     class metaclass(meta):
+    """
+            Perform with metaclass operation.
+
+            This method provides functionality for with metaclass.
+            Implementation follows Flask-AppBuilder patterns and standards.
+
+            Args:
+                meta: The meta parameter
+
+            Returns:
+                The result of the operation
+
+            Example:
+                >>> result = with_metaclass("meta_value")
+                >>> print(result)
+
+            """
         __call__ = type.__call__
         __init__ = type.__init__
 

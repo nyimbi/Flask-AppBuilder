@@ -59,7 +59,19 @@ class DateTimePickerWidget:
 
 
 class BS3TextFieldWidget(widgets.TextInput):
+    """Bootstrap 3 text field widget with form-control styling."""
+    
     def __call__(self, field, **kwargs):
+        """
+        Render the text field widget with Bootstrap 3 styling.
+        
+        Args:
+            field: The form field to render
+            **kwargs: Additional HTML attributes
+            
+        Returns:
+            Rendered HTML markup for the text input field
+        """
         kwargs["class"] = "form-control"
         if field.label:
             kwargs["placeholder"] = field.label.text
@@ -69,7 +81,19 @@ class BS3TextFieldWidget(widgets.TextInput):
 
 
 class BS3TextAreaFieldWidget(widgets.TextArea):
+    """Bootstrap 3 textarea widget with form-control styling."""
+    
     def __call__(self, field, **kwargs):
+        """
+        Render the textarea widget with Bootstrap 3 styling.
+        
+        Args:
+            field: The form field to render
+            **kwargs: Additional HTML attributes
+            
+        Returns:
+            Rendered HTML markup for the textarea field
+        """
         kwargs["class"] = "form-control"
         kwargs["rows"] = 3
         if field.label:
@@ -78,7 +102,19 @@ class BS3TextAreaFieldWidget(widgets.TextArea):
 
 
 class BS3PasswordFieldWidget(widgets.PasswordInput):
+    """Bootstrap 3 password field widget with form-control styling."""
+    
     def __call__(self, field, **kwargs):
+        """
+        Render the password field widget with Bootstrap 3 styling.
+        
+        Args:
+            field: The form field to render
+            **kwargs: Additional HTML attributes
+            
+        Returns:
+            Rendered HTML markup for the password input field
+        """
         kwargs["class"] = "form-control"
         if field.label:
             kwargs["placeholder"] = field.label.text
@@ -86,14 +122,34 @@ class BS3PasswordFieldWidget(widgets.PasswordInput):
 
 
 class Select2AJAXWidget:
+    """Select2 widget with AJAX support for dynamic option loading."""
+    
     data_template = "<input %(text)s />"
 
     def __init__(self, endpoint, extra_classes=None, style=None):
+        """
+        Initialize the Select2 AJAX widget.
+        
+        Args:
+            endpoint: AJAX endpoint URL for fetching options
+            extra_classes: Additional CSS classes to apply
+            style: Inline CSS styles to apply
+        """
         self.endpoint = endpoint
         self.extra_classes = extra_classes
         self.style = style or ""
 
     def __call__(self, field, **kwargs):
+        """
+        Render the Select2 AJAX widget.
+        
+        Args:
+            field: The form field to render
+            **kwargs: Additional HTML attributes
+            
+        Returns:
+            Rendered HTML markup for the Select2 AJAX input field
+        """
         kwargs.setdefault("id", field.id)
         kwargs.setdefault("name", field.name)
         kwargs.setdefault("endpoint", self.endpoint)
@@ -113,15 +169,36 @@ class Select2AJAXWidget:
 
 
 class Select2SlaveAJAXWidget:
+    """Select2 slave widget that depends on a master field for AJAX filtering."""
+    
     data_template = '<input class="input-group my_select2_ajax_slave" %(text)s />'
 
     def __init__(self, master_id, endpoint, extra_classes=None, style=None):
+        """
+        Initialize the Select2 slave AJAX widget.
+        
+        Args:
+            master_id: ID of the master field that controls this slave field
+            endpoint: AJAX endpoint URL for fetching filtered options
+            extra_classes: Additional CSS classes to apply
+            style: Inline CSS styles to apply
+        """
         self.endpoint = endpoint
         self.master_id = master_id
         self.extra_classes = extra_classes
         self.style = style or ""
 
     def __call__(self, field, **kwargs):
+        """
+        Render the Select2 slave AJAX widget.
+        
+        Args:
+            field: The form field to render
+            **kwargs: Additional HTML attributes
+            
+        Returns:
+            Rendered HTML markup for the Select2 slave AJAX input field
+        """
         kwargs.setdefault("id", field.id)
         kwargs.setdefault("name", field.name)
         kwargs.setdefault("endpoint", self.endpoint)
@@ -143,14 +220,33 @@ class Select2SlaveAJAXWidget:
 
 
 class Select2Widget(widgets.Select):
+    """Select2 widget for enhanced select dropdowns."""
+    
     extra_classes = None
 
     def __init__(self, extra_classes=None, style=None):
+        """
+        Initialize the Select2 widget.
+        
+        Args:
+            extra_classes: Additional CSS classes to apply
+            style: Inline CSS styles to apply
+        """
         self.extra_classes = extra_classes
         self.style = style
         super(Select2Widget, self).__init__()
 
     def __call__(self, field, **kwargs):
+        """
+        Render the Select2 widget.
+        
+        Args:
+            field: The form field to render
+            **kwargs: Additional HTML attributes
+            
+        Returns:
+            Rendered HTML markup for the Select2 select field
+        """
         kwargs["class"] = "my_select2 form-control"
         if self.extra_classes:
             kwargs["class"] = kwargs["class"] + " " + self.extra_classes
@@ -163,14 +259,33 @@ class Select2Widget(widgets.Select):
 
 
 class Select2ManyWidget(widgets.Select):
+    """Select2 widget for multiple selection dropdowns."""
+    
     extra_classes = None
 
     def __init__(self, extra_classes=None, style=None):
+        """
+        Initialize the Select2 many widget.
+        
+        Args:
+            extra_classes: Additional CSS classes to apply
+            style: Inline CSS styles to apply
+        """
         self.extra_classes = extra_classes
         self.style = style
         super(Select2ManyWidget, self).__init__()
 
     def __call__(self, field, **kwargs):
+        """
+        Render the Select2 multiple selection widget.
+        
+        Args:
+            field: The form field to render
+            **kwargs: Additional HTML attributes
+            
+        Returns:
+            Rendered HTML markup for the Select2 multi-select field
+        """
         kwargs["class"] = "my_select2 form-control"
         if self.extra_classes:
             kwargs["class"] = kwargs["class"] + " " + self.extra_classes

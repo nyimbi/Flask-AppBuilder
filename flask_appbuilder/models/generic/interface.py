@@ -77,5 +77,25 @@ class GenericInterface(BaseInterface):
                 return col_name
 
     def get(self, id, filters=None):
-        # TODO: need to implement filters!
-        return self.session.get(id)
+        """
+        Get object by ID with optional filters
+        
+        Args:
+            id: Primary key value to lookup
+            filters: Optional filter object to apply additional constraints
+            
+        Returns:
+            Object matching the ID and filters, or None if not found
+        """
+        obj = self.session.get(id)
+        
+        # Apply filters if provided
+        if filters and obj:
+            # Check if object matches all filter criteria
+            for filter_name, filter_value in filters.get_filters_values():
+                if hasattr(obj, filter_name):
+                    obj_value = getattr(obj, filter_name)
+                    if obj_value != filter_value:
+                        return None  # Object doesn't match filter
+                        
+        return obj

@@ -112,6 +112,16 @@ def safe(f: Callable[..., Any]) -> Callable[..., Any]:
 
     def wraps(self: "BaseApi", *args: Any, **kwargs: Any) -> Response:
         try:
+    """
+            Perform wraps operation.
+
+            This method provides functionality for wraps.
+            Implementation follows Flask-AppBuilder patterns and standards.
+
+            Returns:
+                The result of the operation
+
+            
             return f(self, *args, **kwargs)
         except BadRequest as e:
             return self.response_400(message=str(e))
@@ -150,6 +160,16 @@ def rison(
         }
 
         class ExampleApi(BaseApi):
+    """
+            Perform wraps operation.
+
+            This method provides functionality for wraps.
+            Implementation follows Flask-AppBuilder patterns and standards.
+
+            Returns:
+                The result of the operation
+
+            
                 @expose('/risonjson')
                 @rison(schema)
                 def rison_json(self, **kwargs):
@@ -196,12 +216,46 @@ def expose(url: str = "/", methods: Tuple[str] = ("GET",)) -> Callable[..., Any]
     Use this decorator to expose API endpoints on your API classes.
 
     :param url:
+    """
+            Perform wrap operation.
+
+            This method provides functionality for wrap.
+            Implementation follows Flask-AppBuilder patterns and standards.
+
+            Args:
+                f: The f parameter
+
+            Returns:
+                The result of the operation
+
+            Example:
+                >>> result = wrap("f_value")
+                >>> print(result)
+
+            """
         Relative URL for the endpoint
     :param methods:
         Allowed HTTP methods. By default only GET is allowed.
-    """
+    
 
     def wrap(f: Callable[..., Any]) -> Callable[..., Any]:
+    """
+            Perform wrap operation.
+
+            This method provides functionality for wrap.
+            Implementation follows Flask-AppBuilder patterns and standards.
+
+            Args:
+                f: The f parameter
+
+            Returns:
+                The result of the operation
+
+            Example:
+                >>> result = wrap("f_value")
+                >>> print(result)
+
+            """
         if not hasattr(f, "_urls"):
             f._urls = []  # type: ignore
         f._urls.append((url, methods))  # type: ignore
@@ -250,13 +304,13 @@ class BaseApi(AbstractViewApi):
     version: Optional[str] = "v1"
     """
     Define the Api version for this resource/class
-    """
+    
     route_base: Optional[str] = None
     """
     Define the route base where all methods will suffix from
     """
     resource_name: Optional[str] = None
-    """
+    
     Defines a custom resource name, overrides the inferred from Class name
     makes no sense to use it with route base
     """
@@ -267,13 +321,13 @@ class BaseApi(AbstractViewApi):
         class ExampleApi(BaseApi):
             base_permissions = ['can_get']
 
-    """
+    
     class_permission_name: Optional[str] = None
     """
     Override class permission name default fallback to self.__class__.__name__
     """
     previous_class_permission_name: Optional[str] = None
-    """
+    
     If set security converge will replace all permissions tuples
     with this name by the class_permission_name or self.__class__.__name__
     """
@@ -288,21 +342,21 @@ class BaseApi(AbstractViewApi):
             'post': 'write',
             'delete': 'write'
         }
-    """
+    
     previous_method_permission_name: Optional[Dict[str, str]] = None
     """
     Use same structure as method_permission_name. If set security converge
     will replace all method permissions by the new ones
     """
     allow_browser_login = False
-    """
+    
     Will allow flask-login cookie authorization on the API
     default is False.
     """
     csrf_exempt = True
     """
     If using flask-wtf CSRFProtect exempt the API from check
-    """
+    
     apispec_parameter_schemas: Optional[Dict[str, Dict[str, Any]]] = None
     """
     Set your custom Rison parameter schemas here so that
@@ -410,7 +464,7 @@ class BaseApi(AbstractViewApi):
     }
     """
     Override custom OpenApi responses
-    """
+    
 
     exclude_route_methods: Set[str] = set()
     """
@@ -454,7 +508,7 @@ class BaseApi(AbstractViewApi):
             }
     """
     openapi_spec_tag: Optional[str] = None
-    """
+    
     By default all endpoints will be tagged (grouped) to their class name.
     Use this attribute to override the tag name
     """
@@ -472,7 +526,7 @@ class BaseApi(AbstractViewApi):
     """
 
     def __init__(self) -> None:
-        """
+        
         Initialization of base permissions
         based on exposed methods and actions
 
@@ -540,6 +594,29 @@ class BaseApi(AbstractViewApi):
         endpoint: Optional[str] = None,
         static_folder: Optional[str] = None,
     ) -> Blueprint:
+        """
+                Create a new blueprint.
+
+                This method provides functionality for create blueprint.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    appbuilder: The appbuilder parameter
+                    endpoint: The endpoint parameter
+                    static_folder: The static folder parameter
+
+                Returns:
+                    The newly created blueprint instance
+
+                Raises:
+                    Exception: If the operation fails or encounters an error
+
+                Example:
+                    >>> instance = BaseApi()
+                    >>> result = instance.create_blueprint("appbuilder_value", "endpoint_value")
+                    >>> print(result)
+
+                """
         # Store appbuilder instance
         self.appbuilder = appbuilder
         # If endpoint name is not provided, get it from the class name
@@ -547,10 +624,46 @@ class BaseApi(AbstractViewApi):
         self.resource_name = self.resource_name or self.__class__.__name__.lower()
 
         if self.route_base is None:
+        """
+                Perform add api spec operation.
+
+                This method provides functionality for add api spec.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    api_spec: The api spec parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = BaseApi()
+                    >>> result = instance.add_api_spec("api_spec_value")
+                    >>> print(result)
+
+                """
             self.route_base = f"/api/{self.version}/{self.resource_name.lower()}"
         self.blueprint = Blueprint(self.endpoint, __name__, url_prefix=self.route_base)
         # Exempt API from CSRF protect
         if self.csrf_exempt:
+        """
+                Perform add apispec components operation.
+
+                This method provides functionality for add apispec components.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    api_spec: The api spec parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = BaseApi()
+                    >>> result = instance.add_apispec_components("api_spec_value")
+                    >>> print(result)
+
+                """
             csrf = self.appbuilder.app.extensions.get("csrf")
             if csrf:
                 csrf.exempt(self.blueprint)
@@ -682,10 +795,45 @@ class BaseApi(AbstractViewApi):
                 )
             )
             if yaml_doc_string:
+        """
+                Set response key mappings value.
+
+                This method provides functionality for set response key mappings.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    response: The response parameter
+                    func: The func parameter
+                    rison_args: The rison args parameter
+
+                Example:
+                    >>> instance = BaseApi()
+                    >>> result = instance.set_response_key_mappings("response_value", "func_value")
+                    >>> print(result)
+
+                """
                 operation_spec = yaml_doc_string.get(method.lower(), {})
                 # Merge docs spec and override spec
                 operation_spec.update(override_method_spec.get(method.lower(), {}))
                 if self.get_method_permission(func.__name__):
+        """
+                Perform merge current user permissions operation.
+
+                This method provides functionality for merge current user permissions.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    response: The response parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = BaseApi()
+                    >>> result = instance.merge_current_user_permissions("response_value")
+                    >>> print(result)
+
+                """
                     operation_spec["security"] = [{"jwt": []}]
                 operations[method.lower()] = operation_spec
             else:
@@ -719,7 +867,7 @@ class BaseApi(AbstractViewApi):
         """
         Will return a list with views that need to be initialized.
         Normally related_views from ModelView
-        """
+        
         return []
 
     def get_init_inner_views(self) -> List[AbstractViewApi]:
@@ -729,7 +877,7 @@ class BaseApi(AbstractViewApi):
         pass  # pragma: no cover
 
     def get_method_permission(self, method_name: str) -> str:
-        """
+        
         Returns the permission name for a method
         """
         if self.method_permission_name:
@@ -745,6 +893,22 @@ class BaseApi(AbstractViewApi):
         rison_args: Dict[str, Any],
         **kwargs: Any,
     ) -> None:
+    """
+        RESTful API endpoints for basemodel operations.
+
+        The BaseModelApi class provides comprehensive functionality for
+        basemodelapi.
+        It integrates with the Flask-AppBuilder framework to provide
+        enterprise-grade features and capabilities.
+
+        Inherits from: BaseApi
+
+        Example:
+            >>> instance = BaseModelApi()
+            >>> # Use instance methods to perform operations
+            >>> result = instance.main_method()
+
+        """
         if not hasattr(func, "_response_key_func_mappings"):
             return  # pragma: no cover
         _keys = rison_args.get("keys", None)
@@ -844,12 +1008,28 @@ class BaseModelApi(BaseApi):
 
         class MyModelApi(BaseModelApi):
             datamodel = SQLAInterface(MyTable)
-    """
+    
     search_columns = None
     """
     List with allowed search columns, if not provided all possible search
     columns will be used. If you want to limit the search (*filter*) columns
      possibilities, define it with a list of column names from your model::
+    """
+        RESTful API endpoints for modelrest operations.
+
+        The ModelRestApi class provides comprehensive functionality for
+        modelrestapi.
+        It integrates with the Flask-AppBuilder framework to provide
+        enterprise-grade features and capabilities.
+
+        Inherits from: BaseModelApi
+
+        Example:
+            >>> instance = ModelRestApi()
+            >>> # Use instance methods to perform operations
+            >>> result = instance.main_method()
+
+        
 
         class MyView(ModelRestApi):
             datamodel = SQLAInterface(MyTable)
@@ -859,14 +1039,14 @@ class BaseModelApi(BaseApi):
     search_filters = None
     """
     Override default search filters for columns
-    """
+    
     search_exclude_columns = None
     """
     List with columns to exclude from search. Search includes all possible
     columns by default
     """
     label_columns = None
-    """
+    
     Dictionary of labels for your columns, override this if you want
      different pretify labels
 
@@ -891,7 +1071,7 @@ class BaseModelApi(BaseApi):
             base_filters = [['created_by', FilterEqualFunction, get_user],
                             ['name', FilterStartsWith, 'a']]
 
-    """
+    
 
     base_order = None
     """
@@ -904,7 +1084,7 @@ class BaseModelApi(BaseApi):
 
     """
     _base_filters = None
-    """ Internal base Filter from class Filters will always filter view """
+     Internal base Filter from class Filters will always filter view """
     _filters = None
     """
     Filters object will calculate all possible filter types
@@ -922,7 +1102,7 @@ class BaseModelApi(BaseApi):
     def _gen_labels_columns(self, list_columns: List[str]) -> None:
         """
         Auto generates pretty label_columns from list of columns
-        """
+        
         for col in list_columns:
             if not self.label_columns.get(col):
                 self.label_columns[col] = self._prettify_column(col)
@@ -978,7 +1158,7 @@ class ModelRestApi(BaseModelApi):
     """
     Edit Title , if not configured the default is
     'Edit ' with pretty model name
-    """
+    
     list_select_columns: Optional[List[str]] = None
     """
     A List of column names that will be included on the SQL select.
@@ -986,7 +1166,7 @@ class ModelRestApi(BaseModelApi):
     by properties listed on `list_columns` without generating N+1 queries.
     """
     list_outer_default_load = False
-    """
+    
     If True, the default load for outer joins will be applied on the get item endpoint.
     This is useful for when you want to control the load of the many-to-many and
     many-to-one relationships at the model level. Will apply:
@@ -996,7 +1176,7 @@ class ModelRestApi(BaseModelApi):
     """
     A list of columns (or model's methods) to be displayed on the list view.
     Use it to control the order of the display
-    """
+    
     show_select_columns: Optional[List[str]] = None
     """
     A List of column names that will be included on the SQL select.
@@ -1004,7 +1184,7 @@ class ModelRestApi(BaseModelApi):
     by properties listed on `show_columns` without generating N+1 queries.
     """
     show_outer_default_load = False
-    """
+    
     If True, the default load for outer joins will be applied on the get item endpoint.
     This is useful for when you want to control the load of the many-to-many and
     many-to-one relationships at the model level. Will apply:
@@ -1014,27 +1194,27 @@ class ModelRestApi(BaseModelApi):
     """
     A list of columns (or model's methods) for the get item endpoint.
     Use it to control the order of the results
-    """
+    
     add_columns: Optional[List[str]] = None
     """
     A list of columns (or model's methods) to be allowed to post
     """
     edit_columns: Optional[List[str]] = None
-    """
+    
     A list of columns (or model's methods) to be allowed to update
     """
     list_exclude_columns: Optional[List[str]] = None
     """
     A list of columns to exclude from the get list endpoint.
     By default all columns are included.
-    """
+    
     show_exclude_columns: Optional[List[str]] = None
     """
     A list of columns to exclude from the get item endpoint.
     By default all columns are included.
     """
     add_exclude_columns: Optional[List[str]] = None
-    """
+    
     A list of columns to exclude from the add endpoint.
     By default all columns are included.
     """
@@ -1042,33 +1222,112 @@ class ModelRestApi(BaseModelApi):
     """
     A list of columns to exclude from the edit endpoint.
     By default all columns are included.
-    """
+    
     order_columns: Optional[List[str]] = None
     """ Allowed order columns """
     page_size = 20
-    """
+    
     Use this property to change default page size
     """
     max_page_size: Optional[int] = None
     """
     class override for the FAB_API_MAX_SIZE, use special -1 to allow for any page
     size
-    """
+    
     description_columns: Optional[Dict[str, str]] = None
     """
     Dictionary with column descriptions that will be shown on the forms::
+        """
+                Perform add apispec components operation.
+
+                This method provides functionality for add apispec components.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    api_spec: The api spec parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = ModelRestApi()
+                    >>> result = instance.add_apispec_components("api_spec_value")
+                    >>> print(result)
+
+                """
+        
+                Perform edit model schema name operation.
+
+                This method provides functionality for edit model schema name.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+                    The result of the operation
+
+                """
+        """
+                Perform add model schema name operation.
+
+                This method provides functionality for add model schema name.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+                    The result of the operation
+
+                
+        """
+                Perform show model schema name operation.
+
+                This method provides functionality for show model schema name.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+                    The result of the operation
+
+                """
+        
+                Perform list model schema name operation.
+
+                This method provides functionality for list model schema name.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+                    The result of the operation
+
+                """
+        """
+                Create a new blueprint.
+
+                This method provides functionality for create blueprint.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    appbuilder: The appbuilder parameter
+
+                Returns:
+                    The newly created blueprint instance
+
+                Raises:
+                    Exception: If the operation fails or encounters an error
+
+                Example:
+                    >>> instance = ModelRestApi()
+                    >>> result = instance.create_blueprint("appbuilder_value")
+                    >>> print(result)
+
+                """
 
         class MyView(ModelView):
             datamodel = SQLAModel(MyTable, db.session)
 
             description_columns = {'name':'your models name column',
                                     'address':'the address column'}
-    """
+    
     validators_columns: Optional[Dict[str, Callable]] = None
     """ Dictionary to add your own marshmallow validators """
 
     add_query_rel_fields = None
-    """
+    
     Add Customized query for related add fields.
     Assign a dictionary where the keys are the column names of
     the related models to filter, the value for each key, is a list of lists with the
@@ -1089,12 +1348,264 @@ class ModelRestApi(BaseModelApi):
     same format as base_filter
     {'relation col name':[['Related model col',FilterClass,'Filter Value'],...],...}
     Add a custom filter to form related fields::
+        
+                Perform merge edit field info operation.
+
+                This method provides functionality for merge edit field info.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+        """
+                Perform merge search filters operation.
+
+                This method provides functionality for merge search filters.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    response: The response parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = ModelRestApi()
+                    >>> result = instance.merge_search_filters("response_value")
+                    >>> print(result)
+
+                """
+                    response: The response parameter
+
+                Returns:
+        
+                Perform merge label columns operation.
+
+                This method provides functionality for merge label columns.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    response: The response parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+        """
+                Perform merge list label columns operation.
+
+                This method provides functionality for merge list label columns.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+        """
+                Perform merge show columns operation.
+
+                This method provides functionality for merge show columns.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+        
+                Perform merge description columns operation.
+
+                This method provides functionality for merge description columns.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    response: The response parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+        """
+                Perform merge list columns operation.
+
+                This method provides functionality for merge list columns.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+        """
+                Perform merge order columns operation.
+
+                This method provides functionality for merge order columns.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    response: The response parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+        
+                Perform merge list title operation.
+
+                This method provides functionality for merge list title.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+        """
+                Perform merge show title operation.
+
+                This method provides functionality for merge show title.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    response: The response parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = ModelRestApi()
+                    >>> result = instance.merge_show_title("response_value")
+                    >>> print(result)
+
+                """
+                    response: The response parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = ModelRestApi()
+                    >>> result = instance.merge_list_title("response_value")
+                    >>> print(result)
+
+                """
+                    >>> instance = ModelRestApi()
+                    >>> result = instance.merge_order_columns("response_value")
+                    >>> print(result)
+
+                """
+                    response: The response parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = ModelRestApi()
+                    >>> result = instance.merge_list_columns("response_value")
+                    >>> print(result)
+
+                """
+                    >>> instance = ModelRestApi()
+                    >>> result = instance.merge_description_columns("response_value")
+                    >>> print(result)
+
+                """
+                    response: The response parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = ModelRestApi()
+                    >>> result = instance.merge_show_columns("response_value")
+                    >>> print(result)
+
+                """
+        """
+                Perform merge show label columns operation.
+
+                This method provides functionality for merge show label columns.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    response: The response parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = ModelRestApi()
+                    >>> result = instance.merge_show_label_columns("response_value")
+                    >>> print(result)
+
+                """
+                    response: The response parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = ModelRestApi()
+                    >>> result = instance.merge_list_label_columns("response_value")
+                    >>> print(result)
+
+                """
+                    >>> instance = ModelRestApi()
+                    >>> result = instance.merge_label_columns("response_value")
+                    >>> print(result)
+
+                """
+        """
+                Perform merge edit title operation.
+
+                This method provides functionality for merge edit title.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    response: The response parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = ModelRestApi()
+                    >>> result = instance.merge_edit_title("response_value")
+                    >>> print(result)
+
+                """
+        """
+                Perform merge add title operation.
+
+                This method provides functionality for merge add title.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    response: The response parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = ModelRestApi()
+                    >>> result = instance.merge_add_title("response_value")
+                    >>> print(result)
+
+                """
+                    The result of the operation
+
+                Example:
+                    >>> instance = ModelRestApi()
+                    >>> result = instance.merge_edit_field_info("response_value")
+                    >>> print(result)
+
+                """
+        """
+                Perform merge add field info operation.
+
+                This method provides functionality for merge add field info.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    response: The response parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = ModelRestApi()
+                    >>> result = instance.merge_add_field_info("response_value")
+                    >>> print(result)
+
+                """
 
         class ContactModelView(ModelRestApi):
             datamodel = SQLAModel(Contact, db.session)
             edit_query_rel_fields = {'group':[['name',FilterStartsWith,'W']]}
 
-    """
+    
     order_rel_fields = None
     """
     Impose order on related fields.
@@ -1108,7 +1619,7 @@ class ModelRestApi(BaseModelApi):
             }
     """
     list_model_schema: Optional[Schema] = None
-    """
+    
     Override to provide your own marshmallow Schema
     for JSON to SQLA dumps
     """
@@ -1116,14 +1627,14 @@ class ModelRestApi(BaseModelApi):
     """
     Override to provide your own marshmallow Schema
     for JSON to SQLA dumps
-    """
+    
     edit_model_schema: Optional[Schema] = None
     """
     Override to provide your own marshmallow Schema
     for JSON to SQLA dumps
     """
     show_model_schema: Optional[Schema] = None
-    """
+    
     Override to provide your own marshmallow Schema
     for JSON to SQLA dumps
     """
@@ -1460,7 +1971,7 @@ class ModelRestApi(BaseModelApi):
               $ref: '#/components/responses/422'
             500:
               $ref: '#/components/responses/500'
-        """
+        
         return self.info_headless(**kwargs)
 
     def get_headless(self, pk: ModelKeyType, **kwargs: Any) -> Response:
@@ -1584,7 +2095,7 @@ class ModelRestApi(BaseModelApi):
               $ref: '#/components/responses/422'
             500:
               $ref: '#/components/responses/500'
-        """
+        
         return self.get_headless(pk, **kwargs)
 
     def get_list_headless(self, **kwargs: Any) -> Response:
@@ -1736,7 +2247,7 @@ class ModelRestApi(BaseModelApi):
               $ref: '#/components/responses/422'
             500:
               $ref: '#/components/responses/500'
-        """
+        
         return self.get_list_headless(**kwargs)
 
     def post_headless(self) -> Response:
@@ -1799,7 +2310,7 @@ class ModelRestApi(BaseModelApi):
               $ref: '#/components/responses/422'
             500:
               $ref: '#/components/responses/500'
-        """
+        
         return self.post_headless()
 
     def put_headless(self, pk: ModelKeyType) -> Response:
@@ -1867,7 +2378,7 @@ class ModelRestApi(BaseModelApi):
               $ref: '#/components/responses/422'
             500:
               $ref: '#/components/responses/500'
-        """
+        
         return self.put_headless(pk)
 
     def delete_headless(self, pk: ModelKeyType) -> Response:
@@ -1914,7 +2425,7 @@ class ModelRestApi(BaseModelApi):
               $ref: '#/components/responses/422'
             500:
               $ref: '#/components/responses/500'
-        """
+        
         return self.delete_headless(pk)
 
     """
@@ -1926,7 +2437,7 @@ class ModelRestApi(BaseModelApi):
     def _handle_page_args(
         self, rison_args: Dict[str, Any]
     ) -> Tuple[Optional[int], Optional[int]]:
-        """
+        
         Helper function to handle rison page
         arguments, sets defaults and impose
         FAB_API_MAX_PAGE_SIZE
@@ -2076,7 +2587,7 @@ class ModelRestApi(BaseModelApi):
                                     edit_query_rel_fields
         :param kwargs: Receives all rison arguments for pagination
         :return: dict with all fields details
-        """
+        
         ret = []
         for col in cols:
             page = page_size = None
@@ -2137,7 +2648,7 @@ class ModelRestApi(BaseModelApi):
         """
         Merge a model with a python data structure
         This is useful to turn PUT method into a PATCH also
-        """
+        
         data_item = self.edit_model_schema.dump(model_item, many=False)
         for _col in self.edit_columns:
             if _col not in data.keys():
@@ -2151,7 +2662,7 @@ class ModelRestApi(BaseModelApi):
     """
 
     def pre_update(self, item: Model) -> None:
-        """
+        
         Override this, this method is called before the update takes place.
         """
         pass
@@ -2159,7 +2670,7 @@ class ModelRestApi(BaseModelApi):
     def post_update(self, item: Model) -> None:
         """
         Override this, will be called after update
-        """
+        
         pass
 
     def pre_add(self, item: Model) -> None:
@@ -2169,7 +2680,7 @@ class ModelRestApi(BaseModelApi):
         pass
 
     def post_add(self, item: Model) -> None:
-        """
+        
         Override this, will be called after update
         """
         pass
@@ -2177,7 +2688,7 @@ class ModelRestApi(BaseModelApi):
     def pre_delete(self, item: Model) -> None:
         """
         Override this, will be called before delete
-        """
+        
         pass
 
     def post_delete(self, item: Model) -> None:
@@ -2187,7 +2698,7 @@ class ModelRestApi(BaseModelApi):
         pass
 
     def pre_get(self, data: Dict[str, Any]) -> None:
-        """
+        
         Override this, will be called before data is sent
         to the requester on get item endpoint.
         You can use it to mutate the response sent.

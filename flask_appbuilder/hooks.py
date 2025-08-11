@@ -49,6 +49,15 @@ def before_request(
     """
 
     def wrap(hook: Callable[[], Any]) -> Callable[[], Any]:
+        """
+        Internal wrapper function to mark a function as a before-request hook.
+        
+        Args:
+            hook: The function to mark as a hook
+            
+        Returns:
+            The wrapped hook function with metadata attributes
+        """
         hook._before_request_hook = True
         hook._before_request_only = only
         return hook
@@ -61,6 +70,25 @@ def wrap_route_handler_with_hooks(
     handler: Callable[..., Any],
     before_request_hooks: List[Callable[[], Any]],
 ) -> Callable[..., Any]:
+    """
+    Wrap a route handler with applicable before-request hooks.
+    
+    This function creates a new handler that executes before-request hooks
+    before calling the original handler. If any hook returns a non-None
+    value, that value is returned instead of calling the original handler.
+    
+    Args:
+        handler_name: Name of the handler being wrapped
+        handler: The original route handler function
+        before_request_hooks: List of hook functions to apply
+        
+    Returns:
+        A new handler function that executes hooks before the original handler
+        
+    Note:
+        Only hooks that are applicable to the named handler will be executed.
+        Hooks can specify which handlers they apply to using the 'only' parameter.
+    """
     applicable_hooks = []
     for hook in before_request_hooks:
         only = hook._before_request_only
@@ -72,6 +100,17 @@ def wrap_route_handler_with_hooks(
         return handler
 
     def wrapped_handler(*args: List[Any], **kwargs: Dict[str, Any]) -> Any:
+        """
+        Execute applicable hooks before calling the original handler.
+        
+        Args:
+            *args: Positional arguments for the original handler
+            **kwargs: Keyword arguments for the original handler
+            
+        Returns:
+            Result from the first hook that returns non-None, or
+            result from the original handler if no hooks intercept
+        """
         for hook in applicable_hooks:
             result = hook()
             if result is not None:
@@ -82,6 +121,30 @@ def wrap_route_handler_with_hooks(
 
 
 def get_before_request_hooks(view_or_api_instance: Any) -> List[Callable[[], Any]]:
+    """
+    Extract all before-request hook methods from a view or API instance.
+    
+    This function inspects a view or API instance and returns a list of all
+    methods that have been decorated with the @before_request decorator.
+    These hooks will be executed before route handlers are called.
+    
+    Args:
+        view_or_api_instance: The view or API instance to inspect for hooks
+        
+    Returns:
+        List of callable hook functions found on the instance
+        
+    Example:
+        class MyView(BaseView):
+            @before_request
+            def check_auth(self):
+                if not current_user.is_authenticated:
+                    return redirect('/login')
+                    
+        view = MyView()
+        hooks = get_before_request_hooks(view)
+        # hooks will contain [view.check_auth]
+    """
     before_request_hooks = []
     for attr_name in dir(view_or_api_instance):
         attr = getattr(view_or_api_instance, attr_name)

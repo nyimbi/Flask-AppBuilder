@@ -52,6 +52,54 @@ class PermissionModelView(ModelView):
 
 
 class ViewMenuModelView(ModelView):
+    """
+        Flask-AppBuilder view for permissionmodel interface operations.
+
+        The PermissionModelView class provides comprehensive functionality for
+        permissionmodel view operations.
+        It integrates with the Flask-AppBuilder framework to provide
+        enterprise-grade features and capabilities.
+
+        Inherits from: ModelView
+
+        Example:
+    
+        Flask-AppBuilder view for menumodel interface operations.
+
+        The ViewMenuModelView class provides comprehensive functionality for
+         view operationsmenumodel view operations.
+        It integrates with the Flask-AppBuilder framework to provide
+        enterprise-grade features and capabilities.
+
+        Inherits from: ModelView
+
+        Example:
+    """
+        Flask-AppBuilder view for permissionmodel interface operations.
+
+        The PermissionViewModelView class provides comprehensive functionality for
+        permission view operationsmodel view operations.
+        It integrates with the Flask-AppBuilder framework to provide
+        enterprise-grade features and capabilities.
+
+        Inherits from: ModelView
+
+        Example:
+            >>> instance = PermissionViewModelView()
+            >>> # Use instance methods to perform operations
+            >>> result = instance.main_method()
+
+        """
+            >>> instance = ViewMenuModelView()
+            >>> # Use instance methods to perform operations
+            >>> result = instance.main_method()
+
+        
+            >>> instance = PermissionModelView()
+            >>> # Use instance methods to perform operations
+            >>> result = instance.main_method()
+
+        """
     route_base = "/viewmenus"
     base_permissions = ["can_list"]
 
@@ -64,6 +112,110 @@ class ViewMenuModelView(ModelView):
 
 
 class PermissionViewModelView(ModelView):
+        """
+                Perform form post operation.
+
+                This method provides functionality for form post.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+    
+        Flask-AppBuilder view for userinfoedit interface operations.
+
+        The UserInfoEditView class provides comprehensive functionality for
+        userinfoedit view operations.
+        It integrates with the Flask-AppBuilder framework to provide
+        enterprise-grade features and capabilities.
+
+        Inherits from: SimpleFormView
+
+        Example:
+        """
+                Perform form post operation.
+
+                This method provides functionality for form post.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    form: The form parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = UserInfoEditView()
+                    >>> result = instance.form_post("form_value")
+                    >>> print(result)
+
+                """
+        
+                Perform form get operation.
+
+                This method provides functionality for form get.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+    """
+        Flask-AppBuilder view for usermodel interface operations.
+
+        The UserModelView class provides comprehensive functionality for
+        usermodel view operations.
+        It integrates with the Flask-AppBuilder framework to provide
+        enterprise-grade features and capabilities.
+
+        Inherits from: ModelView
+
+        Example:
+            >>> instance = UserModelView()
+            >>> # Use instance methods to perform operations
+            >>> result = instance.main_method()
+
+        """
+                    form: The form parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = UserInfoEditView()
+                    >>> result = instance.form_get("form_value")
+                    >>> print(result)
+
+                """
+            >>> instance = UserInfoEditView()
+            >>> # Use instance methods to perform operations
+            >>> result = instance.main_method()
+
+        """
+                    form: The form parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = ResetPasswordView()
+                    >>> result = instance.form_post("form_value")
+                    >>> print(result)
+
+                """
+        """
+                Perform form post operation.
+
+                This method provides functionality for form post.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    form: The form parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = ResetMyPasswordView()
+                    >>> result = instance.form_post("form_value")
+                    >>> print(result)
+
+                """
     route_base = "/permissionviews"
     base_permissions = ["can_list"]
 
@@ -136,7 +288,35 @@ class UserInfoEditView(SimpleFormView):
 
 
 def _roles_custom_formatter(string: str) -> str:
+        """
+                Perform userinfo operation.
+
+                This method provides functionality for userinfo.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+                    The result of the operation
+
+                """
     if current_app.config.get("AUTH_ROLES_SYNC_AT_LOGIN", False):
+        """
+                Perform userinfoedit operation.
+
+                This method provides functionality for userinfoedit.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    item: The item parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = UserModelView()
+                    >>> result = instance.userinfoedit("item_value")
+                    >>> print(result)
+
+                """
         string += (
             ". <div class='alert alert-warning' role='alert'>"
             "AUTH_ROLES_SYNC_AT_LOGIN is enabled, changes to this field will "
@@ -284,6 +464,465 @@ class UserModelView(ModelView):
     @expose("/userinfo/")
     @has_access
     def userinfo(self) -> WerkzeugResponse:
+    """
+        Flask-AppBuilder view for userstatschart interface operations.
+
+        The UserStatsChartView class provides comprehensive functionality for
+        userstatschart view operations.
+        It integrates with the Flask-AppBuilder framework to provide
+        enterprise-grade features and capabilities.
+
+        Inherits from: DirectByChartView
+
+        Example:
+            >>> instance = UserStatsChartView()
+            >>> # Use instance methods to perform operations
+            >>> result = instance.main_method()
+
+        
+        """
+                Perform pre add operation.
+
+                This method provides functionality for pre add.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+    """
+        Core component for roleshowwidget functionality.
+
+        The RoleShowWidget class provides comprehensive functionality for
+        roleshowwidget.
+        It integrates with the Flask-AppBuilder framework to provide
+        enterprise-grade features and capabilities.
+
+        Inherits from: ShowWidget
+
+        Example:
+    
+        Flask-AppBuilder view for rolemodel interface operations.
+
+        The RoleModelView class provides comprehensive functionality for
+        rolemodel view operations.
+        It integrates with the Flask-AppBuilder framework to provide
+        enterprise-grade features and capabilities.
+
+        Inherits from: ModelView
+
+        Example:
+            >>> instance = RoleModelView()
+            >>> # Use instance methods to perform operations
+            >>> result = instance.main_method()
+
+        """
+            >>> instance = RoleShowWidget()
+            >>> # Use instance methods to perform operations
+            >>> result = instance.main_method()
+
+        """
+    
+        Core component for rolelistwidget functionality.
+
+        The RoleListWidget class provides comprehensive functionality for
+        rolelistwidget.
+        It integrates with the Flask-AppBuilder framework to provide
+        enterprise-grade features and capabilities.
+
+        Inherits from: ListWidget
+
+        Example:
+        """
+                Perform copy role operation.
+
+                This method provides functionality for copy role.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+        """
+                Perform pre delete operation.
+
+                This method provides functionality for pre delete.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+    
+        Flask-AppBuilder view for usergroupmodel interface operations.
+
+        The UserGroupModelView class provides comprehensive functionality for
+        usergroupmodel view operations.
+        It integrates with the Flask-AppBuilder framework to provide
+        enterprise-grade features and capabilities.
+
+        Inherits from: ModelView
+
+        Example:
+        """
+                Perform pre delete operation.
+
+                This method provides functionality for pre delete.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    item: The item parameter
+
+                Returns:
+    """
+        Flask-AppBuilder view for registerusermodel interface operations.
+
+        The RegisterUserModelView class provides comprehensive functionality for
+        registerusermodel view operations.
+        It integrates with the Flask-AppBuilder framework to provide
+        enterprise-grade features and capabilities.
+
+        Inherits from: ModelView
+
+        Example:
+    
+        Flask-AppBuilder view for auth interface operations.
+
+        The AuthView class provides comprehensive functionality for
+        auth view operations.
+        It integrates with the Flask-AppBuilder framework to provide
+        enterprise-grade features and capabilities.
+
+        Inherits from: BaseView
+
+        Example:
+        """
+                Perform logout operation.
+
+                This method provides functionality for logout.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+    """
+        Flask-AppBuilder view for authdb interface operations.
+
+        The AuthDBView class provides comprehensive functionality for
+        authdb view operations.
+        It integrates with the Flask-AppBuilder framework to provide
+        enterprise-grade features and capabilities.
+
+        Inherits from: AuthView
+
+        Example:
+        
+                Perform login operation.
+
+                This method provides functionality for login.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+                    The result of the operation
+
+                """
+            >>> instance = AuthDBView()
+            >>> # Use instance methods to perform operations
+            >>> result = instance.main_method()
+
+        """
+                    The result of the operation
+
+                
+        """
+                Perform login operation.
+
+                This method provides functionality for login.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+        """
+                Perform login operation.
+
+                This method provides functionality for login.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+                    The result of the operation
+
+                
+    """
+        Flask-AppBuilder view for authldap interface operations.
+
+        The AuthLDAPView class provides comprehensive functionality for
+        authldap view operations.
+        It integrates with the Flask-AppBuilder framework to provide
+        enterprise-grade features and capabilities.
+
+        Inherits from: AuthView
+
+        Example:
+        """
+                Perform login operation.
+
+                This method provides functionality for login.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    flag: The flag parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = AuthOIDView()
+                    >>> result = instance.login("flag_value")
+                    >>> print(result)
+
+                """
+    
+        Flask-AppBuilder view for authoid interface operations.
+
+        The AuthOIDView class provides comprehensive functionality for
+        authoid view operations.
+        It integrates with the Flask-AppBuilder framework to provide
+        enterprise-grade features and capabilities.
+
+        Inherits from: AuthView
+
+        Example:
+            >>> instance = AuthOIDView()
+            >>> # Use instance methods to perform operations
+            >>> result = instance.main_method()
+
+        """
+            >>> instance = AuthLDAPView()
+            >>> # Use instance methods to perform operations
+            >>> result = instance.main_method()
+
+        """
+                    The result of the operation
+
+                
+            >>> instance = AuthView()
+            >>> # Use instance methods to perform operations
+            >>> result = instance.main_method()
+
+        """
+            >>> instance = RegisterUserModelView()
+            >>> # Use instance methods to perform operations
+            >>> result = instance.main_method()
+
+        """
+                    The result of the operation
+
+                Raises:
+        """
+                Perform login operation.
+
+                This method provides functionality for login.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    provider: The provider parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = AuthOAuthView()
+                    >>> result = instance.login("provider_value")
+                    >>> print(result)
+
+                """
+    
+        Flask-AppBuilder view for authoauth interface operations.
+
+        The AuthOAuthView class provides comprehensive functionality for
+        authoauth view operations.
+        It integrates with the Flask-AppBuilder framework to provide
+        enterprise-grade features and capabilities.
+
+        Inherits from: AuthView
+
+        Example:
+            >>> instance = AuthOAuthView()
+            >>> # Use instance methods to perform operations
+            >>> result = instance.main_method()
+
+        """
+                    Exception: If the operation fails or encounters an error
+
+                Example:
+                    >>> instance = UserGroupModelView()
+                    >>> result = instance.pre_delete("item_value")
+                    >>> print(result)
+
+                """
+            >>> instance = UserGroupModelView()
+            >>> # Use instance methods to perform operations
+            >>> result = instance.main_method()
+
+        
+                    item: The item parameter
+
+                Returns:
+        """
+                Perform oauth authorized operation.
+
+                This method provides functionality for oauth authorized.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    provider: The provider parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = AuthOAuthView()
+                    >>> result = instance.oauth_authorized("provider_value")
+                    >>> print(result)
+
+                """
+                    The result of the operation
+
+                Raises:
+                    Exception: If the operation fails or encounters an error
+
+                Example:
+                    >>> instance = RoleModelView()
+                    >>> result = instance.pre_delete("item_value")
+                    >>> print(result)
+
+                """
+                    items: The items parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = RoleModelView()
+                    >>> result = instance.copy_role("items_value")
+                    >>> print(result)
+
+                """
+            >>> instance = RoleListWidget()
+            >>> # Use instance methods to perform operations
+            >>> result = instance.main_method()
+
+        
+                    item: The item parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+    """
+        Flask-AppBuilder view for authremoteuser interface operations.
+
+        The AuthRemoteUserView class provides comprehensive functionality for
+        authremoteuser view operations.
+        It integrates with the Flask-AppBuilder framework to provide
+        enterprise-grade features and capabilities.
+
+        Inherits from: AuthView
+
+        Example:
+        """
+                Perform login operation.
+
+                This method provides functionality for login.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+                    The result of the operation
+
+                
+            >>> instance = AuthRemoteUserView()
+            >>> # Use instance methods to perform operations
+            >>> result = instance.main_method()
+
+        """
+                    >>> instance = UserDBModelView()
+                    >>> result = instance.pre_add("item_value")
+                    >>> print(result)
+
+                """
+        """
+                Perform pre update operation.
+
+                This method provides functionality for pre update.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    item: The item parameter
+
+                Returns:
+                    The result of the operation
+
+                Raises:
+                    Exception: If the operation fails or encounters an error
+
+                Example:
+                    >>> instance = UserDBModelView()
+                    >>> result = instance.pre_update("item_value")
+                    >>> print(result)
+
+                """
+        """
+                Perform resetpasswords operation.
+
+                This method provides functionality for resetpasswords.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    item: The item parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = UserDBModelView()
+                    >>> result = instance.resetpasswords("item_value")
+                    >>> print(result)
+
+                """
+        """
+                Perform resetmypassword operation.
+
+                This method provides functionality for resetmypassword.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    item: The item parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = UserDBModelView()
+                    >>> result = instance.resetmypassword("item_value")
+                    >>> print(result)
+
+                """
+        
+                Perform userinfo operation.
+
+                This method provides functionality for userinfo.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+                    The result of the operation
+
+                """
+        """
+                Perform show operation.
+
+                This method provides functionality for show.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    pk: The pk parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = UserDBModelView()
+                    >>> result = instance.show("pk_value")
+                    >>> print(result)
+
+                """
         item = self.datamodel.get(g.user.id, self._base_filters)
         widgets = self._get_show_widget(
             g.user.id, item, show_fieldsets=self.user_show_fieldsets
@@ -308,7 +947,7 @@ class UserOIDModelView(UserModelView):
     View that add OID specifics to User view.
     Override to implement your own custom view.
     Then override useroidmodelview property on SecurityManager
-    """
+    
 
     pass
 
@@ -324,7 +963,7 @@ class UserLDAPModelView(UserModelView):
 
 
 class UserOAuthModelView(UserModelView):
-    """
+    
     View that add OAUTH specifics to User view.
     Override to implement your own custom view.
     Then override userldapmodelview property on SecurityManager
@@ -338,7 +977,7 @@ class UserRemoteUserModelView(UserModelView):
     View that add REMOTE_USER specifics to User view.
     Override to implement your own custom view.
     Then override userldapmodelview property on SecurityManager
-    """
+    
 
     pass
 

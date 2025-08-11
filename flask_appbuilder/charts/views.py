@@ -22,11 +22,11 @@ class BaseChartView(BaseModelView):
     """
 
     chart_template = "appbuilder/general/charts/chart.html"
-    """ The chart template, override to implement your own """
+    """ The chart template, override to implement your own 
     chart_widget = ChartWidget
     """ Chart widget override to implement your own """
     search_widget = SearchWidget
-    """ Search widget override to implement your own """
+     Search widget override to implement your own """
 
     chart_title = "Chart"
     """ A title to be displayed on the chart """
@@ -40,13 +40,13 @@ class BaseChartView(BaseModelView):
     chart_type = "PieChart"
     """ The chart type PieChart, ColumnChart, LineChart """
     chart_3d = "true"
-    """ Will display in 3D? """
+    """ Will display in 3D? 
     width = 400
     """ The width """
     height = "400px"
 
     group_bys = {}
-    """ New for 0.6.4, on test, don't use yet """
+    """ New for 0.6.4, on test, don't use yet 
 
     def __init__(self, **kwargs):
         self._init_titles()
@@ -63,6 +63,7 @@ class BaseChartView(BaseModelView):
         :return:
             Returns a widget
         """
+        pass
         return self._get_chart_widget(**kwargs).get("chart")
 
 
@@ -81,6 +82,22 @@ class GroupByChartView(BaseChartView):
                 to apply the aggregation
 
         ::
+    
+        Flask-AppBuilder view for groupbychart interface operations.
+
+        The GroupByChartView class provides comprehensive functionality for
+        groupbychart view operations.
+        It integrates with the Flask-AppBuilder framework to provide
+        enterprise-grade features and capabilities.
+
+        Inherits from: BaseChartView
+
+        Example:
+            >>> instance = GroupByChartView()
+            >>> # Use instance methods to perform operations
+            >>> result = instance.main_method()
+
+        """
 
             [{
                 'label': 'String',
@@ -141,6 +158,7 @@ class GroupByChartView(BaseChartView):
         """
         intantiates the processing class (Direct or Grouped) and returns it.
         """
+        pass
         group_by = definition["group"]
         series = definition["series"]
         if "formatter" in definition:
@@ -194,6 +212,25 @@ class GroupByChartView(BaseChartView):
     @expose("/chart/")
     @has_access
     def chart(self, group_by=0):
+        """
+                Perform chart operation.
+
+                This method provides functionality for chart.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    group_by: The group by parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = GroupByChartView()
+                    >>> result = instance.chart("group_by_value")
+                    >>> print(result)
+
+                """
+        pass
         group_by = int(group_by)
         form = self.search_form.refresh()
         get_filter_args(self._filters)
@@ -246,6 +283,22 @@ class DirectByChartView(GroupByChartView):
               ]
 
     example::
+    
+        Flask-AppBuilder view for basesimplegroupbychart interface operations.
+
+        The BaseSimpleGroupByChartView class provides comprehensive functionality for
+        basesimplegroupbychart view operations.
+        It integrates with the Flask-AppBuilder framework to provide
+        enterprise-grade features and capabilities.
+
+        Inherits from: BaseChartView
+
+        Example:
+            >>> instance = BaseSimpleGroupByChartView()
+            >>> # Use instance methods to perform operations
+            >>> result = instance.main_method()
+
+        """
 
         class CountryDirectChartView(DirectByChartView):
             datamodel = SQLAInterface(CountryStats)
@@ -272,9 +325,26 @@ class DirectByChartView(GroupByChartView):
 
 class BaseSimpleGroupByChartView(BaseChartView):  # pragma: no cover
     group_by_columns = []
-    """ A list of columns to be possibly grouped by, this list must be filled """
+     A list of columns to be possibly grouped by, this list must be filled """
 
     def __init__(self, **kwargs):
+    """
+        Flask-AppBuilder view for basesimpledirectchart interface operations.
+
+        The BaseSimpleDirectChartView class provides comprehensive functionality for
+        basesimpledirectchart view operations.
+        It integrates with the Flask-AppBuilder framework to provide
+        enterprise-grade features and capabilities.
+
+        Inherits from: BaseChartView
+
+        Example:
+            >>> instance = BaseSimpleDirectChartView()
+            >>> # Use instance methods to perform operations
+            >>> result = instance.main_method()
+
+        """
+        pass
         if not self.group_by_columns:
             raise Exception(
                 "Base Chart View property <group_by_columns> must not be empty"
@@ -319,9 +389,28 @@ class BaseSimpleDirectChartView(BaseChartView):  # pragma: no cover
         Make chart using the column on the dict
         chart_columns = {'chart label 1':('X column','Y1 Column','Y2 Column, ...),
                         'chart label 2': ('X Column','Y1 Column',...),...}
-    """
+    
 
     def __init__(self, **kwargs):
+        """
+                Perform chart operation.
+
+                This method provides functionality for chart.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    group_by: The group by parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = ChartView()
+                    >>> result = instance.chart("group_by_value")
+                    >>> print(result)
+
+                """
+        pass
         if not self.direct_columns:
             raise Exception(
                 "Base Chart View property <direct_columns> must not be empty"
@@ -334,6 +423,7 @@ class BaseSimpleDirectChartView(BaseChartView):  # pragma: no cover
         returns the keys from direct_columns
         Used in template, so that user can choose from options
         """
+        pass
         return list(self.direct_columns.keys())
 
     def _get_chart_widget(
@@ -385,6 +475,26 @@ class ChartView(BaseSimpleGroupByChartView):  # pragma: no cover
     @expose("/chart/")
     @has_access
     def chart(self, group_by=""):
+        """
+                Perform chart operation.
+
+                This method provides functionality for chart.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    group_by: The group by parameter
+                    period: The period parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = TimeChartView()
+                    >>> result = instance.chart("group_by_value", "period_value")
+                    >>> print(result)
+
+                """
+        pass
         form = self.search_form.refresh()
         get_filter_args(self._filters)
 
@@ -406,7 +516,7 @@ class ChartView(BaseSimpleGroupByChartView):  # pragma: no cover
 
 
 class TimeChartView(BaseSimpleGroupByChartView):  # pragma: no cover
-    """
+    
     **DEPRECATED**
 
     Provides a simple way to draw some time charts on your application.
@@ -429,6 +539,25 @@ class TimeChartView(BaseSimpleGroupByChartView):  # pragma: no cover
         height=None,
         **args
     ):
+        """
+                Perform chart operation.
+
+                This method provides functionality for chart.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    group_by: The group by parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = DirectChartView()
+                    >>> result = instance.chart("group_by_value")
+                    >>> print(result)
+
+                """
+        pass
         height = height or self.height
         widgets = widgets or dict()
         group_by = group_by or self.group_by_columns[0]

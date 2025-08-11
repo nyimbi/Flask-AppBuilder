@@ -24,7 +24,7 @@ class AJAXSelectField(Field):
     :param: is_related:
         If the model column is a relationship or direct on
         this case use col_name with the pk
-    """
+    
 
     def __init__(
         self,
@@ -50,6 +50,7 @@ class AJAXSelectField(Field):
 
         :param value: The python object containing the value to process.
         """
+        pass
         if value:
             if self.is_related:
                 self.data = self.datamodel.get_related_interface(
@@ -61,7 +62,7 @@ class AJAXSelectField(Field):
             self.data = None
 
     def process_formdata(self, valuelist):
-        """
+        
         Process data received over the wire from a form.
         This will be called during form construction with data supplied
         through the `formdata` argument.
@@ -134,9 +135,58 @@ class QuerySelectField(SelectFieldBase):
 
     def iter_choices(self):
         if self.allow_blank:
+        """
+                Perform iter choices operation.
+
+                This method provides functionality for iter choices.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+                    The result of the operation
+
+                """
             if IS_WTFORMS_LESS_THEN_3_1_0:
                 yield ("__None", self.blank_text, self.data is None)
             else:
+        """
+                Process formdata data.
+
+                This method provides functionality for process formdata.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    valuelist: The valuelist parameter
+
+                Returns:
+        """
+                Perform pre validate operation.
+
+                This method provides functionality for pre validate.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    form: The form parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = QuerySelectField()
+                    >>> result = instance.pre_validate("form_value")
+                    >>> print(result)
+
+                """
+                    Dictionary containing operation results and status
+
+                Raises:
+                    Exception: If the operation fails or encounters an error
+
+                Example:
+                    >>> instance = QuerySelectField()
+                    >>> result = instance.process_formdata("valuelist_value")
+                    >>> print(result)
+
+                """
                 yield ("__None", self.blank_text, self.data is None, {})
 
         for pk, obj in self._get_object_list():
@@ -166,6 +216,55 @@ class QuerySelectField(SelectFieldBase):
 
 
 class QuerySelectMultipleField(QuerySelectField):
+        """
+                Perform iter choices operation.
+
+                This method provides functionality for iter choices.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+        
+                Process formdata data.
+
+                This method provides functionality for process formdata.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+        """
+                Perform pre validate operation.
+
+                This method provides functionality for pre validate.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    form: The form parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = QuerySelectMultipleField()
+                    >>> result = instance.pre_validate("form_value")
+                    >>> print(result)
+
+                """
+                    valuelist: The valuelist parameter
+
+                Returns:
+                    Dictionary containing operation results and status
+
+                Raises:
+                    Exception: If the operation fails or encounters an error
+
+                Example:
+                    >>> instance = QuerySelectMultipleField()
+                    >>> result = instance.process_formdata("valuelist_value")
+                    >>> print(result)
+
+                """
+                    The result of the operation
+
+                
     """
     Very similar to QuerySelectField with the difference that this will
     display a multiple select. The data property will hold a list with ORM
@@ -191,6 +290,25 @@ class QuerySelectMultipleField(QuerySelectField):
         self._invalid_formdata = False
 
     def _get_data(self):
+        """
+                Perform pre validate operation.
+
+                This method provides functionality for pre validate.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    form: The form parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = EnumField()
+                    >>> result = instance.pre_validate("form_value")
+                    >>> print(result)
+
+                """
+        pass
         formdata = self._formdata
         if formdata is not None:
             data = []

@@ -42,6 +42,29 @@ ADDON_REPO_URL = (
 
 
 def import_application(app_package, appbuilder):
+    """
+    Import and return the Flask-AppBuilder application instance.
+    
+    This function dynamically imports a Python package and retrieves the
+    Flask-AppBuilder instance from it. It's used by the CLI commands to
+    access the application for various operations.
+    
+    Args:
+        app_package: Name of the Python package containing the Flask app
+        appbuilder: Name of the AppBuilder variable within the package
+        
+    Returns:
+        The Flask-AppBuilder application instance
+        
+    Raises:
+        SystemExit: If the package cannot be imported or the appbuilder
+                   variable is not found
+                   
+    Example:
+        >>> app = import_application('myapp', 'appbuilder')
+        >>> print(type(app))
+        <class 'flask_appbuilder.AppBuilder'>
+    """
     sys.path.append(os.getcwd())
     try:
         _app = __import__(app_package)
@@ -66,6 +89,20 @@ def import_application(app_package, appbuilder):
 
 
 def echo_header(title):
+    """
+    Display a formatted header in the terminal.
+    
+    This function prints a styled header text in green color for CLI
+    output formatting. It's used to create visual separation and
+    emphasis in command-line interface output.
+    
+    Args:
+        title: The header text to display
+        
+    Example:
+        >>> echo_header("Database Operations")
+        # Displays "Database Operations" in green color
+    """
     click.echo(click.style(title, fg="green"))
     click.echo(click.style("-" * len(title), fg="green"))
 
@@ -423,4 +460,14 @@ def cli():
 
 
 if __name__ == "__main__":
+    """
+            Perform cli operation.
+
+            This method provides functionality for cli.
+            Implementation follows Flask-AppBuilder patterns and standards.
+
+            Returns:
+                The result of the operation
+
+            """
     cli_app()

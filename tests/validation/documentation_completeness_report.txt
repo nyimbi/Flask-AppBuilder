@@ -1,0 +1,2293 @@
+================================================================================
+DOCUMENTATION COMPLETENESS ANALYSIS REPORT
+================================================================================
+
+SUMMARY STATISTICS
+----------------------------------------
+Total Methods Analyzed: 2126
+Documented Methods: 1577
+Method Documentation Coverage: 74.2%
+
+Total Classes Analyzed: 473
+Documented Classes: 343
+Class Documentation Coverage: 72.5%
+
+Total Modules Analyzed: 131
+Documented Modules: 68
+Module Documentation Coverage: 51.9%
+
+OVERALL DOCUMENTATION COVERAGE: 72.8%
+
+ISSUES SUMMARY
+----------------------------------------
+Critical Issues: 384
+High Priority Issues: 182
+Medium Priority Issues: 524
+Low Priority Issues: 991
+Total Issues: 2081
+
+CRITICAL AND HIGH PRIORITY ISSUES
+----------------------------------------
+[CRITICAL] cli
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/console.py:458
+  Issue: Method 'cli' missing docstring
+
+[CRITICAL] to_dict in class Recommendation
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/recommendation_engine.py:64
+  Issue: Method 'to_dict' missing docstring
+
+[CRITICAL] to_dict in class MediaMetadata
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/multimodal_integration_old.py:194
+  Issue: Method 'to_dict' missing docstring
+
+[CRITICAL] to_dict in class FeatureVector
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/multimodal_integration_old.py:221
+  Issue: Method 'to_dict' missing docstring
+
+[CRITICAL] array in class MockNumpy
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/multimodal_integration_old.py:28
+  Issue: Method 'array' missing docstring
+
+[CRITICAL] mean in class MockNumpy
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/multimodal_integration_old.py:30
+  Issue: Method 'mean' missing docstring
+
+[CRITICAL] std in class MockNumpy
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/multimodal_integration_old.py:32
+  Issue: Method 'std' missing docstring
+
+[CRITICAL] histogram in class MockNumpy
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/multimodal_integration_old.py:37
+  Issue: Method 'histogram' missing docstring
+
+[CRITICAL] open in class MockImage
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/multimodal_integration_old.py:49
+  Issue: Method 'open' missing docstring
+
+[CRITICAL] resize in class MockImage
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/multimodal_integration_old.py:50
+  Issue: Method 'resize' missing docstring
+
+[CRITICAL] convert in class MockImage
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/multimodal_integration_old.py:51
+  Issue: Method 'convert' missing docstring
+
+[CRITICAL] filter in class MockImage
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/multimodal_integration_old.py:52
+  Issue: Method 'filter' missing docstring
+
+[CRITICAL] getdata in class MockImage
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/multimodal_integration_old.py:53
+  Issue: Method 'getdata' missing docstring
+
+[CRITICAL] histogram in class MockImage
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/multimodal_integration_old.py:54
+  Issue: Method 'histogram' missing docstring
+
+[CRITICAL] size in class MockImage
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/multimodal_integration_old.py:56
+  Issue: Method 'size' missing docstring
+
+[CRITICAL] load in class MockLibrosa
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/multimodal_integration_old.py:67
+  Issue: Method 'load' missing docstring
+
+[CRITICAL] stft in class MockLibrosa
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/multimodal_integration_old.py:69
+  Issue: Method 'stft' missing docstring
+
+[CRITICAL] feature in class MockLibrosa
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/multimodal_integration_old.py:71
+  Issue: Method 'feature' missing docstring
+
+[CRITICAL] VideoCapture in class MockCV2
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/multimodal_integration_old.py:92
+  Issue: Method 'VideoCapture' missing docstring
+
+[CRITICAL] fit_transform in class MockTfidf
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/multimodal_integration_old.py:111
+  Issue: Method 'fit_transform' missing docstring
+
+[CRITICAL] get_feature_names_out in class MockTfidf
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/multimodal_integration_old.py:112
+  Issue: Method 'get_feature_names_out' missing docstring
+
+[CRITICAL] cosine_similarity in class MockSimilarity
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/multimodal_integration_old.py:115
+  Issue: Method 'cosine_similarity' missing docstring
+
+[CRITICAL] fit in class MockKMeans
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/multimodal_integration_old.py:118
+  Issue: Method 'fit' missing docstring
+
+[CRITICAL] predict in class MockKMeans
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/multimodal_integration_old.py:119
+  Issue: Method 'predict' missing docstring
+
+[CRITICAL] cluster_centers_ in class MockKMeans
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/multimodal_integration_old.py:121
+  Issue: Method 'cluster_centers_' missing docstring
+
+[CRITICAL] from_pretrained in class MockTokenizer
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/multimodal_integration_old.py:135
+  Issue: Method 'from_pretrained' missing docstring
+
+[CRITICAL] from_pretrained in class MockModel
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/multimodal_integration_old.py:140
+  Issue: Method 'from_pretrained' missing docstring
+
+[CRITICAL] mfcc in class Feature
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/multimodal_integration_old.py:74
+  Issue: Method 'mfcc' missing docstring
+
+[CRITICAL] spectral_centroid in class Feature
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/multimodal_integration_old.py:76
+  Issue: Method 'spectral_centroid' missing docstring
+
+[CRITICAL] zero_crossing_rate in class Feature
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/multimodal_integration_old.py:78
+  Issue: Method 'zero_crossing_rate' missing docstring
+
+[CRITICAL] tempo in class Feature
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/multimodal_integration_old.py:80
+  Issue: Method 'tempo' missing docstring
+
+[CRITICAL] read in class MockCap
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/multimodal_integration_old.py:94
+  Issue: Method 'read' missing docstring
+
+[CRITICAL] get in class MockCap
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/multimodal_integration_old.py:95
+  Issue: Method 'get' missing docstring
+
+[CRITICAL] release in class MockCap
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/multimodal_integration_old.py:96
+  Issue: Method 'release' missing docstring
+
+[CRITICAL] to_dict in class Metric
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/monitoring_system.py:66
+  Issue: Method 'to_dict' missing docstring
+
+[CRITICAL] to_dict in class Alert
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/monitoring_system.py:94
+  Issue: Method 'to_dict' missing docstring
+
+[CRITICAL] to_dict in class Entity
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/knowledge_graph_constructor.py:55
+  Issue: Method 'to_dict' missing docstring
+
+[CRITICAL] to_dict in class Relationship
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/knowledge_graph_constructor.py:82
+  Issue: Method 'to_dict' missing docstring
+
+[CRITICAL] to_dict in class DocumentMetadata
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/knowledge_graph_constructor.py:108
+  Issue: Method 'to_dict' missing docstring
+
+[CRITICAL] decorator
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/performance_optimizer.py:805
+  Issue: Method 'decorator' missing docstring
+
+[CRITICAL] wrapper
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/performance_optimizer.py:807
+  Issue: Method 'wrapper' missing docstring
+
+[CRITICAL] to_dict in class GraphIssue
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/graph_optimizer.py:80
+  Issue: Method 'to_dict' missing docstring
+
+[CRITICAL] to_dict in class OptimizationResult
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/graph_optimizer.py:114
+  Issue: Method 'to_dict' missing docstring
+
+[CRITICAL] to_dict in class Change
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/temporal_graph_system.py:68
+  Issue: Method 'to_dict' missing docstring
+
+[CRITICAL] to_dict in class Snapshot
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/temporal_graph_system.py:102
+  Issue: Method 'to_dict' missing docstring
+
+[CRITICAL] to_dict in class Branch
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/temporal_graph_system.py:134
+  Issue: Method 'to_dict' missing docstring
+
+[CRITICAL] create_form in class GeneralModelConverter
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/forms/__init__.py:67
+  Issue: Method 'create_form' missing docstring
+
+[CRITICAL] roles_or_groups_required
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/forms.py:24
+  Issue: Method 'roles_or_groups_required' missing docstring
+
+[CRITICAL] add_apispec_components in class SecurityApi
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/api.py:26
+  Issue: Method 'add_apispec_components' missing docstring
+
+[CRITICAL] validate_password
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/schemas.py:17
+  Issue: Method 'validate_password' missing docstring
+
+[CRITICAL] validate_provider
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/schemas.py:22
+  Issue: Method 'validate_provider' missing docstring
+
+[CRITICAL] generate_random_string
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/utils.py:7
+  Issue: Method 'generate_random_string' missing docstring
+
+[CRITICAL] no_cache
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/decorators.py:33
+  Issue: Method 'no_cache' missing docstring
+
+[CRITICAL] response_unauthorized_mvc
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/decorators.py:47
+  Issue: Method 'response_unauthorized_mvc' missing docstring
+
+[CRITICAL] wrapped_view
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/decorators.py:35
+  Issue: Method 'wrapped_view' missing docstring
+
+[CRITICAL] wraps
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/decorators.py:142
+  Issue: Method 'wraps' missing docstring
+
+[CRITICAL] wraps
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/decorators.py:182
+  Issue: Method 'wraps' missing docstring
+
+[CRITICAL] wraps
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/decorators.py:240
+  Issue: Method 'wraps' missing docstring
+
+[CRITICAL] wraps
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/decorators.py:293
+  Issue: Method 'wraps' missing docstring
+
+[CRITICAL] wraps
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/decorators.py:86
+  Issue: Method 'wraps' missing docstring
+
+[CRITICAL] created_by_fk in class User
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/models.py:134
+  Issue: Method 'created_by_fk' missing docstring
+
+[CRITICAL] changed_by_fk in class User
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/models.py:140
+  Issue: Method 'changed_by_fk' missing docstring
+
+[CRITICAL] get_user_id in class User
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/models.py:161
+  Issue: Method 'get_user_id' missing docstring
+
+[CRITICAL] is_authenticated in class User
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/models.py:168
+  Issue: Method 'is_authenticated' missing docstring
+
+[CRITICAL] is_active in class User
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/models.py:172
+  Issue: Method 'is_active' missing docstring
+
+[CRITICAL] is_anonymous in class User
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/models.py:176
+  Issue: Method 'is_anonymous' missing docstring
+
+[CRITICAL] get_id in class User
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/models.py:179
+  Issue: Method 'get_id' missing docstring
+
+[CRITICAL] get_full_name in class User
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/models.py:182
+  Issue: Method 'get_full_name' missing docstring
+
+[CRITICAL] get_session in class SecurityManager
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/manager.py:102
+  Issue: Method 'get_session' missing docstring
+
+[CRITICAL] register_views in class SecurityManager
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/manager.py:105
+  Issue: Method 'register_views' missing docstring
+
+[CRITICAL] create_db in class SecurityManager
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/manager.py:116
+  Issue: Method 'create_db' missing docstring
+
+[CRITICAL] find_register_user in class SecurityManager
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/manager.py:130
+  Issue: Method 'find_register_user' missing docstring
+
+[CRITICAL] get_all_users in class SecurityManager
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/manager.py:225
+  Issue: Method 'get_all_users' missing docstring
+
+[CRITICAL] count_users in class SecurityManager
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/manager.py:276
+  Issue: Method 'count_users' missing docstring
+
+[CRITICAL] update_user in class SecurityManager
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/manager.py:279
+  Issue: Method 'update_user' missing docstring
+
+[CRITICAL] get_user_by_id in class SecurityManager
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/manager.py:289
+  Issue: Method 'get_user_by_id' missing docstring
+
+[CRITICAL] get_first_user in class SecurityManager
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/manager.py:292
+  Issue: Method 'get_first_user' missing docstring
+
+[CRITICAL] noop_user_update in class SecurityManager
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/manager.py:295
+  Issue: Method 'noop_user_update' missing docstring
+
+[CRITICAL] add_role in class SecurityManager
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/manager.py:310
+  Issue: Method 'add_role' missing docstring
+
+[CRITICAL] update_role in class SecurityManager
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/manager.py:331
+  Issue: Method 'update_role' missing docstring
+
+[CRITICAL] find_role in class SecurityManager
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/manager.py:345
+  Issue: Method 'find_role' missing docstring
+
+[CRITICAL] get_all_roles in class SecurityManager
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/manager.py:352
+  Issue: Method 'get_all_roles' missing docstring
+
+[CRITICAL] get_public_role in class SecurityManager
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/manager.py:355
+  Issue: Method 'get_public_role' missing docstring
+
+[CRITICAL] find_group in class SecurityManager
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/manager.py:363
+  Issue: Method 'find_group' missing docstring
+
+[CRITICAL] add_group in class SecurityManager
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/manager.py:370
+  Issue: Method 'add_group' missing docstring
+
+[CRITICAL] get_public_permissions in class SecurityManager
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/manager.py:397
+  Issue: Method 'get_public_permissions' missing docstring
+
+[CRITICAL] find_roles_permission_view_menus in class SecurityManager
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/manager.py:452
+  Issue: Method 'find_roles_permission_view_menus' missing docstring
+
+[CRITICAL] get_all_view_menu in class SecurityManager
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/manager.py:606
+  Issue: Method 'get_all_view_menu' missing docstring
+
+[CRITICAL] del_permission_view_menu in class SecurityManager
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/manager.py:715
+  Issue: Method 'del_permission_view_menu' missing docstring
+
+[CRITICAL] exist_permission_on_views in class SecurityManager
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/manager.py:752
+  Issue: Method 'exist_permission_on_views' missing docstring
+
+[CRITICAL] exist_permission_on_view in class SecurityManager
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/manager.py:758
+  Issue: Method 'exist_permission_on_view' missing docstring
+
+[CRITICAL] pre_update in class UserApi
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/apis/user/api.py:71
+  Issue: Method 'pre_update' missing docstring
+
+[CRITICAL] pre_add in class UserApi
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/apis/user/api.py:85
+  Issue: Method 'pre_add' missing docstring
+
+[CRITICAL] get_user_id
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/mongoengine/models.py:17
+  Issue: Method 'get_user_id' missing docstring
+
+[CRITICAL] is_authenticated in class User
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/mongoengine/models.py:104
+  Issue: Method 'is_authenticated' missing docstring
+
+[CRITICAL] is_active in class User
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/mongoengine/models.py:108
+  Issue: Method 'is_active' missing docstring
+
+[CRITICAL] is_anonymous in class User
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/mongoengine/models.py:112
+  Issue: Method 'is_anonymous' missing docstring
+
+[CRITICAL] get_id in class User
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/mongoengine/models.py:115
+  Issue: Method 'get_id' missing docstring
+
+[CRITICAL] get_full_name in class User
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/mongoengine/models.py:118
+  Issue: Method 'get_full_name' missing docstring
+
+[CRITICAL] find_register_user in class SecurityManager
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/mongoengine/manager.py:80
+  Issue: Method 'find_register_user' missing docstring
+
+[CRITICAL] add_register_user in class SecurityManager
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/mongoengine/manager.py:85
+  Issue: Method 'add_register_user' missing docstring
+
+[CRITICAL] del_register_user in class SecurityManager
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/mongoengine/manager.py:113
+  Issue: Method 'del_register_user' missing docstring
+
+[CRITICAL] find_user in class SecurityManager
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/mongoengine/manager.py:119
+  Issue: Method 'find_user' missing docstring
+
+[CRITICAL] get_all_users in class SecurityManager
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/mongoengine/manager.py:125
+  Issue: Method 'get_all_users' missing docstring
+
+[CRITICAL] count_users in class SecurityManager
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/mongoengine/manager.py:168
+  Issue: Method 'count_users' missing docstring
+
+[CRITICAL] update_user in class SecurityManager
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/mongoengine/manager.py:171
+  Issue: Method 'update_user' missing docstring
+
+[CRITICAL] get_user_by_id in class SecurityManager
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/mongoengine/manager.py:178
+  Issue: Method 'get_user_by_id' missing docstring
+
+[CRITICAL] load_user in class SecurityManager
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/mongoengine/manager.py:181
+  Issue: Method 'load_user' missing docstring
+
+[CRITICAL] add_role in class SecurityManager
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/mongoengine/manager.py:190
+  Issue: Method 'add_role' missing docstring
+
+[CRITICAL] update_role in class SecurityManager
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/mongoengine/manager.py:207
+  Issue: Method 'update_role' missing docstring
+
+[CRITICAL] find_role in class SecurityManager
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/mongoengine/manager.py:215
+  Issue: Method 'find_role' missing docstring
+
+[CRITICAL] get_all_roles in class SecurityManager
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/mongoengine/manager.py:218
+  Issue: Method 'get_all_roles' missing docstring
+
+[CRITICAL] get_public_permissions in class SecurityManager
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/mongoengine/manager.py:221
+  Issue: Method 'get_public_permissions' missing docstring
+
+[CRITICAL] exist_permission_on_roles in class SecurityManager
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/mongoengine/manager.py:231
+  Issue: Method 'exist_permission_on_roles' missing docstring
+
+[CRITICAL] get_all_view_menu in class SecurityManager
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/mongoengine/manager.py:288
+  Issue: Method 'get_all_view_menu' missing docstring
+
+[CRITICAL] del_permission_view_menu in class SecurityManager
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/mongoengine/manager.py:372
+  Issue: Method 'del_permission_view_menu' missing docstring
+
+[CRITICAL] exist_permission_on_views in class SecurityManager
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/mongoengine/manager.py:387
+  Issue: Method 'exist_permission_on_views' missing docstring
+
+[CRITICAL] exist_permission_on_view in class SecurityManager
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/mongoengine/manager.py:393
+  Issue: Method 'exist_permission_on_view' missing docstring
+
+[CRITICAL] get_first_user in class SecurityManager
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/mongoengine/manager.py:478
+  Issue: Method 'get_first_user' missing docstring
+
+[CRITICAL] noop_user_update in class SecurityManager
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/mongoengine/manager.py:481
+  Issue: Method 'noop_user_update' missing docstring
+
+[CRITICAL] wrapper
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/utils/error_handling.py:689
+  Issue: Method 'wrapper' missing docstring
+
+[CRITICAL] is_safe_redirect_url
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/utils/base.py:15
+  Issue: Method 'is_safe_redirect_url' missing docstring
+
+[CRITICAL] get_safe_redirect
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/utils/base.py:43
+  Issue: Method 'get_safe_redirect' missing docstring
+
+[CRITICAL] get_column_root_relation
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/utils/base.py:50
+  Issue: Method 'get_column_root_relation' missing docstring
+
+[CRITICAL] get_column_leaf
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/utils/base.py:56
+  Issue: Method 'get_column_leaf' missing docstring
+
+[CRITICAL] is_column_dotted
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/utils/base.py:62
+  Issue: Method 'is_column_dotted' missing docstring
+
+[CRITICAL] get_col_spec in class Vector
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/postgresql.py:56
+  Issue: Method 'get_col_spec' missing docstring
+
+[CRITICAL] bind_processor in class Vector
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/postgresql.py:59
+  Issue: Method 'bind_processor' missing docstring
+
+[CRITICAL] result_processor in class Vector
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/postgresql.py:70
+  Issue: Method 'result_processor' missing docstring
+
+[CRITICAL] get_col_spec in class Geometry
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/postgresql.py:108
+  Issue: Method 'get_col_spec' missing docstring
+
+[CRITICAL] bind_processor in class Geometry
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/postgresql.py:111
+  Issue: Method 'bind_processor' missing docstring
+
+[CRITICAL] result_processor in class Geometry
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/postgresql.py:119
+  Issue: Method 'result_processor' missing docstring
+
+[CRITICAL] get_col_spec in class Geography
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/postgresql.py:152
+  Issue: Method 'get_col_spec' missing docstring
+
+[CRITICAL] get_col_spec in class LTREE
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/postgresql.py:176
+  Issue: Method 'get_col_spec' missing docstring
+
+[CRITICAL] get_col_spec in class HSTORE
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/postgresql.py:200
+  Issue: Method 'get_col_spec' missing docstring
+
+[CRITICAL] bind_processor in class HSTORE
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/postgresql.py:203
+  Issue: Method 'bind_processor' missing docstring
+
+[CRITICAL] result_processor in class HSTORE
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/postgresql.py:212
+  Issue: Method 'result_processor' missing docstring
+
+[CRITICAL] process_formdata in class JSONBField
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/postgresql.py:228
+  Issue: Method 'process_formdata' missing docstring
+
+[CRITICAL] process_formdata in class PostgreSQLArrayField
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/postgresql.py:256
+  Issue: Method 'process_formdata' missing docstring
+
+[CRITICAL] process_formdata in class PostGISGeometryField
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/postgresql.py:284
+  Issue: Method 'process_formdata' missing docstring
+
+[CRITICAL] process_formdata in class PgVectorField
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/postgresql.py:303
+  Issue: Method 'process_formdata' missing docstring
+
+[CRITICAL] process_formdata in class PostgreSQLIntervalField
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/postgresql.py:337
+  Issue: Method 'process_formdata' missing docstring
+
+[CRITICAL] process_formdata in class PostgreSQLUUIDField
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/postgresql.py:353
+  Issue: Method 'process_formdata' missing docstring
+
+[CRITICAL] process_formdata in class PostgreSQLBitStringField
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/postgresql.py:372
+  Issue: Method 'process_formdata' missing docstring
+
+[CRITICAL] created_by_fk in class AuditMixin
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mixins.py:61
+  Issue: Method 'created_by_fk' missing docstring
+
+[CRITICAL] created_by in class AuditMixin
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mixins.py:67
+  Issue: Method 'created_by' missing docstring
+
+[CRITICAL] changed_by_fk in class AuditMixin
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mixins.py:75
+  Issue: Method 'changed_by_fk' missing docstring
+
+[CRITICAL] changed_by in class AuditMixin
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mixins.py:85
+  Issue: Method 'changed_by' missing docstring
+
+[CRITICAL] get_user_id in class AuditMixin
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mixins.py:93
+  Issue: Method 'get_user_id' missing docstring
+
+[CRITICAL] id in class UserExtensionMixin
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mixins.py:105
+  Issue: Method 'id' missing docstring
+
+[CRITICAL] get_group_col in class BaseGroupBy
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/group.py:92
+  Issue: Method 'get_group_col' missing docstring
+
+[CRITICAL] get_format_group_col in class BaseGroupBy
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/group.py:95
+  Issue: Method 'get_format_group_col' missing docstring
+
+[CRITICAL] get_aggregate_col_name in class BaseGroupBy
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/group.py:98
+  Issue: Method 'get_aggregate_col_name' missing docstring
+
+[CRITICAL] apply in class GroupByCol
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/group.py:133
+  Issue: Method 'apply' missing docstring
+
+[CRITICAL] apply in class GroupByDateYear
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/group.py:145
+  Issue: Method 'apply' missing docstring
+
+[CRITICAL] get_group_col in class GroupByDateYear
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/group.py:155
+  Issue: Method 'get_group_col' missing docstring
+
+[CRITICAL] apply in class GroupByDateMonth
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/group.py:162
+  Issue: Method 'apply' missing docstring
+
+[CRITICAL] get_group_col in class GroupByDateMonth
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/group.py:173
+  Issue: Method 'get_group_col' missing docstring
+
+[CRITICAL] get_format_group_col in class GroupByDateMonth
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/group.py:178
+  Issue: Method 'get_format_group_col' missing docstring
+
+[CRITICAL] attrgetter in class BaseProcessData
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/group.py:205
+  Issue: Method 'attrgetter' missing docstring
+
+[CRITICAL] resolve_attr in class BaseProcessData
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/group.py:219
+  Issue: Method 'resolve_attr' missing docstring
+
+[CRITICAL] format_columns in class BaseProcessData
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/group.py:230
+  Issue: Method 'format_columns' missing docstring
+
+[CRITICAL] format_column in class BaseProcessData
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/group.py:239
+  Issue: Method 'format_column' missing docstring
+
+[CRITICAL] apply in class BaseProcessData
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/group.py:245
+  Issue: Method 'apply' missing docstring
+
+[CRITICAL] to_dict in class BaseProcessData
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/group.py:248
+  Issue: Method 'to_dict' missing docstring
+
+[CRITICAL] apply in class DirectProcessData
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/group.py:319
+  Issue: Method 'apply' missing docstring
+
+[CRITICAL] apply in class GroupByProcessData
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/group.py:341
+  Issue: Method 'apply' missing docstring
+
+[CRITICAL] wrap
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/group.py:25
+  Issue: Method 'wrap' missing docstring
+
+[CRITICAL] get_filters in class BaseInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/base.py:94
+  Issue: Method 'get_filters' missing docstring
+
+[CRITICAL] get_values_item in class BaseInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/base.py:103
+  Issue: Method 'get_values_item' missing docstring
+
+[CRITICAL] model_name in class BaseInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/base.py:163
+  Issue: Method 'model_name' missing docstring
+
+[CRITICAL] query in class BaseInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/base.py:170
+  Issue: Method 'query' missing docstring
+
+[CRITICAL] is_image in class BaseInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/base.py:180
+  Issue: Method 'is_image' missing docstring
+
+[CRITICAL] is_file in class BaseInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/base.py:183
+  Issue: Method 'is_file' missing docstring
+
+[CRITICAL] is_gridfs_file in class BaseInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/base.py:186
+  Issue: Method 'is_gridfs_file' missing docstring
+
+[CRITICAL] is_gridfs_image in class BaseInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/base.py:189
+  Issue: Method 'is_gridfs_image' missing docstring
+
+[CRITICAL] is_string in class BaseInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/base.py:192
+  Issue: Method 'is_string' missing docstring
+
+[CRITICAL] is_text in class BaseInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/base.py:195
+  Issue: Method 'is_text' missing docstring
+
+[CRITICAL] is_binary in class BaseInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/base.py:198
+  Issue: Method 'is_binary' missing docstring
+
+[CRITICAL] is_integer in class BaseInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/base.py:201
+  Issue: Method 'is_integer' missing docstring
+
+[CRITICAL] is_numeric in class BaseInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/base.py:204
+  Issue: Method 'is_numeric' missing docstring
+
+[CRITICAL] is_float in class BaseInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/base.py:207
+  Issue: Method 'is_float' missing docstring
+
+[CRITICAL] is_boolean in class BaseInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/base.py:210
+  Issue: Method 'is_boolean' missing docstring
+
+[CRITICAL] is_date in class BaseInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/base.py:213
+  Issue: Method 'is_date' missing docstring
+
+[CRITICAL] is_datetime in class BaseInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/base.py:216
+  Issue: Method 'is_datetime' missing docstring
+
+[CRITICAL] is_enum in class BaseInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/base.py:219
+  Issue: Method 'is_enum' missing docstring
+
+[CRITICAL] is_relation in class BaseInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/base.py:222
+  Issue: Method 'is_relation' missing docstring
+
+[CRITICAL] is_relation_col in class BaseInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/base.py:225
+  Issue: Method 'is_relation_col' missing docstring
+
+[CRITICAL] is_relation_many_to_one in class BaseInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/base.py:228
+  Issue: Method 'is_relation_many_to_one' missing docstring
+
+[CRITICAL] is_relation_many_to_many in class BaseInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/base.py:231
+  Issue: Method 'is_relation_many_to_many' missing docstring
+
+[CRITICAL] is_relation_one_to_one in class BaseInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/base.py:234
+  Issue: Method 'is_relation_one_to_one' missing docstring
+
+[CRITICAL] is_relation_one_to_many in class BaseInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/base.py:237
+  Issue: Method 'is_relation_one_to_many' missing docstring
+
+[CRITICAL] is_nullable in class BaseInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/base.py:240
+  Issue: Method 'is_nullable' missing docstring
+
+[CRITICAL] is_unique in class BaseInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/base.py:243
+  Issue: Method 'is_unique' missing docstring
+
+[CRITICAL] is_pk in class BaseInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/base.py:246
+  Issue: Method 'is_pk' missing docstring
+
+[CRITICAL] is_pk_composite in class BaseInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/base.py:249
+  Issue: Method 'is_pk_composite' missing docstring
+
+[CRITICAL] is_fk in class BaseInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/base.py:252
+  Issue: Method 'is_fk' missing docstring
+
+[CRITICAL] get_max_length in class BaseInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/base.py:255
+  Issue: Method 'get_max_length' missing docstring
+
+[CRITICAL] get_min_length in class BaseInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/base.py:258
+  Issue: Method 'get_min_length' missing docstring
+
+[CRITICAL] get_col_default in class BaseInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/base.py:285
+  Issue: Method 'get_col_default' missing docstring
+
+[CRITICAL] get_pk_value in class BaseInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/base.py:304
+  Issue: Method 'get_pk_value' missing docstring
+
+[CRITICAL] get_related_model in class BaseInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/base.py:318
+  Issue: Method 'get_related_model' missing docstring
+
+[CRITICAL] get_related_obj in class BaseInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/base.py:331
+  Issue: Method 'get_related_obj' missing docstring
+
+[CRITICAL] get_related_fk in class BaseInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/base.py:334
+  Issue: Method 'get_related_fk' missing docstring
+
+[CRITICAL] get_relation_fk in class BaseInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/base.py:361
+  Issue: Method 'get_relation_fk' missing docstring
+
+[CRITICAL] convert in class BaseFilterConverter
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/filters.py:113
+  Issue: Method 'convert' missing docstring
+
+[CRITICAL] get_search_filters in class Filters
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/filters.py:156
+  Issue: Method 'get_search_filters' missing docstring
+
+[CRITICAL] clear_filters in class Filters
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/filters.py:167
+  Issue: Method 'clear_filters' missing docstring
+
+[CRITICAL] add_filter_index in class Filters
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/filters.py:175
+  Issue: Method 'add_filter_index' missing docstring
+
+[CRITICAL] add_filter in class Filters
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/filters.py:229
+  Issue: Method 'add_filter' missing docstring
+
+[CRITICAL] add_filter_related_view in class Filters
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/filters.py:233
+  Issue: Method 'add_filter_related_view' missing docstring
+
+[CRITICAL] add_filter_list in class Filters
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/filters.py:237
+  Issue: Method 'add_filter_list' missing docstring
+
+[CRITICAL] get_filters_values_tojson in class Filters
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/filters.py:290
+  Issue: Method 'get_filters_values_tojson' missing docstring
+
+[CRITICAL] apply_all in class Filters
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/filters.py:296
+  Issue: Method 'apply_all' missing docstring
+
+[CRITICAL] wrap
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/decorators.py:22
+  Issue: Method 'wrap' missing docstring
+
+[CRITICAL] is_model_already_joined in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:81
+  Issue: Method 'is_model_already_joined' missing docstring
+
+[CRITICAL] apply_engine_specific_hack in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:157
+  Issue: Method 'apply_engine_specific_hack' missing docstring
+
+[CRITICAL] apply_order_by in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:175
+  Issue: Method 'apply_order_by' missing docstring
+
+[CRITICAL] apply_pagination in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:214
+  Issue: Method 'apply_pagination' missing docstring
+
+[CRITICAL] apply_filters in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:223
+  Issue: Method 'apply_filters' missing docstring
+
+[CRITICAL] apply_outer_select_joins in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:301
+  Issue: Method 'apply_outer_select_joins' missing docstring
+
+[CRITICAL] exists_col_to_many in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:358
+  Issue: Method 'exists_col_to_many' missing docstring
+
+[CRITICAL] get_alias_mapping in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:368
+  Issue: Method 'get_alias_mapping' missing docstring
+
+[CRITICAL] query_count in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:400
+  Issue: Method 'query_count' missing docstring
+
+[CRITICAL] query_simple_group in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:521
+  Issue: Method 'query_simple_group' missing docstring
+
+[CRITICAL] query_month_group in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:530
+  Issue: Method 'query_month_group' missing docstring
+
+[CRITICAL] query_year_group in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:537
+  Issue: Method 'query_year_group' missing docstring
+
+[CRITICAL] is_image in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:550
+  Issue: Method 'is_image' missing docstring
+
+[CRITICAL] is_file in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:556
+  Issue: Method 'is_file' missing docstring
+
+[CRITICAL] is_string in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:562
+  Issue: Method 'is_string' missing docstring
+
+[CRITICAL] is_text in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:571
+  Issue: Method 'is_text' missing docstring
+
+[CRITICAL] is_binary in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:577
+  Issue: Method 'is_binary' missing docstring
+
+[CRITICAL] is_integer in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:583
+  Issue: Method 'is_integer' missing docstring
+
+[CRITICAL] is_numeric in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:589
+  Issue: Method 'is_numeric' missing docstring
+
+[CRITICAL] is_float in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:595
+  Issue: Method 'is_float' missing docstring
+
+[CRITICAL] is_boolean in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:601
+  Issue: Method 'is_boolean' missing docstring
+
+[CRITICAL] is_date in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:607
+  Issue: Method 'is_date' missing docstring
+
+[CRITICAL] is_datetime in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:613
+  Issue: Method 'is_datetime' missing docstring
+
+[CRITICAL] is_enum in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:619
+  Issue: Method 'is_enum' missing docstring
+
+[CRITICAL] is_relation in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:625
+  Issue: Method 'is_relation' missing docstring
+
+[CRITICAL] is_relation_many_to_one in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:631
+  Issue: Method 'is_relation_many_to_one' missing docstring
+
+[CRITICAL] is_relation_many_to_many in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:639
+  Issue: Method 'is_relation_many_to_many' missing docstring
+
+[CRITICAL] is_relation_many_to_many_special in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:648
+  Issue: Method 'is_relation_many_to_many_special' missing docstring
+
+[CRITICAL] is_relation_one_to_one in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:657
+  Issue: Method 'is_relation_one_to_one' missing docstring
+
+[CRITICAL] is_relation_one_to_many in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:668
+  Issue: Method 'is_relation_one_to_many' missing docstring
+
+[CRITICAL] is_nullable in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:677
+  Issue: Method 'is_nullable' missing docstring
+
+[CRITICAL] is_unique in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:686
+  Issue: Method 'is_unique' missing docstring
+
+[CRITICAL] is_pk in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:692
+  Issue: Method 'is_pk' missing docstring
+
+[CRITICAL] is_pk_composite in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:698
+  Issue: Method 'is_pk_composite' missing docstring
+
+[CRITICAL] is_fk in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:701
+  Issue: Method 'is_fk' missing docstring
+
+[CRITICAL] is_property in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:707
+  Issue: Method 'is_property' missing docstring
+
+[CRITICAL] is_function in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:710
+  Issue: Method 'is_function' missing docstring
+
+[CRITICAL] is_property_or_function in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:713
+  Issue: Method 'is_property_or_function' missing docstring
+
+[CRITICAL] get_max_length in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:716
+  Issue: Method 'get_max_length' missing docstring
+
+[CRITICAL] add in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:734
+  Issue: Method 'add' missing docstring
+
+[CRITICAL] edit in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:755
+  Issue: Method 'edit' missing docstring
+
+[CRITICAL] delete in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:776
+  Issue: Method 'delete' missing docstring
+
+[CRITICAL] delete_all in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:798
+  Issue: Method 'delete_all' missing docstring
+
+[CRITICAL] get_col_default in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:849
+  Issue: Method 'get_col_default' missing docstring
+
+[CRITICAL] get_related_model in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:866
+  Issue: Method 'get_related_model' missing docstring
+
+[CRITICAL] get_related_model_and_join in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:869
+  Issue: Method 'get_related_model_and_join' missing docstring
+
+[CRITICAL] get_related_interface in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:880
+  Issue: Method 'get_related_interface' missing docstring
+
+[CRITICAL] get_related_obj in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:883
+  Issue: Method 'get_related_obj' missing docstring
+
+[CRITICAL] get_related_fks in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:889
+  Issue: Method 'get_related_fks' missing docstring
+
+[CRITICAL] get_related_fk in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:892
+  Issue: Method 'get_related_fk' missing docstring
+
+[CRITICAL] get_info in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:899
+  Issue: Method 'get_info' missing docstring
+
+[CRITICAL] get_file_column_list in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:974
+  Issue: Method 'get_file_column_list' missing docstring
+
+[CRITICAL] get_image_column_list in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:981
+  Issue: Method 'get_image_column_list' missing docstring
+
+[CRITICAL] get_property_first_col in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:988
+  Issue: Method 'get_property_first_col' missing docstring
+
+[CRITICAL] get_relation_fk in class SQLAInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:992
+  Issue: Method 'get_relation_fk' missing docstring
+
+[CRITICAL] make_declarative_base in class SQLA
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/__init__.py:94
+  Issue: Method 'make_declarative_base' missing docstring
+
+[CRITICAL] to_json in class Model
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/__init__.py:176
+  Issue: Method 'to_json' missing docstring
+
+[CRITICAL] set_value_to_type
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/filters.py:56
+  Issue: Method 'set_value_to_type' missing docstring
+
+[CRITICAL] apply in class FilterStartsWith
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/filters.py:89
+  Issue: Method 'apply' missing docstring
+
+[CRITICAL] apply in class FilterNotStartsWith
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/filters.py:98
+  Issue: Method 'apply' missing docstring
+
+[CRITICAL] apply in class FilterEndsWith
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/filters.py:107
+  Issue: Method 'apply' missing docstring
+
+[CRITICAL] apply in class FilterNotEndsWith
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/filters.py:116
+  Issue: Method 'apply' missing docstring
+
+[CRITICAL] apply in class FilterContains
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/filters.py:125
+  Issue: Method 'apply' missing docstring
+
+[CRITICAL] apply in class FilterNotContains
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/filters.py:134
+  Issue: Method 'apply' missing docstring
+
+[CRITICAL] apply in class FilterEqual
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/filters.py:143
+  Issue: Method 'apply' missing docstring
+
+[CRITICAL] apply in class FilterNotEqual
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/filters.py:153
+  Issue: Method 'apply' missing docstring
+
+[CRITICAL] apply in class FilterGreater
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/filters.py:164
+  Issue: Method 'apply' missing docstring
+
+[CRITICAL] apply in class FilterSmaller
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/filters.py:178
+  Issue: Method 'apply' missing docstring
+
+[CRITICAL] apply in class FilterIn
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/filters.py:192
+  Issue: Method 'apply' missing docstring
+
+[CRITICAL] apply in class FilterNotIn
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/filters.py:204
+  Issue: Method 'apply' missing docstring
+
+[CRITICAL] apply in class FilterRelationOneToManyEqual
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/filters.py:216
+  Issue: Method 'apply' missing docstring
+
+[CRITICAL] apply in class FilterRelationOneToManyNotEqual
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/filters.py:237
+  Issue: Method 'apply' missing docstring
+
+[CRITICAL] apply in class FilterRelationManyToManyEqual
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/filters.py:289
+  Issue: Method 'apply' missing docstring
+
+[CRITICAL] apply in class FilterEqualFunction
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/filters.py:304
+  Issue: Method 'apply' missing docstring
+
+[CRITICAL] apply in class FilterInFunction
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/filters.py:313
+  Issue: Method 'apply' missing docstring
+
+[CRITICAL] is_empty
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/fields.py:12
+  Issue: Method 'is_empty' missing docstring
+
+[CRITICAL] process in class MongoFileField
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/fields.py:31
+  Issue: Method 'process' missing docstring
+
+[CRITICAL] populate_obj in class MongoFileField
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/fields.py:39
+  Issue: Method 'populate_obj' missing docstring
+
+[CRITICAL] query in class MongoEngineInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/interface.py:51
+  Issue: Method 'query' missing docstring
+
+[CRITICAL] is_object_id in class MongoEngineInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/interface.py:89
+  Issue: Method 'is_object_id' missing docstring
+
+[CRITICAL] is_string in class MongoEngineInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/interface.py:95
+  Issue: Method 'is_string' missing docstring
+
+[CRITICAL] is_integer in class MongoEngineInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/interface.py:101
+  Issue: Method 'is_integer' missing docstring
+
+[CRITICAL] is_float in class MongoEngineInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/interface.py:107
+  Issue: Method 'is_float' missing docstring
+
+[CRITICAL] is_boolean in class MongoEngineInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/interface.py:113
+  Issue: Method 'is_boolean' missing docstring
+
+[CRITICAL] is_datetime in class MongoEngineInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/interface.py:119
+  Issue: Method 'is_datetime' missing docstring
+
+[CRITICAL] is_gridfs_file in class MongoEngineInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/interface.py:125
+  Issue: Method 'is_gridfs_file' missing docstring
+
+[CRITICAL] is_gridfs_image in class MongoEngineInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/interface.py:131
+  Issue: Method 'is_gridfs_image' missing docstring
+
+[CRITICAL] is_relation in class MongoEngineInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/interface.py:137
+  Issue: Method 'is_relation' missing docstring
+
+[CRITICAL] is_relation_many_to_one in class MongoEngineInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/interface.py:145
+  Issue: Method 'is_relation_many_to_one' missing docstring
+
+[CRITICAL] is_relation_many_to_many in class MongoEngineInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/interface.py:151
+  Issue: Method 'is_relation_many_to_many' missing docstring
+
+[CRITICAL] is_relation_one_to_one in class MongoEngineInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/interface.py:160
+  Issue: Method 'is_relation_one_to_one' missing docstring
+
+[CRITICAL] is_relation_one_to_many in class MongoEngineInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/interface.py:163
+  Issue: Method 'is_relation_one_to_many' missing docstring
+
+[CRITICAL] is_nullable in class MongoEngineInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/interface.py:166
+  Issue: Method 'is_nullable' missing docstring
+
+[CRITICAL] is_unique in class MongoEngineInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/interface.py:169
+  Issue: Method 'is_unique' missing docstring
+
+[CRITICAL] is_pk in class MongoEngineInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/interface.py:172
+  Issue: Method 'is_pk' missing docstring
+
+[CRITICAL] is_pk_composite in class MongoEngineInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/interface.py:175
+  Issue: Method 'is_pk_composite' missing docstring
+
+[CRITICAL] get_max_length in class MongoEngineInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/interface.py:178
+  Issue: Method 'get_max_length' missing docstring
+
+[CRITICAL] get_min_length in class MongoEngineInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/interface.py:188
+  Issue: Method 'get_min_length' missing docstring
+
+[CRITICAL] add in class MongoEngineInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/interface.py:198
+  Issue: Method 'add' missing docstring
+
+[CRITICAL] edit in class MongoEngineInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/interface.py:211
+  Issue: Method 'edit' missing docstring
+
+[CRITICAL] delete in class MongoEngineInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/interface.py:224
+  Issue: Method 'delete' missing docstring
+
+[CRITICAL] get_search_columns_list in class MongoEngineInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/interface.py:255
+  Issue: Method 'get_search_columns_list' missing docstring
+
+[CRITICAL] get_related_model in class MongoEngineInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/interface.py:290
+  Issue: Method 'get_related_model' missing docstring
+
+[CRITICAL] get_related_interface in class MongoEngineInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/interface.py:297
+  Issue: Method 'get_related_interface' missing docstring
+
+[CRITICAL] get_related_obj in class MongoEngineInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/interface.py:300
+  Issue: Method 'get_related_obj' missing docstring
+
+[CRITICAL] get_related_fk in class MongoEngineInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/interface.py:311
+  Issue: Method 'get_related_fk' missing docstring
+
+[CRITICAL] get_pk_name in class MongoEngineInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/interface.py:317
+  Issue: Method 'get_pk_name' missing docstring
+
+[CRITICAL] get in class MongoEngineInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/interface.py:320
+  Issue: Method 'get' missing docstring
+
+[CRITICAL] apply in class FilterEqual
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/filters.py:24
+  Issue: Method 'apply' missing docstring
+
+[CRITICAL] apply in class FilterNotEqual
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/filters.py:35
+  Issue: Method 'apply' missing docstring
+
+[CRITICAL] apply in class FilterGreater
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/filters.py:46
+  Issue: Method 'apply' missing docstring
+
+[CRITICAL] apply in class FilterSmaller
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/filters.py:54
+  Issue: Method 'apply' missing docstring
+
+[CRITICAL] apply in class FilterStartsWith
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/filters.py:62
+  Issue: Method 'apply' missing docstring
+
+[CRITICAL] apply in class FilterNotStartsWith
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/filters.py:70
+  Issue: Method 'apply' missing docstring
+
+[CRITICAL] apply in class FilterContains
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/filters.py:78
+  Issue: Method 'apply' missing docstring
+
+[CRITICAL] apply in class FilterNotContains
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/filters.py:86
+  Issue: Method 'apply' missing docstring
+
+[CRITICAL] apply in class FilterRelationOneToManyEqual
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/filters.py:94
+  Issue: Method 'apply' missing docstring
+
+[CRITICAL] apply in class FilterRelationManyToManyEqual
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/filters.py:103
+  Issue: Method 'apply' missing docstring
+
+[CRITICAL] apply in class FilterEqualFunction
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/filters.py:112
+  Issue: Method 'apply' missing docstring
+
+[CRITICAL] query in class GenericInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/generic/interface.py:19
+  Issue: Method 'query' missing docstring
+
+[CRITICAL] is_string in class GenericInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/generic/interface.py:38
+  Issue: Method 'is_string' missing docstring
+
+[CRITICAL] is_integer in class GenericInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/generic/interface.py:41
+  Issue: Method 'is_integer' missing docstring
+
+[CRITICAL] is_nullable in class GenericInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/generic/interface.py:44
+  Issue: Method 'is_nullable' missing docstring
+
+[CRITICAL] is_unique in class GenericInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/generic/interface.py:47
+  Issue: Method 'is_unique' missing docstring
+
+[CRITICAL] is_pk in class GenericInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/generic/interface.py:50
+  Issue: Method 'is_pk' missing docstring
+
+[CRITICAL] is_pk_composite in class GenericInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/generic/interface.py:53
+  Issue: Method 'is_pk_composite' missing docstring
+
+[CRITICAL] get_columns_list in class GenericInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/generic/interface.py:56
+  Issue: Method 'get_columns_list' missing docstring
+
+[CRITICAL] get_search_columns_list in class GenericInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/generic/interface.py:59
+  Issue: Method 'get_search_columns_list' missing docstring
+
+[CRITICAL] get_order_columns_list in class GenericInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/generic/interface.py:62
+  Issue: Method 'get_order_columns_list' missing docstring
+
+[CRITICAL] get_pk_name in class GenericInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/generic/interface.py:74
+  Issue: Method 'get_pk_name' missing docstring
+
+[CRITICAL] check_type in class GenericColumn
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/generic/__init__.py:32
+  Issue: Method 'check_type' missing docstring
+
+[CRITICAL] get_col_type in class GenericModel
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/generic/__init__.py:98
+  Issue: Method 'get_col_type' missing docstring
+
+[CRITICAL] order_by in class GenericSession
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/generic/__init__.py:167
+  Issue: Method 'order_by' missing docstring
+
+[CRITICAL] scalar in class GenericSession
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/generic/__init__.py:195
+  Issue: Method 'scalar' missing docstring
+
+[CRITICAL] starts_with in class GenericSession
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/generic/__init__.py:202
+  Issue: Method 'starts_with' missing docstring
+
+[CRITICAL] greater in class GenericSession
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/generic/__init__.py:221
+  Issue: Method 'greater' missing docstring
+
+[CRITICAL] smaller in class GenericSession
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/generic/__init__.py:246
+  Issue: Method 'smaller' missing docstring
+
+[CRITICAL] ilike in class GenericSession
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/generic/__init__.py:271
+  Issue: Method 'ilike' missing docstring
+
+[CRITICAL] like in class GenericSession
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/generic/__init__.py:290
+  Issue: Method 'like' missing docstring
+
+[CRITICAL] not_like in class GenericSession
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/generic/__init__.py:304
+  Issue: Method 'not_like' missing docstring
+
+[CRITICAL] equal in class GenericSession
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/generic/__init__.py:311
+  Issue: Method 'equal' missing docstring
+
+[CRITICAL] not_equal in class GenericSession
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/generic/__init__.py:336
+  Issue: Method 'not_equal' missing docstring
+
+[CRITICAL] offset in class GenericSession
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/generic/__init__.py:343
+  Issue: Method 'offset' missing docstring
+
+[CRITICAL] limit in class GenericSession
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/generic/__init__.py:347
+  Issue: Method 'limit' missing docstring
+
+[CRITICAL] add in class GenericSession
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/generic/__init__.py:375
+  Issue: Method 'add' missing docstring
+
+[CRITICAL] add_object in class PSSession
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/generic/__init__.py:402
+  Issue: Method 'add_object' missing docstring
+
+[CRITICAL] get in class PSSession
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/generic/__init__.py:418
+  Issue: Method 'get' missing docstring
+
+[CRITICAL] all in class PSSession
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/generic/__init__.py:425
+  Issue: Method 'all' missing docstring
+
+[CRITICAL] apply in class FilterContains
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/generic/filters.py:22
+  Issue: Method 'apply' missing docstring
+
+[CRITICAL] apply in class FilterIContains
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/generic/filters.py:33
+  Issue: Method 'apply' missing docstring
+
+[CRITICAL] apply in class FilterNotContains
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/generic/filters.py:40
+  Issue: Method 'apply' missing docstring
+
+[CRITICAL] apply in class FilterEqual
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/generic/filters.py:47
+  Issue: Method 'apply' missing docstring
+
+[CRITICAL] apply in class FilterNotEqual
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/generic/filters.py:54
+  Issue: Method 'apply' missing docstring
+
+[CRITICAL] apply in class FilterGreater
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/generic/filters.py:61
+  Issue: Method 'apply' missing docstring
+
+[CRITICAL] apply in class FilterSmaller
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/generic/filters.py:68
+  Issue: Method 'apply' missing docstring
+
+[CRITICAL] apply in class FilterStartsWith
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/generic/filters.py:75
+  Issue: Method 'apply' missing docstring
+
+[CRITICAL] register_views in class BabelManager
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/babel/manager.py:38
+  Issue: Method 'register_views' missing docstring
+
+[CRITICAL] babel_default_locale in class BabelManager
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/babel/manager.py:43
+  Issue: Method 'babel_default_locale' missing docstring
+
+[CRITICAL] languages in class BabelManager
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/babel/manager.py:47
+  Issue: Method 'languages' missing docstring
+
+[CRITICAL] get_locale in class BabelManager
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/babel/manager.py:50
+  Issue: Method 'get_locale' missing docstring
+
+[CRITICAL] add in class Tree
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/api/convert.py:28
+  Issue: Method 'add' missing docstring
+
+[CRITICAL] add_child in class Tree
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/api/convert.py:32
+  Issue: Method 'add_child' missing docstring
+
+[CRITICAL] columns2Tree
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/api/convert.py:49
+  Issue: Method 'columns2Tree' missing docstring
+
+[CRITICAL] process in class BaseModelSchema
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/api/schemas.py:41
+  Issue: Method 'process' missing docstring
+
+[CRITICAL] load in class BaseModelSchema
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/api/schemas.py:48
+  Issue: Method 'load' missing docstring
+
+[CRITICAL] resolver
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/api/manager.py:12
+  Issue: Method 'resolver' missing docstring
+
+[CRITICAL] show in class SwaggerView
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/api/manager.py:89
+  Issue: Method 'show' missing docstring
+
+[CRITICAL] register_views in class OpenApiManager
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/api/manager.py:99
+  Issue: Method 'register_views' missing docstring
+
+[CRITICAL] mean in class MockNumpy
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/views/graph_optimizer_view.py:25
+  Issue: Method 'mean' missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/basemanager.py:1
+  Issue: Module missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/hooks.py:1
+  Issue: Module missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/validators.py:1
+  Issue: Module missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/__init__.py:1
+  Issue: Module missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/messages.py:1
+  Issue: Module missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/exceptions.py:1
+  Issue: Module missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/const.py:1
+  Issue: Module missing docstring
+
+[HIGH] <class> in class MockNumpy
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/multimodal_integration_old.py:26
+  Issue: Class 'MockNumpy' missing docstring
+
+[HIGH] <class> in class MockImage
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/multimodal_integration_old.py:47
+  Issue: Class 'MockImage' missing docstring
+
+[HIGH] <class> in class MockLibrosa
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/multimodal_integration_old.py:65
+  Issue: Class 'MockLibrosa' missing docstring
+
+[HIGH] <class> in class MockCV2
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/multimodal_integration_old.py:90
+  Issue: Class 'MockCV2' missing docstring
+
+[HIGH] <class> in class MockTfidf
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/multimodal_integration_old.py:110
+  Issue: Class 'MockTfidf' missing docstring
+
+[HIGH] <class> in class MockSimilarity
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/multimodal_integration_old.py:113
+  Issue: Class 'MockSimilarity' missing docstring
+
+[HIGH] <class> in class MockKMeans
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/multimodal_integration_old.py:116
+  Issue: Class 'MockKMeans' missing docstring
+
+[HIGH] <class> in class MockTokenizer
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/multimodal_integration_old.py:133
+  Issue: Class 'MockTokenizer' missing docstring
+
+[HIGH] <class> in class MockModel
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/multimodal_integration_old.py:138
+  Issue: Class 'MockModel' missing docstring
+
+[HIGH] <class> in class Feature
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/multimodal_integration_old.py:72
+  Issue: Class 'Feature' missing docstring
+
+[HIGH] <class> in class MockCap
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/multimodal_integration_old.py:93
+  Issue: Class 'MockCap' missing docstring
+
+[HIGH] <class> in class MockOutput
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/database/multimodal_integration_old.py:142
+  Issue: Class 'MockOutput' missing docstring
+
+[HIGH] <class> in class WizardData
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/forms/wizard.py:436
+  Issue: Class 'WizardData' missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/__init__.py:1
+  Issue: Module missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/forms.py:1
+  Issue: Module missing docstring
+
+[HIGH] <class> in class LoginForm_oid
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/forms.py:29
+  Issue: Class 'LoginForm_oid' missing docstring
+
+[HIGH] <class> in class LoginForm_db
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/forms.py:35
+  Issue: Class 'LoginForm_db' missing docstring
+
+[HIGH] <class> in class UserInfoEdit
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/forms.py:40
+  Issue: Class 'UserInfoEdit' missing docstring
+
+[HIGH] <class> in class ResetPasswordForm
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/forms.py:55
+  Issue: Class 'ResetPasswordForm' missing docstring
+
+[HIGH] <class> in class RegisterUserDBForm
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/forms.py:73
+  Issue: Class 'RegisterUserDBForm' missing docstring
+
+[HIGH] <class> in class RegisterUserOIDForm
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/forms.py:112
+  Issue: Class 'RegisterUserOIDForm' missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/api.py:1
+  Issue: Module missing docstring
+
+[HIGH] <class> in class SecurityApi
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/api.py:21
+  Issue: Class 'SecurityApi' missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/schemas.py:1
+  Issue: Module missing docstring
+
+[HIGH] <class> in class LoginPost
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/schemas.py:29
+  Issue: Class 'LoginPost' missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/utils.py:1
+  Issue: Module missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/decorators.py:1
+  Issue: Module missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/models.py:1
+  Issue: Module missing docstring
+
+[HIGH] <class> in class Permission
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/models.py:28
+  Issue: Class 'Permission' missing docstring
+
+[HIGH] <class> in class ViewMenu
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/models.py:37
+  Issue: Class 'ViewMenu' missing docstring
+
+[HIGH] <class> in class Role
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/models.py:68
+  Issue: Class 'Role' missing docstring
+
+[HIGH] <class> in class PermissionView
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/models.py:84
+  Issue: Class 'PermissionView' missing docstring
+
+[HIGH] <class> in class User
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/models.py:111
+  Issue: Class 'User' missing docstring
+
+[HIGH] <class> in class Group
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/models.py:213
+  Issue: Class 'Group' missing docstring
+
+[HIGH] <class> in class RegisterUser
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/models.py:230
+  Issue: Class 'RegisterUser' missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/__init__.py:1
+  Issue: Module missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/manager.py:1
+  Issue: Module missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/apis/__init__.py:1
+  Issue: Module missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/apis/view_menu/__init__.py:1
+  Issue: Module missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/apis/view_menu/api.py:1
+  Issue: Module missing docstring
+
+[HIGH] <class> in class ViewMenuApi
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/apis/view_menu/api.py:6
+  Issue: Class 'ViewMenuApi' missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/apis/role/__init__.py:1
+  Issue: Module missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/apis/role/api.py:1
+  Issue: Module missing docstring
+
+[HIGH] <class> in class RoleApi
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/apis/role/api.py:18
+  Issue: Class 'RoleApi' missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/apis/role/schema.py:1
+  Issue: Module missing docstring
+
+[HIGH] <class> in class RolePermissionPostSchema
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/apis/role/schema.py:4
+  Issue: Class 'RolePermissionPostSchema' missing docstring
+
+[HIGH] <class> in class RolePermissionListSchema
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/apis/role/schema.py:12
+  Issue: Class 'RolePermissionListSchema' missing docstring
+
+[HIGH] <class> in class RoleUserPutSchema
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/apis/role/schema.py:18
+  Issue: Class 'RoleUserPutSchema' missing docstring
+
+[HIGH] <class> in class RoleGroupPutSchema
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/apis/role/schema.py:24
+  Issue: Class 'RoleGroupPutSchema' missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/apis/group/__init__.py:1
+  Issue: Module missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/apis/group/api.py:1
+  Issue: Module missing docstring
+
+[HIGH] <class> in class GroupApi
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/apis/group/api.py:16
+  Issue: Class 'GroupApi' missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/apis/group/schema.py:1
+  Issue: Module missing docstring
+
+[HIGH] <class> in class GroupPostSchema
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/apis/group/schema.py:12
+  Issue: Class 'GroupPostSchema' missing docstring
+
+[HIGH] <class> in class GroupPutSchema
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/apis/group/schema.py:44
+  Issue: Class 'GroupPutSchema' missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/apis/user/validator.py:1
+  Issue: Module missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/apis/user/__init__.py:1
+  Issue: Module missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/apis/user/api.py:1
+  Issue: Module missing docstring
+
+[HIGH] <class> in class UserApi
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/apis/user/api.py:19
+  Issue: Class 'UserApi' missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/apis/user/schema.py:1
+  Issue: Module missing docstring
+
+[HIGH] <class> in class UserPostSchema
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/apis/user/schema.py:18
+  Issue: Class 'UserPostSchema' missing docstring
+
+[HIGH] <class> in class UserPutSchema
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/apis/user/schema.py:65
+  Issue: Class 'UserPutSchema' missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/apis/permission_view_menu/__init__.py:1
+  Issue: Module missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/apis/permission_view_menu/api.py:1
+  Issue: Module missing docstring
+
+[HIGH] <class> in class PermissionViewMenuApi
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/apis/permission_view_menu/api.py:6
+  Issue: Class 'PermissionViewMenuApi' missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/apis/permission/__init__.py:1
+  Issue: Module missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/apis/permission/api.py:1
+  Issue: Module missing docstring
+
+[HIGH] <class> in class PermissionApi
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/sqla/apis/permission/api.py:6
+  Issue: Class 'PermissionApi' missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/mongoengine/models.py:1
+  Issue: Module missing docstring
+
+[HIGH] <class> in class Permission
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/mongoengine/models.py:24
+  Issue: Class 'Permission' missing docstring
+
+[HIGH] <class> in class ViewMenu
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/mongoengine/models.py:31
+  Issue: Class 'ViewMenu' missing docstring
+
+[HIGH] <class> in class PermissionView
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/mongoengine/models.py:44
+  Issue: Class 'PermissionView' missing docstring
+
+[HIGH] <class> in class Role
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/mongoengine/models.py:55
+  Issue: Class 'Role' missing docstring
+
+[HIGH] <class> in class Group
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/mongoengine/models.py:70
+  Issue: Class 'Group' missing docstring
+
+[HIGH] <class> in class User
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/mongoengine/models.py:81
+  Issue: Class 'User' missing docstring
+
+[HIGH] <class> in class RegisterUser
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/mongoengine/models.py:125
+  Issue: Class 'RegisterUser' missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/mongoengine/__init__.py:1
+  Issue: Module missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/security/mongoengine/manager.py:1
+  Issue: Module missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/charts/__init__.py:1
+  Issue: Module missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/charts/jsontools.py:1
+  Issue: Module missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/charts/widgets.py:1
+  Issue: Module missing docstring
+
+[HIGH] <class> in class ChartWidget
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/charts/widgets.py:4
+  Issue: Class 'ChartWidget' missing docstring
+
+[HIGH] <class> in class DirectChartWidget
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/charts/widgets.py:8
+  Issue: Class 'DirectChartWidget' missing docstring
+
+[HIGH] <class> in class MultipleChartWidget
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/charts/widgets.py:12
+  Issue: Class 'MultipleChartWidget' missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/utils/limit.py:1
+  Issue: Module missing docstring
+
+[HIGH] <class> in class Limit
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/utils/limit.py:9
+  Issue: Class 'Limit' missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/utils/base.py:1
+  Issue: Module missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mixins.py:1
+  Issue: Module missing docstring
+
+[HIGH] <class> in class UserExtensionMixin
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mixins.py:100
+  Issue: Class 'UserExtensionMixin' missing docstring
+
+[HIGH] <class> in class BaseMixin
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mixins.py:114
+  Issue: Class 'BaseMixin' missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/__init__.py:1
+  Issue: Module missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/group.py:1
+  Issue: Module missing docstring
+
+[HIGH] <class> in class BaseGroupBy
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/group.py:63
+  Issue: Class 'BaseGroupBy' missing docstring
+
+[HIGH] <class> in class GroupByCol
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/group.py:108
+  Issue: Class 'GroupByCol' missing docstring
+
+[HIGH] <class> in class GroupByDateYear
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/group.py:144
+  Issue: Class 'GroupByDateYear' missing docstring
+
+[HIGH] <class> in class GroupByDateMonth
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/group.py:161
+  Issue: Class 'GroupByDateMonth' missing docstring
+
+[HIGH] <class> in class DirectProcessData
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/group.py:318
+  Issue: Class 'DirectProcessData' missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/base.py:1
+  Issue: Module missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/filters.py:1
+  Issue: Module missing docstring
+
+[HIGH] <class> in class Filters
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/filters.py:120
+  Issue: Class 'Filters' missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/decorators.py:1
+  Issue: Module missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/interface.py:1
+  Issue: Module missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/__init__.py:1
+  Issue: Module missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/filters.py:1
+  Issue: Module missing docstring
+
+[HIGH] <class> in class FilterStartsWith
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/filters.py:85
+  Issue: Class 'FilterStartsWith' missing docstring
+
+[HIGH] <class> in class FilterNotStartsWith
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/filters.py:94
+  Issue: Class 'FilterNotStartsWith' missing docstring
+
+[HIGH] <class> in class FilterEndsWith
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/filters.py:103
+  Issue: Class 'FilterEndsWith' missing docstring
+
+[HIGH] <class> in class FilterNotEndsWith
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/filters.py:112
+  Issue: Class 'FilterNotEndsWith' missing docstring
+
+[HIGH] <class> in class FilterContains
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/filters.py:121
+  Issue: Class 'FilterContains' missing docstring
+
+[HIGH] <class> in class FilterNotContains
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/filters.py:130
+  Issue: Class 'FilterNotContains' missing docstring
+
+[HIGH] <class> in class FilterEqual
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/filters.py:139
+  Issue: Class 'FilterEqual' missing docstring
+
+[HIGH] <class> in class FilterNotEqual
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/filters.py:149
+  Issue: Class 'FilterNotEqual' missing docstring
+
+[HIGH] <class> in class FilterGreater
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/filters.py:160
+  Issue: Class 'FilterGreater' missing docstring
+
+[HIGH] <class> in class FilterSmaller
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/filters.py:174
+  Issue: Class 'FilterSmaller' missing docstring
+
+[HIGH] <class> in class FilterIn
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/filters.py:188
+  Issue: Class 'FilterIn' missing docstring
+
+[HIGH] <class> in class FilterNotIn
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/filters.py:200
+  Issue: Class 'FilterNotIn' missing docstring
+
+[HIGH] <class> in class FilterRelationOneToManyEqual
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/filters.py:212
+  Issue: Class 'FilterRelationOneToManyEqual' missing docstring
+
+[HIGH] <class> in class FilterRelationOneToManyNotEqual
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/filters.py:233
+  Issue: Class 'FilterRelationOneToManyNotEqual' missing docstring
+
+[HIGH] <class> in class FilterRelationManyToManyEqual
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/filters.py:254
+  Issue: Class 'FilterRelationManyToManyEqual' missing docstring
+
+[HIGH] <class> in class FilterEqualFunction
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/filters.py:300
+  Issue: Class 'FilterEqualFunction' missing docstring
+
+[HIGH] <class> in class FilterInFunction
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/sqla/filters.py:309
+  Issue: Class 'FilterInFunction' missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/fields.py:1
+  Issue: Module missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/interface.py:1
+  Issue: Module missing docstring
+
+[HIGH] <class> in class MongoEngineInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/interface.py:35
+  Issue: Class 'MongoEngineInterface' missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/__init__.py:1
+  Issue: Module missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/filters.py:1
+  Issue: Module missing docstring
+
+[HIGH] <class> in class FilterEqual
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/filters.py:21
+  Issue: Class 'FilterEqual' missing docstring
+
+[HIGH] <class> in class FilterNotEqual
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/filters.py:32
+  Issue: Class 'FilterNotEqual' missing docstring
+
+[HIGH] <class> in class FilterGreater
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/filters.py:43
+  Issue: Class 'FilterGreater' missing docstring
+
+[HIGH] <class> in class FilterSmaller
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/filters.py:51
+  Issue: Class 'FilterSmaller' missing docstring
+
+[HIGH] <class> in class FilterStartsWith
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/filters.py:59
+  Issue: Class 'FilterStartsWith' missing docstring
+
+[HIGH] <class> in class FilterNotStartsWith
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/filters.py:67
+  Issue: Class 'FilterNotStartsWith' missing docstring
+
+[HIGH] <class> in class FilterContains
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/filters.py:75
+  Issue: Class 'FilterContains' missing docstring
+
+[HIGH] <class> in class FilterNotContains
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/filters.py:83
+  Issue: Class 'FilterNotContains' missing docstring
+
+[HIGH] <class> in class FilterRelationOneToManyEqual
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/filters.py:91
+  Issue: Class 'FilterRelationOneToManyEqual' missing docstring
+
+[HIGH] <class> in class FilterRelationManyToManyEqual
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/filters.py:100
+  Issue: Class 'FilterRelationManyToManyEqual' missing docstring
+
+[HIGH] <class> in class FilterEqualFunction
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/mongoengine/filters.py:109
+  Issue: Class 'FilterEqualFunction' missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/generic/interface.py:1
+  Issue: Module missing docstring
+
+[HIGH] <class> in class GenericInterface
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/generic/interface.py:11
+  Issue: Class 'GenericInterface' missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/generic/__init__.py:1
+  Issue: Module missing docstring
+
+[HIGH] <class> in class PKMissingException
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/generic/__init__.py:14
+  Issue: Class 'PKMissingException' missing docstring
+
+[HIGH] <class> in class GenericColumn
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/generic/__init__.py:20
+  Issue: Class 'GenericColumn' missing docstring
+
+[HIGH] <class> in class PSModel
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/generic/__init__.py:386
+  Issue: Class 'PSModel' missing docstring
+
+[HIGH] <class> in class PSSession
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/generic/__init__.py:397
+  Issue: Class 'PSSession' missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/generic/filters.py:1
+  Issue: Module missing docstring
+
+[HIGH] <class> in class FilterContains
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/generic/filters.py:19
+  Issue: Class 'FilterContains' missing docstring
+
+[HIGH] <class> in class FilterNotContains
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/generic/filters.py:37
+  Issue: Class 'FilterNotContains' missing docstring
+
+[HIGH] <class> in class FilterEqual
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/generic/filters.py:44
+  Issue: Class 'FilterEqual' missing docstring
+
+[HIGH] <class> in class FilterNotEqual
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/generic/filters.py:51
+  Issue: Class 'FilterNotEqual' missing docstring
+
+[HIGH] <class> in class FilterGreater
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/generic/filters.py:58
+  Issue: Class 'FilterGreater' missing docstring
+
+[HIGH] <class> in class FilterSmaller
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/generic/filters.py:65
+  Issue: Class 'FilterSmaller' missing docstring
+
+[HIGH] <class> in class FilterStartsWith
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/models/generic/filters.py:72
+  Issue: Class 'FilterStartsWith' missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/babel/__init__.py:1
+  Issue: Module missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/babel/manager.py:1
+  Issue: Module missing docstring
+
+[HIGH] <class> in class BabelManager
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/babel/manager.py:9
+  Issue: Class 'BabelManager' missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/api/convert.py:1
+  Issue: Module missing docstring
+
+[HIGH] <class> in class TreeNode
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/api/convert.py:11
+  Issue: Class 'TreeNode' missing docstring
+
+[HIGH] <class> in class BaseModel2SchemaConverter
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/api/convert.py:60
+  Issue: Class 'BaseModel2SchemaConverter' missing docstring
+
+[HIGH] <class> in class MetaSchema
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/api/convert.py:148
+  Issue: Class 'MetaSchema' missing docstring
+
+[HIGH] <class> in class SchemaMixin
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/api/convert.py:274
+  Issue: Class 'SchemaMixin' missing docstring
+
+[HIGH] <class> in class MetaSchema
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/api/convert.py:136
+  Issue: Class 'MetaSchema' missing docstring
+
+[HIGH] <class> in class Meta
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/api/convert.py:149
+  Issue: Class 'Meta' missing docstring
+
+[HIGH] <class> in class Meta
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/api/convert.py:137
+  Issue: Class 'Meta' missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/api/schemas.py:1
+  Issue: Module missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/api/manager.py:1
+  Issue: Module missing docstring
+
+[HIGH] <class> in class OpenApi
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/api/manager.py:25
+  Issue: Class 'OpenApi' missing docstring
+
+[HIGH] <class> in class SwaggerView
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/api/manager.py:82
+  Issue: Class 'SwaggerView' missing docstring
+
+[HIGH] <class> in class OpenApiManager
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/api/manager.py:98
+  Issue: Class 'OpenApiManager' missing docstring
+
+[HIGH] <class> in class MockNumpy
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/views/graph_optimizer_view.py:23
+  Issue: Class 'MockNumpy' missing docstring
+
+[HIGH] <class> in class IndexView
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/views/__init__.py:37
+  Issue: Class 'IndexView' missing docstring
+
+[HIGH] <class> in class UtilView
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/views/__init__.py:41
+  Issue: Class 'UtilView' missing docstring
+
+[HIGH] <class> in class ModelWizardForm
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/views/wizard.py:493
+  Issue: Class 'ModelWizardForm' missing docstring
+
+[HIGH] <class> in class ModelWizardView
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/views/wizard.py:509
+  Issue: Class 'ModelWizardView' missing docstring
+
+[HIGH] <class> in class WizardFormClass
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/views/wizard.py:642
+  Issue: Class 'WizardFormClass' missing docstring
+
+[HIGH] <module>
+  File: /Users/nyimbiodero/src/pjs/fab-ext/flask_appbuilder/translations/__init__.py:1
+  Issue: Module missing docstring

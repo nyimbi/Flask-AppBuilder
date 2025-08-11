@@ -923,8 +923,16 @@ class SQLAInterface(BaseInterface):
             if (not self.is_pk(col_name)) and (not self.is_fk(col_name))
         ]
 
-    # TODO get different solution, more integrated with filters
     def get_search_columns_list(self) -> List[str]:
+        """
+        Returns a list of columns that can be searched/filtered.
+        
+        This method filters out columns that shouldn't be searchable (PKs, FKs, 
+        binary data like images/files) while preserving searchable relationships.
+        
+        Note: Future enhancement could integrate this more tightly with the 
+        filter system to allow dynamic search column configuration per view.
+        """
         ret_lst = []
         for col_name in self.get_columns_list():
             if not self.is_relation(col_name):

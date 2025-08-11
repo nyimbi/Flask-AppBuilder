@@ -963,3 +963,24 @@ def execute_cross_organizational_query(query: str,
 	except Exception as e:
 		logger.error(f"Cross-organizational query failed: {e}")
 		raise
+
+
+# Global federated analytics instance
+_federated_analytics = None
+_federated_lock = threading.Lock()
+
+
+def get_federated_analytics():
+	"""Get the global federated analytics instance"""
+	global _federated_analytics
+	with _federated_lock:
+		if _federated_analytics is None:
+			_federated_analytics = FederatedAnalytics()
+		return _federated_analytics
+
+
+def reset_federated_analytics():
+	"""Reset the global federated analytics instance for testing"""
+	global _federated_analytics
+	with _federated_lock:
+		_federated_analytics = None

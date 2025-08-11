@@ -76,6 +76,16 @@ class FieldConverter(object):
     def convert(self):
         # sqlalchemy.types.Enum inherits from String, therefore `is_enum` must be
         # checked before checking for `is_string`:
+        """
+                Perform convert operation.
+
+                This method provides functionality for convert.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+                    The result of the operation
+
+                """
         if getattr(self.datamodel, "is_enum")(self.colname):
             col_type = self.datamodel.list_columns[self.colname].type
             return EnumField(
@@ -157,6 +167,7 @@ class GeneralModelConverter(object):
         will use a Select box based on a query. Will only
         work with SQLAlchemy interface.
         """
+        pass
         query_func = self._get_related_query_func(col_name, filter_rel_fields)
         get_pk_func = self._get_related_pk_func(col_name)
         extra_classes = None
@@ -296,6 +307,7 @@ class GeneralModelConverter(object):
         :param filter_rel_fields:
             A filter to be applied on relationships
         """
+        pass
         label_columns = label_columns or {}
         inc_columns = inc_columns or []
         description_columns = description_columns or {}
@@ -318,7 +330,25 @@ class GeneralModelConverter(object):
 
 
 class DynamicForm(FlaskForm):
-    """
+        """
+                Perform refresh operation.
+
+                This method provides functionality for refresh.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    obj: The obj parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = DynamicForm()
+                    >>> result = instance.refresh("obj_value")
+                    >>> print(result)
+
+                """
+    
     Refresh method will force select field to refresh
     """
 

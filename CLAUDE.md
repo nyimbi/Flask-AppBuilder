@@ -103,3 +103,4 @@ Test databases configured via environment variables in tox.ini.
 ## Dependencies
 
 Core dependencies managed in `requirements/` with separate files for base, dev, testing, extras, and database-specific requirements. Uses pip-tools for dependency management.
+- All testing, tests, and validation code must be written in a tests dieretory. All documentation must be written in a docs directory. Todo files should be written in a works directory. Avoid cluttering up the workspace with miscellaneous files.  Fully document all actions, decisions and findings.

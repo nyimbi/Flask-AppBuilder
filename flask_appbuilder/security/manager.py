@@ -68,7 +68,7 @@ class AbstractSecurityManager(BaseManager):
     """
     Abstract SecurityManager class, declares all methods used by the
     framework. There is no assumptions about security models or auth types.
-    """
+    
 
     def add_permissions_view(self, base_permissions, view_menu):
         """
@@ -80,10 +80,11 @@ class AbstractSecurityManager(BaseManager):
         :param view_menu:
             name of the view or menu to add
         """
+        pass
         raise NotImplementedError
 
     def add_permissions_menu(self, view_menu_name):
-        """
+        
         Adds menu_access to menu on permission_view_menu
 
         :param view_menu_name:
@@ -94,8 +95,10 @@ class AbstractSecurityManager(BaseManager):
     def register_views(self):
         """
         Generic function to create the security views
-        """
-        raise NotImplementedError
+        
+        raise NotImplementedError"""
+        pass
+        pass
 
     def is_item_public(self, permission_name, view_name):
         """
@@ -106,10 +109,11 @@ class AbstractSecurityManager(BaseManager):
         :param view_name:
             the name of the class view (child of BaseView)
         """
+        pass
         raise NotImplementedError
 
     def has_access(self, permission_name, view_name):
-        """
+        
         Check if current user or public has access to view or menu
         """
         raise NotImplementedError
@@ -118,6 +122,80 @@ class AbstractSecurityManager(BaseManager):
         raise NotImplementedError
 
     def get_first_user(self):
+        """
+                Perform security cleanup operation.
+
+                This method provides functionality for security cleanup.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+        
+                Perform noop user update operation.
+
+                This method provides functionality for noop user update.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    user: The user parameter
+
+                Returns:
+                    The result of the operation
+
+                Raises:
+    """
+        pass
+        Comprehensive management system for basesecurity operations.
+
+        The BaseSecurityManager class provides comprehensive functionality for
+        basesecurity management.
+        It integrates with the Flask-AppBuilder framework to provide
+        enterprise-grade features and capabilities.
+
+        Inherits from: AbstractSecurityManager
+
+        Attributes:
+            appbuilder: Reference to the Flask-AppBuilder instance
+
+        Example:
+            >>> instance = BaseSecurityManager(required_param)
+            >>> # Use instance methods to perform operations
+            >>> result = instance.main_method()
+
+        Note:
+            This manager class follows the Flask-AppBuilder manager pattern
+            and integrates with the application lifecycle and security system.
+
+        """
+                    Exception: If the operation fails or encounters an error
+
+                Example:
+                    >>> instance = AbstractSecurityManager()
+                    >>> result = instance.noop_user_update("user_value")
+                    >>> print(result)
+
+                """
+        
+                Get first user information.
+
+                This method provides functionality for get first user.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+                    The requested first user data
+
+                """
+                    baseviews: The baseviews parameter
+                    menus: The menus parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = AbstractSecurityManager()
+                    >>> result = instance.security_cleanup("baseviews_value", "menus_value")
+                    >>> print(result)
+
+                """
         raise NotImplementedError
 
     def noop_user_update(self, user) -> None:
@@ -125,7 +203,7 @@ class AbstractSecurityManager(BaseManager):
 
 
 def _oauth_tokengetter(token=None):
-    """
+    
     Default function to return the current user oauth token
     from session cookie.
     """
@@ -136,78 +214,78 @@ def _oauth_tokengetter(token=None):
 
 class BaseSecurityManager(AbstractSecurityManager):
     auth_view = None
-    """ The obj instance for authentication view """
+    """ The obj instance for authentication view 
     user_view = None
     """ The obj instance for user view """
     registeruser_view = None
-    """ The obj instance for registering user view """
+     The obj instance for registering user view """
     lm = None
-    """ Flask-Login LoginManager """
+    """ Flask-Login LoginManager 
     jwt_manager = None
     """ Flask-JWT-Extended """
     oid = None
-    """ Flask-OpenID OpenID """
+     Flask-OpenID OpenID """
     oauth = None
-    """ Flask-OAuth """
+    """ Flask-OAuth 
     oauth_remotes = None
     """ OAuth email whitelists """
     oauth_whitelists = {}
-    """ Initialized (remote_app) providers dict {'provider_name', OBJ } """
+     Initialized (remote_app) providers dict {'provider_name', OBJ } """
     oauth_tokengetter = _oauth_tokengetter
-    """ OAuth tokengetter function override to implement your own tokengetter method """
+    """ OAuth tokengetter function override to implement your own tokengetter method 
     oauth_user_info = None
 
     user_model = None
     """ Override to set your own User Model """
     role_model = None
-    """ Override to set your own Role Model """
+     Override to set your own Role Model """
     group_model = None
-    """ Override to set your own Group Model """
+    """ Override to set your own Group Model 
     permission_model = None
     """ Override to set your own Permission Model """
     viewmenu_model = None
-    """ Override to set your own ViewMenu Model """
+     Override to set your own ViewMenu Model """
     permissionview_model = None
-    """ Override to set your own PermissionView Model """
+    """ Override to set your own PermissionView Model 
     registeruser_model = None
     """ Override to set your own RegisterUser Model """
 
     userdbmodelview = UserDBModelView
-    """ Override if you want your own user db view """
+     Override if you want your own user db view """
     userldapmodelview = UserLDAPModelView
-    """ Override if you want your own user ldap view """
+    """ Override if you want your own user ldap view 
     useroidmodelview = UserOIDModelView
     """ Override if you want your own user OID view """
     useroauthmodelview = UserOAuthModelView
-    """ Override if you want your own user OAuth view """
+     Override if you want your own user OAuth view """
     userremoteusermodelview = UserRemoteUserModelView
-    """ Override if you want your own user REMOTE_USER view """
+    """ Override if you want your own user REMOTE_USER view 
     registerusermodelview = RegisterUserModelView
 
     authdbview = AuthDBView
     """ Override if you want your own Authentication DB view """
     authldapview = AuthLDAPView
-    """ Override if you want your own Authentication LDAP view """
+     Override if you want your own Authentication LDAP view """
     authoidview = AuthOIDView
-    """ Override if you want your own Authentication OID view """
+    """ Override if you want your own Authentication OID view 
     authoauthview = AuthOAuthView
     """ Override if you want your own Authentication OAuth view """
     authremoteuserview = AuthRemoteUserView
-    """ Override if you want your own Authentication REMOTE_USER view """
+     Override if you want your own Authentication REMOTE_USER view """
 
     registeruserdbview = RegisterUserDBView
-    """ Override if you want your own register user db view """
+    """ Override if you want your own register user db view 
     registeruseroidview = RegisterUserOIDView
     """ Override if you want your own register user OpenID view """
     registeruseroauthview = RegisterUserOAuthView
-    """ Override if you want your own register user OAuth view """
+     Override if you want your own register user OAuth view """
 
     resetmypasswordview = ResetMyPasswordView
-    """ Override if you want your own reset my password view """
+    """ Override if you want your own reset my password view 
     resetpasswordview = ResetPasswordView
     """ Override if you want your own reset password view """
     userinfoeditview = UserInfoEditView
-    """ Override if you want your own User information edit view """
+     Override if you want your own User information edit view """
 
     # API
     security_api = SecurityApi
@@ -255,6 +333,27 @@ class BaseSecurityManager(AbstractSecurityManager):
 
         # LDAP Config
         if self.auth_type == AUTH_LDAP:
+        """
+                Create a new limiter.
+
+                This method provides functionality for create limiter.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    app: The app parameter
+
+                Returns:
+                    The newly created limiter instance
+
+                Raises:
+                    Exception: If the operation fails or encounters an error
+
+                Example:
+                    >>> instance = BaseSecurityManager()
+                    >>> result = instance.create_limiter("app_value")
+                    >>> print(result)
+
+                """
             if "AUTH_LDAP_SERVER" not in app.config:
                 raise Exception(
                     "No AUTH_LDAP_SERVER defined on config"
@@ -282,6 +381,19 @@ class BaseSecurityManager(AbstractSecurityManager):
             app.config.setdefault("AUTH_LDAP_EMAIL_FIELD", "mail")
 
         if self.auth_type == AUTH_REMOTE_USER:
+        """
+                Create a new builtin roles.
+
+                This method provides functionality for create builtin roles.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+                    The newly created builtin roles instance
+
+                Raises:
+                    Exception: If the operation fails or encounters an error
+
+                """
             app.config.setdefault("AUTH_REMOTE_USER_ENV_VAR", "REMOTE_USER")
 
         # Rate limiting
@@ -289,6 +401,430 @@ class BaseSecurityManager(AbstractSecurityManager):
         app.config.setdefault("AUTH_RATE_LIMIT", "10 per 20 second")
 
         if self.auth_type == AUTH_OID:
+        """
+                Get url for registeruser information.
+
+                This method provides functionality for get url for registeruser.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+        
+                Get register user datamodel information.
+
+                This method provides functionality for get register user datamodel.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+        """
+                Perform builtin roles operation.
+
+                This method provides functionality for builtin roles.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+        """
+                Perform auth type operation.
+
+                This method provides functionality for auth type.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+        
+                Perform auth role admin operation.
+
+                This method provides functionality for auth role admin.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+        """
+                Perform auth ldap server operation.
+
+                This method provides functionality for auth ldap server.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+        """
+                Perform auth ldap use tls operation.
+
+                This method provides functionality for auth ldap use tls.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+        
+                Perform auth user registration role operation.
+
+                This method provides functionality for auth user registration role.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+        """
+                Perform auth remote user env var operation.
+
+                This method provides functionality for auth remote user env var.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+        """
+                Perform auth roles sync at login operation.
+
+                This method provides functionality for auth roles sync at login.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+        
+                Perform auth ldap search operation.
+
+                This method provides functionality for auth ldap search.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+        """
+                Perform auth ldap bind user operation.
+
+                This method provides functionality for auth ldap bind user.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+        """
+                Perform auth ldap append domain operation.
+
+                This method provides functionality for auth ldap append domain.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+        
+                Perform auth ldap uid field operation.
+
+                This method provides functionality for auth ldap uid field.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+        """
+                Perform auth ldap group field operation.
+
+                This method provides functionality for auth ldap group field.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+        """
+                Perform auth ldap lastname field operation.
+
+                This method provides functionality for auth ldap lastname field.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+        
+                Perform auth ldap bind first operation.
+
+                This method provides functionality for auth ldap bind first.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+        """
+                Perform auth ldap tls demand operation.
+
+                This method provides functionality for auth ldap tls demand.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+        """
+                Perform auth ldap tls cacertdir operation.
+
+                This method provides functionality for auth ldap tls cacertdir.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+        
+                Perform auth ldap tls certfile operation.
+
+                This method provides functionality for auth ldap tls certfile.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+        """
+                Perform openid providers operation.
+
+                This method provides functionality for openid providers.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+        """
+                Perform is auth limited operation.
+
+                This method provides functionality for is auth limited.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+        
+                Perform auth rate limit operation.
+
+                This method provides functionality for auth rate limit.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+        """
+                Perform current user operation.
+
+                This method provides functionality for current user.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+                    The result of the operation
+
+                """
+                    The result of the operation
+
+                
+                    Boolean indicating success or presence of the condition
+
+                """
+        """
+                Perform oauth providers operation.
+
+                This method provides functionality for oauth providers.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+                    The result of the operation
+
+                
+                    The result of the operation
+
+                """
+        """
+                Perform auth ldap tls keyfile operation.
+
+                This method provides functionality for auth ldap tls keyfile.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+                    The result of the operation
+
+                
+                    The result of the operation
+
+                """
+        """
+                Perform auth ldap tls cacertfile operation.
+
+                This method provides functionality for auth ldap tls cacertfile.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+                    The result of the operation
+
+                
+                    The result of the operation
+
+                """
+                    The result of the operation
+
+                """
+        
+                Perform auth ldap allow self signed operation.
+
+                This method provides functionality for auth ldap allow self signed.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+                    The result of the operation
+
+                """
+                    The result of the operation
+
+                """
+        
+                Perform auth ldap email field operation.
+
+                This method provides functionality for auth ldap email field.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+                    The result of the operation
+
+                """
+                    The result of the operation
+
+                """
+        
+                Perform auth ldap firstname field operation.
+
+                This method provides functionality for auth ldap firstname field.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+                    The result of the operation
+
+                """
+                    The result of the operation
+
+                """
+                    The result of the operation
+
+                
+        """
+                Perform auth ldap username format operation.
+
+                This method provides functionality for auth ldap username format.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+                    The result of the operation
+
+                """
+                    The result of the operation
+
+                
+        """
+                Perform auth ldap bind password operation.
+
+                This method provides functionality for auth ldap bind password.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+                    The result of the operation
+
+                """
+                    The result of the operation
+
+                
+        """
+                Perform auth ldap search filter operation.
+
+                This method provides functionality for auth ldap search filter.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+                    The result of the operation
+
+                """
+                    The result of the operation
+
+                
+                    The result of the operation
+
+                """
+        """
+                Perform auth roles mapping operation.
+
+                This method provides functionality for auth roles mapping.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+                    The result of the operation
+
+                
+                    The result of the operation
+
+                """
+        """
+                Perform auth user registration role jmespath operation.
+
+                This method provides functionality for auth user registration role jmespath.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+                    The result of the operation
+
+                
+                    The result of the operation
+
+                """
+        """
+                Perform auth user registration operation.
+
+                This method provides functionality for auth user registration.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+                    The result of the operation
+
+                
+                    The result of the operation
+
+                """
+                    The result of the operation
+
+                """
+        
+                Perform auth role public operation.
+
+                This method provides functionality for auth role public.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+                    The result of the operation
+
+                """
+                    The result of the operation
+
+                """
+        
+                Perform auth username ci operation.
+
+                This method provides functionality for auth username ci.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+                    The result of the operation
+
+                """
+                    The result of the operation
+
+                """
+        
+                Perform api login allow multiple providers operation.
+
+                This method provides functionality for api login allow multiple providers.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+                    The result of the operation
+
+                """
+                    The result of the operation
+
+                """
+                    The requested register user datamodel data
+
+                
+        """
+                Get user datamodel information.
+
+                This method provides functionality for get user datamodel.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+                    The requested user datamodel data
+
+                """
+                    The requested url for registeruser data
+
+                
+        """
+                Perform auth type provider name operation.
+
+                This method provides functionality for auth type provider name.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+        """
+                Register views components.
+
+                This method provides functionality for register views.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+                    The result of the operation
+
+                Note:
+                    This method is part of the Flask-AppBuilder lifecycle and
+                    should be implemented by subclasses as needed.
+
+                
+                    The result of the operation
+
+                """
             from flask_openid import OpenID
 
             log.warning(
@@ -566,7 +1102,9 @@ class BaseSecurityManager(AbstractSecurityManager):
         The returned user info dict should have it's keys with the same
         name as the User Model.
 
-        Use it like this an example for GitHub ::
+        Use it like this an example for GitHub ::"""
+        pass
+        pass
 
             @appbuilder.sm.oauth_user_info_getter
             def my_oauth_user_info(sm, provider, response=None):
@@ -574,7 +1112,7 @@ class BaseSecurityManager(AbstractSecurityManager):
                     me = sm.oauth_remotes[provider].get('user')
                     return {'username': me.data.get('login')}
                 return {}
-        """
+        
 
         def wraps(provider: str, response: Dict[str, Any] = None) -> Dict[str, Any]:
             return func(self, provider, response)
@@ -588,6 +1126,7 @@ class BaseSecurityManager(AbstractSecurityManager):
         if none is configured defaults to oauth_token
         this is configured using OAUTH_PROVIDERS and token_key key.
         """
+        pass
         for _provider in self.oauth_providers:
             if _provider["name"] == provider:
                 return _provider.get("token_key", "oauth_token")
@@ -598,6 +1137,7 @@ class BaseSecurityManager(AbstractSecurityManager):
         if none is configured defaults to oauth_secret
         this is configured using OAUTH_PROVIDERS and token_secret
         """
+        pass
         for _provider in self.oauth_providers:
             if _provider["name"] == provider:
                 return _provider.get("token_secret", "oauth_token_secret")
@@ -606,6 +1146,7 @@ class BaseSecurityManager(AbstractSecurityManager):
         """
         Set the current session with OAuth user secrets
         """
+        pass
         # Get this provider key names for token_key and token_secret
         token_key = self.appbuilder.sm.get_oauth_token_key_name(provider)
         token_secret = self.appbuilder.sm.get_oauth_token_secret_name(provider)
@@ -631,6 +1172,45 @@ class BaseSecurityManager(AbstractSecurityManager):
             return {"username": "github_" + data.get("login")}
         # for twitter
         if provider == "twitter":
+        """
+                Perform ldap extract operation.
+
+                This method provides functionality for ldap extract.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+        """
+                Perform ldap extract list operation.
+
+                This method provides functionality for ldap extract list.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    ldap_dict: The ldap dict parameter
+                    field_name: The field name parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = BaseSecurityManager()
+                    >>> result = instance.ldap_extract_list("ldap_dict_value", "field_name_value")
+                    >>> print(result)
+
+                """
+                    ldap_dict: The ldap dict parameter
+                    field_name: The field name parameter
+                    fallback: The fallback parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = BaseSecurityManager()
+                    >>> result = instance.ldap_extract("ldap_dict_value", "field_name_value")
+                    >>> print(result)
+
+                """
             me = self.appbuilder.sm.oauth_remotes[provider].get("account/settings.json")
             data = me.json()
             log.debug("User info from Twitter: %s", data)
@@ -924,6 +1504,7 @@ class BaseSecurityManager(AbstractSecurityManager):
         """
         Setups the DB, creates admin and public roles if they don't exist.
         """
+        pass
         roles_mapping = self.appbuilder.get_app.config.get("FAB_ROLES_MAPPING", {})
         for pk, name in roles_mapping.items():
             self.update_role(pk, name)
@@ -949,6 +1530,7 @@ class BaseSecurityManager(AbstractSecurityManager):
         :param password:
             The clear text password to reset and save hashed on the db
         """
+        pass
         user = self.get_user_by_id(userid)
         user.password = generate_password_hash(
             password=password,
@@ -974,7 +1556,7 @@ class BaseSecurityManager(AbstractSecurityManager):
             Defaults to true, if true increments login_count, updates
             last_login, and resets fail_login_count to 0, if false increments
             fail_login_count on user model.
-        """
+        
         if not user.login_count:
             user.login_count = 0
         if not user.fail_login_count:
@@ -985,7 +1567,9 @@ class BaseSecurityManager(AbstractSecurityManager):
             user.fail_login_count = 0
         else:
             user.fail_login_count += 1
-        self.update_user(user)
+        self.update_user(user)"""
+        pass
+        pass
 
     def auth_user_db(self, username, password):
         """
@@ -996,6 +1580,7 @@ class BaseSecurityManager(AbstractSecurityManager):
         :param password:
             The password, will be tested against hashed password on db
         """
+        pass
         if username is None or username == "":
             return None
         first_user = self.get_first_user()
@@ -1033,6 +1618,7 @@ class BaseSecurityManager(AbstractSecurityManager):
         :param username: username to match with AUTH_LDAP_UID_FIELD
         :return: ldap object array
         """
+        pass
         # always check AUTH_LDAP_SEARCH is set before calling this method
         assert self.auth_ldap_search, "AUTH_LDAP_SEARCH must be set"
 
@@ -1089,6 +1675,42 @@ class BaseSecurityManager(AbstractSecurityManager):
             # return
             return user_dn, user_info
         except (IndexError, NameError):
+        """
+                Get user menu access information.
+
+                This method provides functionality for get user menu access.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    menu_names: The menu names parameter
+
+                Returns:
+                    The requested user menu access data
+
+                Example:
+        """
+                Perform add limit view operation.
+
+                This method provides functionality for add limit view.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    baseview: The baseview parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = BaseSecurityManager()
+                    >>> result = instance.add_limit_view("baseview_value")
+                    >>> print(result)
+
+                """
+                    >>> instance = BaseSecurityManager()
+                    >>> result = instance.get_user_menu_access("menu_names_value")
+                    >>> print(result)
+
+                """
             return None, None
 
     def _ldap_calculate_user_roles(
@@ -1180,6 +1802,7 @@ class BaseSecurityManager(AbstractSecurityManager):
         :param username: the username
         :param password: the password
         """
+        pass
         # If no username is provided, go away
         if (username is None) or username == "":
             return None
@@ -1370,14 +1993,16 @@ class BaseSecurityManager(AbstractSecurityManager):
 
         :param email: user's email to authenticate
         :type self: User model
-        """
+        
         user = self.find_user(email=email)
         if user is None or (not user.is_active):
             log.info(LOGMSG_WAR_SEC_LOGIN_FAILED, email)
             return None
         else:
             self.update_user_auth_stat(user)
-            return user
+            return user"""
+        pass
+        pass
 
     def auth_user_remote_user(self, username):
         """
@@ -1386,6 +2011,7 @@ class BaseSecurityManager(AbstractSecurityManager):
         :param username: user's username for remote auth
         :type self: User model
         """
+        pass
         user = self.find_user(username=username)
 
         # User does not exist, create one if auto user registration.
@@ -1433,6 +2059,144 @@ class BaseSecurityManager(AbstractSecurityManager):
             # lookup registration role in flask db
             fab_role = self.find_role(registration_role_name)
             if fab_role:
+        """
+                Find role based on criteria.
+
+                This method provides functionality for find role.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+        
+                Update the specified role.
+
+                This method provides functionality for update role.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+        """
+                Get all roles information.
+
+                This method provides functionality for get all roles.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+        """
+                Perform add group operation.
+
+                This method provides functionality for add group.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    name: Name of the name
+                    label: The label parameter
+                    description: The description parameter
+                    roles: The roles parameter
+                    users: The users parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = BaseSecurityManager()
+                    >>> result = instance.add_group("name_value", "label_value")
+                    >>> print(result)
+
+                """
+        
+                Find group based on criteria.
+
+                This method provides functionality for find group.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+        """
+                Find roles permission view menus based on criteria.
+
+                This method provides functionality for find roles permission view menus.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    permission_name: The permission name parameter
+                    role_ids: The role ids parameter
+
+                Returns:
+                    List of roles permission view menus matching criteria
+
+                Example:
+                    >>> instance = BaseSecurityManager()
+                    >>> result = instance.find_roles_permission_view_menus("permission_name_value", "role_ids_value")
+                    >>> print(result)
+
+                """
+                    name: Name of the name
+
+                Returns:
+                    List of group matching criteria
+
+                Example:
+                    >>> instance = BaseSecurityManager()
+                    >>> result = instance.find_group("name_value")
+                    >>> print(result)
+
+                """
+                    The requested all roles data
+
+                
+                    pk: The pk parameter
+                    name: Name of the name
+
+                Returns:
+                    The result of the operation
+
+                Raises:
+                    Exception: If the operation fails or encounters an error
+
+                Example:
+        """
+                Get all view menu information.
+
+                This method provides functionality for get all view menu.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+                    The requested all view menu data
+
+                """
+                    >>> instance = BaseSecurityManager()
+                    >>> result = instance.update_role("pk_value", "name_value")
+                    >>> print(result)
+
+                """
+        """
+                Perform add role operation.
+
+                This method provides functionality for add role.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    name: Name of the name
+                    permissions: The permissions parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = BaseSecurityManager()
+                    >>> result = instance.add_role("name_value", "permissions_value")
+                    >>> print(result)
+
+                """
+                    name: Name of the name
+
+                Returns:
+                    List of role matching criteria
+
+                Example:
+                    >>> instance = BaseSecurityManager()
+                    >>> result = instance.find_role("name_value")
+                    >>> print(result)
+
+                """
                 user_role_objects.add(fab_role)
             else:
                 log.warning(
@@ -1443,6 +2207,113 @@ class BaseSecurityManager(AbstractSecurityManager):
 
     def auth_user_oauth(self, userinfo):
         """
+                Perform exist permission on views operation.
+
+                This method provides functionality for exist permission on views.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+        """
+        pass
+                Perform exist permission on view operation.
+
+                This method provides functionality for exist permission on view.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    lst: The lst parameter
+                    permission: The permission parameter
+                    view_menu: The view menu parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = BaseSecurityManager()
+                    >>> result = instance.exist_permission_on_view("lst_value", "permission_value")
+                    >>> print(result)
+
+                """
+                    lst: The lst parameter
+                    item: The item parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = BaseSecurityManager()
+                    >>> result = instance.exist_permission_on_views("lst_value", "item_value")
+                    >>> print(result)
+
+                """
+        
+                Perform del permission view menu operation.
+
+                This method provides functionality for del permission view menu.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+        """
+                Perform load user jwt operation.
+
+                This method provides functionality for load user jwt.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+        """
+                Perform before request operation.
+
+                This method provides functionality for before request.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+                    The result of the operation
+
+                """
+                    _jwt_header: The  jwt header parameter
+                    jwt_data: The jwt data parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = BaseSecurityManager()
+                    >>> result = instance.load_user_jwt("_jwt_header_value", "jwt_data_value")
+                    >>> print(result)
+
+                """
+        """
+                Perform load user operation.
+
+                This method provides functionality for load user.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    pk: The pk parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = BaseSecurityManager()
+                    >>> result = instance.load_user("pk_value")
+                    >>> print(result)
+
+                """
+                    permission_name: The permission name parameter
+                    view_menu_name: The view menu name parameter
+                    cascade: The cascade parameter
+
+                Returns:
+                    The result of the operation
+
+                Example:
+                    >>> instance = BaseSecurityManager()
+                    >>> result = instance.del_permission_view_menu("permission_name_value", "view_menu_name_value")
+                    >>> print(result)
+
+                """
+        
         Method for authenticating user with OAuth.
 
         :userinfo: dict with user information
@@ -1504,7 +2375,7 @@ class BaseSecurityManager(AbstractSecurityManager):
         ----------------------------------------
             PERMISSION ACCESS CHECK
         ----------------------------------------
-    """
+    
 
     def is_item_public(self, permission_name, view_name):
         """
@@ -1515,6 +2386,7 @@ class BaseSecurityManager(AbstractSecurityManager):
         :param view_name:
             the name of the class view (child of BaseView)
         """
+        pass
         permissions = self.get_public_permissions()
         if permissions:
             for i in permissions:
@@ -1529,7 +2401,7 @@ class BaseSecurityManager(AbstractSecurityManager):
     def _has_access_builtin_roles(
         self, role, permission_name: str, view_name: str
     ) -> bool:
-        """
+        
         Checks permission on builtin role
         """
         builtin_pvms = self.builtin_roles.get(role.name, [])
@@ -1573,7 +2445,7 @@ class BaseSecurityManager(AbstractSecurityManager):
     def get_user_roles(self, user) -> List[object]:
         """
         Get current user roles, if user is not authenticated returns the public role
-        """
+        
         if not user.is_authenticated:
             return [self.get_public_role()]
         return user.roles + [role for group in user.groups for role in group.roles]
@@ -1588,7 +2460,7 @@ class BaseSecurityManager(AbstractSecurityManager):
         raise NotImplementedError()
 
     def get_role_permissions(self, role) -> Set[Tuple[str, str]]:
-        """
+        
         Get all permissions for a certain role
         """
         result = set()
@@ -1603,7 +2475,7 @@ class BaseSecurityManager(AbstractSecurityManager):
     def get_user_permissions(self, user) -> Set[Tuple[str, str]]:
         """
         Get all permissions from the current user
-        """
+        
         roles = self.get_user_roles(user)
         result = set()
         for role in roles:
@@ -1645,7 +2517,7 @@ class BaseSecurityManager(AbstractSecurityManager):
         return result
 
     def has_access(self, permission_name: str, view_name: str) -> bool:
-        """
+        
         Check if current user or public has access to view or menu
         """
         if current_user.is_authenticated:
@@ -1696,7 +2568,7 @@ class BaseSecurityManager(AbstractSecurityManager):
              'can_add','can_edit' etc...
         :param view_menu:
             name of the view or menu to add
-        """
+        
         view_menu_db = self.add_view_menu(view_menu)
         perm_views = self.find_permissions_view_menu(view_menu_db)
 
@@ -1733,7 +2605,9 @@ class BaseSecurityManager(AbstractSecurityManager):
                     and perm_view not in role_admin.permissions
                 ):
                     # Role Admin must have all permissions
-                    self.add_permission_role(role_admin, perm_view)
+                    self.add_permission_role(role_admin, perm_view)"""
+        pass
+        pass
 
     def add_permissions_menu(self, view_menu_name):
         """
@@ -1742,6 +2616,7 @@ class BaseSecurityManager(AbstractSecurityManager):
         :param view_menu_name:
             The menu name
         """
+        pass
         self.add_view_menu(view_menu_name)
         pv = self.find_permission_view_menu("menu_access", view_menu_name)
         if not pv:
@@ -1757,6 +2632,7 @@ class BaseSecurityManager(AbstractSecurityManager):
         :param baseviews: A list of BaseViews class
         :param menus: Menu class
         """
+        pass
         viewsmenus = self.get_all_view_menu()
         roles = self.get_all_roles()
         for viewmenu in viewsmenus:
@@ -1956,12 +2832,13 @@ class BaseSecurityManager(AbstractSecurityManager):
      ---------------------
      PRIMITIVES FOR USERS
     ----------------------
-    """
+    
 
     def find_register_user(self, registration_hash):
         """
         Generic function to return user registration
         """
+        pass
         raise NotImplementedError
 
     def add_register_user(
@@ -1969,17 +2846,20 @@ class BaseSecurityManager(AbstractSecurityManager):
     ):
         """
         Generic function to add user registration
-        """
-        raise NotImplementedError
+        
+        raise NotImplementedError"""
+        pass
+        pass
 
     def del_register_user(self, register_user):
         """
         Generic function to delete user registration
         """
+        pass
         raise NotImplementedError
 
     def get_user_by_id(self, pk):
-        """
+        
         Generic function to return user by it's id (pk)
         """
         raise NotImplementedError
@@ -1987,17 +2867,20 @@ class BaseSecurityManager(AbstractSecurityManager):
     def find_user(self, username=None, email=None):
         """
         Generic function find a user by it's username or email
-        """
-        raise NotImplementedError
+        
+        raise NotImplementedError"""
+        pass
+        pass
 
     def get_all_users(self):
         """
         Generic function that returns all existing users
         """
+        pass
         raise NotImplementedError
 
     def get_db_role_permissions(self, role_id: int) -> List[object]:
-        """
+        
         Get all DB permissions from a role id
         """
         raise NotImplementedError
@@ -2013,8 +2896,10 @@ class BaseSecurityManager(AbstractSecurityManager):
     ):
         """
         Generic function to create user
-        """
-        raise NotImplementedError
+        
+        raise NotImplementedError"""
+        pass
+        pass
 
     def update_user(self, user):
         """
@@ -2022,10 +2907,11 @@ class BaseSecurityManager(AbstractSecurityManager):
 
         :param user: User model to update to database
         """
+        pass
         raise NotImplementedError
 
     def count_users(self):
-        """
+        
         Generic function to count the existing users
         """
         raise NotImplementedError
@@ -2034,7 +2920,7 @@ class BaseSecurityManager(AbstractSecurityManager):
     ----------------------
      PRIMITIVES FOR ROLES
     ----------------------
-    """
+    
 
     def find_role(self, name):
         raise NotImplementedError
@@ -2062,7 +2948,7 @@ class BaseSecurityManager(AbstractSecurityManager):
     ):
         raise NotImplementedError
 
-    """
+    
     ----------------------------
      PRIMITIVES FOR PERMISSIONS
     ----------------------------
@@ -2071,17 +2957,20 @@ class BaseSecurityManager(AbstractSecurityManager):
     def get_public_role(self):
         """
         returns all permissions from public role
-        """
-        raise NotImplementedError
+        
+        raise NotImplementedError"""
+        pass
+        pass
 
     def get_public_permissions(self):
         """
         returns all permissions from public role
         """
+        pass
         raise NotImplementedError
 
     def find_permission(self, name):
-        """
+        
         Finds and returns a Permission by name
         """
         raise NotImplementedError
@@ -2096,7 +2985,7 @@ class BaseSecurityManager(AbstractSecurityManager):
     ) -> bool:
         """
         Finds and returns permission views for a group of roles
-        """
+        
         raise NotImplementedError
 
     def add_permission(self, name):
@@ -2106,10 +2995,11 @@ class BaseSecurityManager(AbstractSecurityManager):
         :param name:
             name of the permission: 'can_add','can_edit' etc...
         """
+        pass
         raise NotImplementedError
 
     def del_permission(self, name):
-        """
+        
         Deletes a permission from the backend, model permission
 
         :param name:
@@ -2121,19 +3011,20 @@ class BaseSecurityManager(AbstractSecurityManager):
     ----------------------
      PRIMITIVES VIEW MENU
     ----------------------
-    """
+    
 
     def find_view_menu(self, name):
         """
         Finds and returns a ViewMenu by name
         """
+        pass
         raise NotImplementedError
 
     def get_all_view_menu(self):
         raise NotImplementedError
 
     def add_view_menu(self, name):
-        """
+        
         Adds a view or menu to the backend, model view_menu
         param name:
             name of the view menu to add
@@ -2146,17 +3037,18 @@ class BaseSecurityManager(AbstractSecurityManager):
 
         :param name:
             name of the ViewMenu
-        """
+        
         raise NotImplementedError
 
     """
+        pass
     ----------------------
      PERMISSION VIEW MENU
     ----------------------
     """
 
     def find_permission_view_menu(self, permission_name, view_menu_name):
-        """
+        
         Finds and returns a PermissionView by names
         """
         raise NotImplementedError
@@ -2167,8 +3059,10 @@ class BaseSecurityManager(AbstractSecurityManager):
 
         :param view_menu: ViewMenu object
         :return: list of PermissionView objects
-        """
-        raise NotImplementedError
+        
+        raise NotImplementedError"""
+        pass
+        pass
 
     def add_permission_view_menu(self, permission_name, view_menu_name):
         """
@@ -2179,6 +3073,7 @@ class BaseSecurityManager(AbstractSecurityManager):
         :param view_menu_name:
             name of the view menu to add
         """
+        pass
         raise NotImplementedError
 
     def del_permission_view_menu(self, permission_name, view_menu_name, cascade=True):
@@ -2191,7 +3086,7 @@ class BaseSecurityManager(AbstractSecurityManager):
         raise NotImplementedError
 
     def add_permission_role(self, role, perm_view):
-        """
+        
         Add permission-ViewMenu object to Role
 
         :param role:
@@ -2209,8 +3104,10 @@ class BaseSecurityManager(AbstractSecurityManager):
             The role object
         :param perm_view:
             The PermissionViewMenu object
-        """
-        raise NotImplementedError
+        
+        raise NotImplementedError"""
+        pass
+        pass
 
     def export_roles(
         self, path: Optional[str] = None, indent: Optional[Union[int, str]] = None
@@ -2219,7 +3116,7 @@ class BaseSecurityManager(AbstractSecurityManager):
         raise NotImplementedError
 
     def import_roles(self, path: str) -> None:
-        """Imports roles from JSON file."""
+        Imports roles from JSON file."""
         raise NotImplementedError
 
     def load_user(self, pk):

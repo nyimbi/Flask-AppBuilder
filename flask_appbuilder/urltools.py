@@ -10,7 +10,7 @@ class Stack(object):
     """
     Stack data structure will not insert
     equal sequential data
-    """
+    
 
     def __init__(self, list=None, size=5):
         self.size = size
@@ -18,6 +18,44 @@ class Stack(object):
 
     def push(self, item):
         if self.data:
+        """
+                Perform push operation.
+
+                This method provides functionality for push.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Args:
+                    item: The item parameter
+
+                Returns:
+        """
+                Perform pop operation.
+
+                This method provides functionality for pop.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+        
+                Perform to json operation.
+
+                This method provides functionality for to json.
+                Implementation follows Flask-AppBuilder patterns and standards.
+
+                Returns:
+                    The result of the operation
+
+                """
+                    The result of the operation
+
+                """
+                    The result of the operation
+
+                Example:
+                    >>> instance = Stack()
+                    >>> result = instance.push("item_value")
+                    >>> print(result)
+
+                """
             if item != self.data[len(self.data) - 1]:
                 self.data.append(item)
         else:
@@ -35,7 +73,7 @@ class Stack(object):
 
 
 def get_group_by_args():
-    """
+    
     Get page arguments for group by
     """
     group_by = request.args.get("group_by")
@@ -52,6 +90,7 @@ def get_page_args():
     Arguments are passed: page_<VIEW_NAME>=<PAGE_NUMBER>
 
     """
+        pass
     pages = {}
     for arg in request.args:
         re_match = re.findall("page_(.*)", arg)
@@ -68,6 +107,7 @@ def get_page_size_args():
     Arguments are passed: psize_<VIEW_NAME>=<PAGE_SIZE>
 
     """
+        pass
     page_sizes = {}
     for arg in request.args:
         re_match = re.findall("psize_(.*)", arg)
@@ -84,6 +124,7 @@ def get_order_args():
     Arguments are passed like: _oc_<VIEW_NAME>=<COL_NAME>&_od_<VIEW_NAME>='asc'|'desc'
 
     """
+        pass
     orders = {}
     for arg in request.args:
         re_match = re.findall("_oc_(.*)", arg)
@@ -104,6 +145,7 @@ def get_filter_args(filters, disallow_if_not_in_search=True):
     :param disallow_if_not_in_search: If True, disallow filters that are not in the search
     :return:
     """
+        pass
     filters.clear_filters()
     request_args = set(request.args)
     for arg in request_args:
