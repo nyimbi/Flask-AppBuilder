@@ -1,0 +1,411 @@
+{% extends "appbuilder/base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fa fa-bell"></i> Alert Dashboard</h2>
+        <div class="btn-group">
+            <a href="{{ url_for('AlertConfigView.rules') }}" class="btn btn-primary">
+                <i class="fa fa-plus"></i> Manage Rules
+            </a>
+            <a href="{{ url_for('AlertConfigView.monitoring') }}" class="btn btn-info">
+                <i class="fa fa-cogs"></i> Monitoring
+            </a>
+            <a href="{{ url_for('AlertConfigView.notifications') }}" class="btn btn-secondary">
+                <i class="fa fa-envelope"></i> Notifications
+            </a>
+        </div>
+    </div>
+
+    <!-- Alert Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h4 class="mb-0">{{ alert_stats.get('active_alerts', 0) }}</h4>
+                            <p class="mb-0">Active Alerts</p>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <i class="fa fa-exclamation-triangle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h4 class="mb-0">{{ alert_stats.get('enabled_rules', 0) }}</h4>
+                            <p class="mb-0">Active Rules</p>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <i class="fa fa-rules fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h4 class="mb-0">{{ monitoring_stats.get('evaluations_successful', 0) }}</h4>
+                            <p class="mb-0">Successful Checks</p>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <i class="fa fa-check-circle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h4 class="mb-0">{{ notification_stats.get('recent_notifications', 0) }}</h4>
+                            <p class="mb-0">Recent Notifications</p>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <i class="fa fa-paper-plane fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Active Alerts -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fa fa-exclamation-circle text-danger"></i> Active Alerts
+                        {% if active_alerts %}
+                        <span class="badge badge-danger ms-2">{{ active_alerts|length }}</span>
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if active_alerts %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Alert</th>
+                                    <th>Metric</th>
+                                    <th>Current Value</th>
+                                    <th>Threshold</th>
+                                    <th>Severity</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for alert in active_alerts %}
+                                <tr class="
+                                    {% if alert.severity.value == 'critical' %}table-danger
+                                    {% elif alert.severity.value == 'high' %}table-warning
+                                    {% elif alert.severity.value == 'medium' %}table-info
+                                    {% endif %}
+                                ">
+                                    <td>
+                                        <strong>{{ alert.name }}</strong>
+                                        {% if alert.description %}
+                                        <br><small class="text-muted">{{ alert.description[:100] }}...</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ alert.metric_name }}</td>
+                                    <td>
+                                        <span class="badge badge-secondary">{{ "%.2f"|format(alert.current_value) }}</span>
+                                    </td>
+                                    <td>{{ alert.condition }} {{ "%.2f"|format(alert.threshold_value) }}</td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if alert.severity.value == 'critical' %}badge-danger
+                                            {% elif alert.severity.value == 'high' %}badge-warning
+                                            {% elif alert.severity.value == 'medium' %}badge-info
+                                            {% else %}badge-secondary
+                                            {% endif %}
+                                        ">
+                                            {{ alert.severity.value.upper() }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <small title="{{ alert.created_at.strftime('%Y-%m-%d %H:%M:%S') }}">
+                                            {{ alert.created_at.strftime('%m/%d %H:%M') }}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            {% if alert.status.value == 'active' %}
+                                            <button class="btn btn-outline-success btn-sm acknowledge-alert" 
+                                                    data-alert-id="{{ alert.id }}">
+                                                <i class="fa fa-check"></i> Ack
+                                            </button>
+                                            {% endif %}
+                                            <button class="btn btn-outline-info btn-sm" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#alertDetailModal"
+                                                    data-alert="{{ alert.id }}">
+                                                <i class="fa fa-info-circle"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fa fa-check-circle fa-3x text-success mb-3"></i>
+                        <h5>No Active Alerts</h5>
+                        <p class="text-muted">All systems are operating normally.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- System Status & Quick Stats -->
+        <div class="col-lg-4">
+            <!-- Monitoring Status -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fa fa-heartbeat"></i> Monitoring Status
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if monitoring_stats.get('is_monitoring') %}
+                    <div class="alert alert-success d-flex align-items-center">
+                        <i class="fa fa-check-circle me-2"></i>
+                        <div>
+                            <strong>Monitoring Active</strong><br>
+                            <small>Checking every {{ monitoring_stats.get('config', {}).get('interval_seconds', 60) }}s</small>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning d-flex align-items-center">
+                        <i class="fa fa-exclamation-triangle me-2"></i>
+                        <div>
+                            <strong>Monitoring Inactive</strong><br>
+                            <small><a href="{{ url_for('AlertConfigView.monitoring') }}">Start monitoring</a></small>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="border-end">
+                                <h6 class="mb-0">{{ monitoring_stats.get('evaluations_successful', 0) }}</h6>
+                                <small class="text-muted">Successful</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <h6 class="mb-0">{{ monitoring_stats.get('evaluations_failed', 0) }}</h6>
+                            <small class="text-muted">Failed</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alert Rules Summary -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fa fa-list"></i> Alert Rules
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Total Rules:</span>
+                        <span class="fw-bold">{{ alert_stats.get('total_rules', 0) }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Enabled:</span>
+                        <span class="fw-bold text-success">{{ alert_stats.get('enabled_rules', 0) }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span>Disabled:</span>
+                        <span class="fw-bold text-muted">{{ alert_stats.get('total_rules', 0) - alert_stats.get('enabled_rules', 0) }}</span>
+                    </div>
+                    
+                    <a href="{{ url_for('AlertConfigView.rules') }}" class="btn btn-outline-primary btn-sm w-100">
+                        <i class="fa fa-cog"></i> Manage Rules
+                    </a>
+                </div>
+            </div>
+
+            <!-- Severity Breakdown -->
+            {% if alert_stats.get('severity_breakdown') %}
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fa fa-chart-pie"></i> Active Alerts by Severity
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% for severity, count in alert_stats.get('severity_breakdown', {}).items() %}
+                    {% if count > 0 %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="badge 
+                            {% if severity == 'critical' %}badge-danger
+                            {% elif severity == 'high' %}badge-warning
+                            {% elif severity == 'medium' %}badge-info
+                            {% else %}badge-secondary
+                            {% endif %}
+                        ">
+                            {{ severity.upper() }}
+                        </span>
+                        <span class="fw-bold">{{ count }}</span>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Alert Detail Modal -->
+<div class="modal fade" id="alertDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Alert Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="alertDetailContent">
+                <div class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-refresh dashboard every 30 seconds
+    setInterval(function() {
+        location.reload();
+    }, 30000);
+    
+    // Handle alert acknowledgment
+    document.querySelectorAll('.acknowledge-alert').forEach(button => {
+        button.addEventListener('click', function() {
+            const alertId = this.getAttribute('data-alert-id');
+            
+            fetch(`{{ url_for('AlertConfigView.api_acknowledge_alert', alert_id='ALERT_ID') }}`.replace('ALERT_ID', alertId), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    this.innerHTML = '<i class="fa fa-check"></i> Acknowledged';
+                    this.className = 'btn btn-success btn-sm';
+                    this.disabled = true;
+                    
+                    // Refresh page after short delay
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    alert('Error acknowledging alert: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error acknowledging alert');
+            });
+        });
+    });
+    
+    // Handle alert detail modal
+    const alertDetailModal = document.getElementById('alertDetailModal');
+    if (alertDetailModal) {
+        alertDetailModal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            const alertId = button.getAttribute('data-alert');
+            
+            // Load alert details
+            fetch(`{{ url_for('AlertConfigView.api_alerts') }}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        const alert = data.alerts.find(a => a.id === alertId);
+                        if (alert) {
+                            document.getElementById('alertDetailContent').innerHTML = `
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6>Alert Information</h6>
+                                        <table class="table table-sm">
+                                            <tr><th>Name:</th><td>${alert.name}</td></tr>
+                                            <tr><th>Status:</th><td><span class="badge badge-${alert.status === 'active' ? 'danger' : 'secondary'}">${alert.status.toUpperCase()}</span></td></tr>
+                                            <tr><th>Severity:</th><td><span class="badge badge-${alert.severity === 'critical' ? 'danger' : alert.severity === 'high' ? 'warning' : 'info'}">${alert.severity.toUpperCase()}</span></td></tr>
+                                            <tr><th>Created:</th><td>${new Date(alert.created_at).toLocaleString()}</td></tr>
+                                        </table>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6>Metric Information</h6>
+                                        <table class="table table-sm">
+                                            <tr><th>Metric:</th><td>${alert.metric_name}</td></tr>
+                                            <tr><th>Current Value:</th><td>${alert.current_value}</td></tr>
+                                            <tr><th>Condition:</th><td>${alert.condition} ${alert.threshold_value}</td></tr>
+                                        </table>
+                                    </div>
+                                </div>
+                                ${alert.description ? `<div class="mt-3"><h6>Description</h6><p>${alert.description}</p></div>` : ''}
+                            `;
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading alert details:', error);
+                    document.getElementById('alertDetailContent').innerHTML = 
+                        '<div class="alert alert-danger">Error loading alert details</div>';
+                });
+        });
+    }
+});
+</script>
+
+<style>
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    border: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.badge {
+    font-size: 0.75em;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.btn-group-sm > .btn, .btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+}
+</style>
+{% endblock %}

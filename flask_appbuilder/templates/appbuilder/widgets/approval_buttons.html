@@ -1,0 +1,25 @@
+{% if can_approve and object_id %}
+<div class="approval-buttons mt-3">
+    <div class="btn-group" role="group">
+        <form method="POST" action="{{ url_for('ApprovalModelView.approve', pk=object_id) }}" style="display: inline;">
+            {% if csrf_token %}
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            {% endif %}
+            <button type="submit" class="btn btn-success btn-sm" 
+                    onclick="return confirm('Approve {{ object_name }}?')">
+                <i class="fa fa-check"></i> Approve
+            </button>
+        </form>
+        
+        <form method="POST" action="{{ url_for('ApprovalModelView.reject', pk=object_id) }}" style="display: inline;">
+            {% if csrf_token %}
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            {% endif %}
+            <button type="submit" class="btn btn-danger btn-sm" 
+                    onclick="return confirm('Reject {{ object_name }}?')">
+                <i class="fa fa-times"></i> Reject
+            </button>
+        </form>
+    </div>
+</div>
+{% endif %}

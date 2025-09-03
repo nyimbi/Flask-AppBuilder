@@ -1,0 +1,714 @@
+{% extends "appbuilder/base.html" %}
+{% import "appbuilder/general/lib.html" as lib %}
+
+{% block title %}Configure Dashboard Layout{% endblock %}
+
+{% block head_css %}
+    {{ super() }}
+    <style>
+        .config-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+        }
+        
+        .widget-selector {
+            background: #f8f9fa;
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            margin-bottom: 1.5rem;
+            transition: all 0.3s ease;
+        }
+        
+        .widget-selector:hover {
+            border-color: #007bff;
+            background: #e3f2fd;
+        }
+        
+        .widget-type-card {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .widget-type-card:hover {
+            border-color: #007bff;
+            box-shadow: 0 2px 8px rgba(0,123,255,0.2);
+            transform: translateY(-2px);
+        }
+        
+        .widget-type-card.selected {
+            border-color: #007bff;
+            background-color: #e3f2fd;
+        }
+        
+        .layout-preview {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            min-height: 200px;
+        }
+        
+        .layout-option {
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .layout-option:hover {
+            border-color: #007bff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .layout-option.selected {
+            border-color: #007bff;
+            background-color: #f8f9ff;
+        }
+        
+        .json-editor {
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+        
+        .existing-dashboard-card {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .existing-dashboard-card.is-default {
+            border-color: #28a745;
+            background-color: #f8fff9;
+        }
+        
+        .preview-container {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 1.5rem;
+            min-height: 300px;
+        }
+        
+        .widget-library {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 2rem;
+        }
+        
+        .step {
+            display: flex;
+            align-items: center;
+            margin: 0 1rem;
+        }
+        
+        .step-number {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #dee2e6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 0.5rem;
+        }
+        
+        .step.active .step-number {
+            background: #007bff;
+            color: white;
+        }
+        
+        .step.completed .step-number {
+            background: #28a745;
+            color: white;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Configuration Header -->
+    <div class="config-header rounded mb-4">
+        <div class="container">
+            <h1 class="h3 mb-2">Configure Dashboard Layout</h1>
+            <p class="mb-0 opacity-75">
+                Customize your dashboard with flexible layouts and interactive widgets
+            </p>
+        </div>
+    </div>
+    
+    <form method="post" action="{{ url_for('DashboardLayoutView.configure_layout') }}">
+        {{ form.hidden_tag() }}
+        
+        <div class="row">
+            <!-- Configuration Form -->
+            <div class="col-lg-8">
+                <!-- Basic Settings -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-cog me-2"></i>Basic Settings
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                {{ form.title.label(class="form-label") }}
+                                {{ form.title(class="form-control") }}
+                                <div class="form-text">{{ form.title.description }}</div>
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.layout_type.label(class="form-label") }}
+                                {{ form.layout_type(class="form-select", id="layout-type-select") }}
+                                <div class="form-text">{{ form.layout_type.description }}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-3">
+                            <div class="col-md-4">
+                                {{ form.is_default(class="form-check-input") }}
+                                {{ form.is_default.label(class="form-check-label ms-2") }}
+                                <div class="form-text">{{ form.is_default.description }}</div>
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.show_refresh_button(class="form-check-input") }}
+                                {{ form.show_refresh_button.label(class="form-check-label ms-2") }}
+                                <div class="form-text">{{ form.show_refresh_button.description }}</div>
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.auto_refresh_interval.label(class="form-label") }}
+                                {{ form.auto_refresh_interval(class="form-select") }}
+                                <div class="form-text">{{ form.auto_refresh_interval.description }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Layout Selection -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-th me-2"></i>Choose Layout
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row" id="layout-options">
+                            {% for layout_id, layout_info in layout_examples.items() %}
+                            <div class="col-md-6">
+                                <div class="layout-option" data-layout="{{ layout_id }}">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <div class="layout-preview-mini {{ layout_info.preview_class }} me-3">
+                                            <div class="layout-preview-content">
+                                                <!-- Mini preview visualization -->
+                                                {% if layout_id == 'grid' %}
+                                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2px; width: 40px; height: 30px;">
+                                                    <div style="background: #007bff; border-radius: 2px;"></div>
+                                                    <div style="background: #007bff; border-radius: 2px;"></div>
+                                                    <div style="background: #007bff; border-radius: 2px;"></div>
+                                                    <div style="background: #007bff; border-radius: 2px;"></div>
+                                                </div>
+                                                {% elif layout_id == 'tabs' %}
+                                                <div style="width: 40px; height: 30px;">
+                                                    <div style="background: #007bff; height: 8px; margin-bottom: 2px; border-radius: 2px;"></div>
+                                                    <div style="background: #e9ecef; height: 20px; border-radius: 2px;"></div>
+                                                </div>
+                                                {% elif layout_id == 'single_column' %}
+                                                <div style="width: 40px; height: 30px; display: flex; flex-direction: column; gap: 2px;">
+                                                    <div style="background: #007bff; height: 8px; border-radius: 2px;"></div>
+                                                    <div style="background: #007bff; height: 8px; border-radius: 2px;"></div>
+                                                    <div style="background: #007bff; height: 8px; border-radius: 2px;"></div>
+                                                </div>
+                                                {% elif layout_id == 'two_column' %}
+                                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; width: 40px; height: 30px;">
+                                                    <div style="background: #007bff; border-radius: 2px;"></div>
+                                                    <div style="background: #007bff; border-radius: 2px;"></div>
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-1">{{ layout_info.name }}</h6>
+                                            <small class="text-muted">{{ layout_info.description }}</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Widget Configuration -->
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-puzzle-piece me-2"></i>Widget Configuration
+                        </h5>
+                        <button type="button" class="btn btn-outline-primary btn-sm" id="open-widget-builder">
+                            <i class="fas fa-magic me-1"></i>Widget Builder
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        {{ form.widgets_config.label(class="form-label") }}
+                        {{ form.widgets_config(class="form-control json-editor") }}
+                        <div class="form-text">{{ form.widgets_config.description }}</div>
+                        
+                        <div class="mt-3">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="validate-config">
+                                <i class="fas fa-check me-1"></i>Validate Configuration
+                            </button>
+                            <button type="button" class="btn btn-outline-info btn-sm" id="preview-dashboard">
+                                <i class="fas fa-eye me-1"></i>Preview Dashboard
+                            </button>
+                            <button type="button" class="btn btn-outline-success btn-sm" id="load-example">
+                                <i class="fas fa-download me-1"></i>Load Example
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Form Actions -->
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('ConfigurableDashboardView.index') }}" 
+                               class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+                            </a>
+                            <div>
+                                <button type="button" class="btn btn-outline-primary me-2" id="save-draft">
+                                    <i class="fas fa-save me-1"></i>Save Draft
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-check me-1"></i>Save Configuration
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                <!-- Widget Library -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="fas fa-layer-group me-2"></i>Available Widgets
+                        </h6>
+                    </div>
+                    <div class="card-body widget-library">
+                        {% for widget in available_widgets %}
+                        <div class="widget-type-card" data-widget-type="{{ widget.id }}">
+                            <div class="d-flex align-items-center">
+                                <i class="fas {{ widget.icon }} fa-lg me-3 text-primary"></i>
+                                <div>
+                                    <h6 class="mb-1">{{ widget.name }}</h6>
+                                    <small class="text-muted">{{ widget.description }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <!-- Existing Dashboards -->
+                {% if existing_dashboards %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="fas fa-history me-2"></i>Existing Dashboards
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        {% for dashboard in existing_dashboards %}
+                        <div class="existing-dashboard-card {% if dashboard.is_default %}is-default{% endif %}">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">{{ dashboard.title }}</h6>
+                                    <small class="text-muted">
+                                        {{ dashboard.widget_count }} widgets
+                                        {% if dashboard.is_default %}
+                                        <span class="badge bg-success ms-1">Default</span>
+                                        {% endif %}
+                                    </small>
+                                </div>
+                                <div>
+                                    <button class="btn btn-sm btn-outline-primary" 
+                                            onclick="loadDashboard({{ dashboard.id }})">
+                                        Load
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Preview Area -->
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="fas fa-eye me-2"></i>Live Preview
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="preview-container" id="dashboard-preview">
+                            <div class="text-center text-muted py-4">
+                                <i class="fas fa-eye fa-2x mb-2"></i>
+                                <p class="mb-0">Configuration preview will appear here</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Widget Builder Modal -->
+<div class="modal fade" id="widgetBuilderModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Widget Builder</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Select Widget Type</h6>
+                        <div id="widget-type-selector">
+                            <!-- Widget types will be populated here -->
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Widget Preview</h6>
+                        <div id="widget-preview-area" class="border rounded p-3" style="min-height: 200px;">
+                            <div class="text-center text-muted">
+                                <i class="fas fa-puzzle-piece fa-2x mb-2"></i>
+                                <p class="mb-0">Select a widget type to see preview</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="add-widget-to-config">Add Widget</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block tail_js %}
+    {{ super() }}
+    <script>
+        // Dashboard configuration functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeLayoutSelector();
+            initializeWidgetBuilder();
+            initializeConfigValidation();
+            loadExampleConfigs();
+        });
+        
+        function initializeLayoutSelector() {
+            const layoutOptions = document.querySelectorAll('.layout-option');
+            const layoutSelect = document.getElementById('layout-type-select');
+            
+            // Sync layout option selection with form select
+            layoutOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    layoutOptions.forEach(opt => opt.classList.remove('selected'));
+                    this.classList.add('selected');
+                    
+                    const layoutType = this.dataset.layout;
+                    layoutSelect.value = layoutType;
+                    
+                    // Update preview
+                    updateLayoutPreview(layoutType);
+                });
+            });
+            
+            // Initialize with current selection
+            const currentLayout = layoutSelect.value;
+            const currentOption = document.querySelector(`[data-layout="${currentLayout}"]`);
+            if (currentOption) {
+                currentOption.classList.add('selected');
+            }
+        }
+        
+        function initializeWidgetBuilder() {
+            const openBuilderBtn = document.getElementById('open-widget-builder');
+            const widgetBuilderModal = new bootstrap.Modal(document.getElementById('widgetBuilderModal'));
+            
+            openBuilderBtn.addEventListener('click', function() {
+                populateWidgetTypeSelector();
+                widgetBuilderModal.show();
+            });
+            
+            // Widget type selection
+            document.addEventListener('click', function(e) {
+                if (e.target.closest('.widget-type-card')) {
+                    const cards = document.querySelectorAll('.widget-type-card');
+                    cards.forEach(card => card.classList.remove('selected'));
+                    
+                    const selectedCard = e.target.closest('.widget-type-card');
+                    selectedCard.classList.add('selected');
+                    
+                    updateWidgetPreview(selectedCard.dataset.widgetType);
+                }
+            });
+            
+            // Add widget to configuration
+            document.getElementById('add-widget-to-config').addEventListener('click', function() {
+                const selectedWidget = document.querySelector('.widget-type-card.selected');
+                if (selectedWidget) {
+                    addWidgetToConfig(selectedWidget.dataset.widgetType);
+                    widgetBuilderModal.hide();
+                }
+            });
+        }
+        
+        function initializeConfigValidation() {
+            const validateBtn = document.getElementById('validate-config');
+            const previewBtn = document.getElementById('preview-dashboard');
+            const loadExampleBtn = document.getElementById('load-example');
+            
+            validateBtn.addEventListener('click', validateConfiguration);
+            previewBtn.addEventListener('click', previewDashboard);
+            loadExampleBtn.addEventListener('click', loadExampleConfiguration);
+        }
+        
+        function populateWidgetTypeSelector() {
+            const selector = document.getElementById('widget-type-selector');
+            selector.innerHTML = '';
+            
+            {% for widget in available_widgets %}
+            const widgetCard = document.createElement('div');
+            widgetCard.className = 'widget-type-card mb-2';
+            widgetCard.dataset.widgetType = '{{ widget.id }}';
+            widgetCard.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <i class="fas {{ widget.icon }} me-2 text-primary"></i>
+                    <div>
+                        <h6 class="mb-0">{{ widget.name }}</h6>
+                        <small class="text-muted">{{ widget.description }}</small>
+                    </div>
+                </div>
+            `;
+            selector.appendChild(widgetCard);
+            {% endfor %}
+        }
+        
+        function updateWidgetPreview(widgetType) {
+            const previewArea = document.getElementById('widget-preview-area');
+            
+            // Mock widget preview based on type
+            const previews = {
+                'metric_card': '<div class="card border-primary"><div class="card-body text-center"><h3 class="text-primary">1,250</h3><p class="text-muted mb-0">Sample Metric</p></div></div>',
+                'trend_chart': '<div class="card"><div class="card-body"><h6>Trend Chart</h6><div class="bg-light rounded p-3"><i class="fas fa-chart-line fa-3x text-primary"></i></div></div></div>',
+                'status_pie': '<div class="card"><div class="card-body"><h6>Status Distribution</h6><div class="bg-light rounded p-3"><i class="fas fa-chart-pie fa-3x text-success"></i></div></div></div>',
+                'data_table': '<div class="card"><div class="card-body"><h6>Data Table</h6><div class="table-responsive"><table class="table table-sm"><tr><th>Name</th><th>Status</th></tr><tr><td>Record 1</td><td>Active</td></tr></table></div></div></div>',
+                'activity_feed': '<div class="card"><div class="card-body"><h6>Activity Feed</h6><div class="list-group list-group-flush"><div class="list-group-item p-2"><small>Recent activity item</small></div></div></div></div>'
+            };
+            
+            previewArea.innerHTML = previews[widgetType] || '<p class="text-muted">Preview not available</p>';
+        }
+        
+        function addWidgetToConfig(widgetType) {
+            const configTextarea = document.querySelector('[name="widgets_config"]');
+            let config = [];
+            
+            try {
+                config = JSON.parse(configTextarea.value || '[]');
+            } catch (e) {
+                config = [];
+            }
+            
+            // Add new widget with default configuration
+            const newWidget = {
+                type: widgetType,
+                title: getWidgetTypeName(widgetType),
+                position: { row: config.length, col: 0 },
+                config: getDefaultWidgetConfig(widgetType)
+            };
+            
+            config.push(newWidget);
+            
+            configTextarea.value = JSON.stringify(config, null, 2);
+            
+            showNotification('Widget added to configuration', 'success');
+        }
+        
+        function getWidgetTypeName(type) {
+            const names = {
+                'metric_card': 'Metric Card',
+                'trend_chart': 'Trend Chart',
+                'status_pie': 'Status Distribution',
+                'data_table': 'Data Table',
+                'activity_feed': 'Activity Feed'
+            };
+            return names[type] || 'Widget';
+        }
+        
+        function getDefaultWidgetConfig(type) {
+            const configs = {
+                'metric_card': { color: 'primary', icon: 'fa-chart-bar', metric: 'total_records' },
+                'trend_chart': { time_range: '30d', chart_type: 'line' },
+                'status_pie': { field: 'status' },
+                'data_table': { limit: 10 },
+                'activity_feed': { limit: 5 }
+            };
+            return configs[type] || {};
+        }
+        
+        function validateConfiguration() {
+            const configTextarea = document.querySelector('[name="widgets_config"]');
+            
+            try {
+                const config = JSON.parse(configTextarea.value || '[]');
+                showNotification('Configuration is valid JSON', 'success');
+                
+                // Additional validation could be added here
+                
+                return true;
+            } catch (e) {
+                showNotification('Invalid JSON configuration: ' + e.message, 'error');
+                return false;
+            }
+        }
+        
+        function previewDashboard() {
+            const configTextarea = document.querySelector('[name="widgets_config"]');
+            const layoutType = document.getElementById('layout-type-select').value;
+            
+            try {
+                const config = {
+                    layout_type: layoutType,
+                    widgets: JSON.parse(configTextarea.value || '[]')
+                };
+                
+                // Send preview request
+                fetch('{{ url_for("DashboardLayoutView.api_preview_dashboard") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(config)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        document.getElementById('dashboard-preview').innerHTML = data.preview_html;
+                        showNotification('Preview updated', 'success');
+                    } else {
+                        showNotification('Preview failed: ' + data.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    showNotification('Preview error: ' + error.message, 'error');
+                });
+                
+            } catch (e) {
+                showNotification('Invalid configuration for preview', 'error');
+            }
+        }
+        
+        function loadExampleConfiguration() {
+            const exampleConfig = [
+                {
+                    type: 'metric_card',
+                    title: 'Total Records',
+                    position: { row: 0, col: 0 },
+                    config: { color: 'primary', icon: 'fa-database', metric: 'total_records' }
+                },
+                {
+                    type: 'metric_card',
+                    title: 'Active Processes',
+                    position: { row: 0, col: 1 },
+                    config: { color: 'success', icon: 'fa-play-circle', metric: 'active_processes' }
+                },
+                {
+                    type: 'trend_chart',
+                    title: 'Monthly Trends',
+                    position: { row: 1, col: 0 },
+                    config: { time_range: '30d', chart_type: 'line' }
+                }
+            ];
+            
+            document.querySelector('[name="widgets_config"]').value = JSON.stringify(exampleConfig, null, 2);
+            showNotification('Example configuration loaded', 'success');
+        }
+        
+        function updateLayoutPreview(layoutType) {
+            // Update the preview area to show layout structure
+            const preview = document.getElementById('dashboard-preview');
+            
+            const layouts = {
+                'grid': '<div class="row"><div class="col-md-6"><div class="bg-primary-subtle p-3 rounded mb-2">Widget 1</div></div><div class="col-md-6"><div class="bg-success-subtle p-3 rounded mb-2">Widget 2</div></div></div>',
+                'tabs': '<ul class="nav nav-tabs"><li class="nav-item"><a class="nav-link active">Tab 1</a></li></ul><div class="bg-light p-3 rounded">Tab content with widgets</div>',
+                'single_column': '<div class="bg-primary-subtle p-3 rounded mb-2">Widget 1</div><div class="bg-success-subtle p-3 rounded mb-2">Widget 2</div><div class="bg-warning-subtle p-3 rounded">Widget 3</div>',
+                'two_column': '<div class="row"><div class="col-md-6"><div class="bg-primary-subtle p-3 rounded mb-2">Left Column</div></div><div class="col-md-6"><div class="bg-success-subtle p-3 rounded mb-2">Right Column</div></div></div>'
+            };
+            
+            preview.innerHTML = layouts[layoutType] || '<p class="text-muted">Layout preview</p>';
+        }
+        
+        function showNotification(message, type = 'info') {
+            const alertClass = type === 'success' ? 'alert-success' : 
+                             type === 'error' ? 'alert-danger' : 'alert-info';
+            
+            const alert = document.createElement('div');
+            alert.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
+            alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            alert.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            document.body.appendChild(alert);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (alert.parentNode) {
+                    alert.parentNode.removeChild(alert);
+                }
+            }, 5000);
+        }
+        
+        function loadDashboard(dashboardId) {
+            showNotification('Loading dashboard configuration...', 'info');
+            // In a real implementation, this would fetch the dashboard config via API
+        }
+        
+        // Initialize with current values
+        loadExampleConfigs();
+        
+        function loadExampleConfigs() {
+            // Set up some example configurations for demonstration
+            if (!document.querySelector('[name="widgets_config"]').value.trim()) {
+                loadExampleConfiguration();
+            }
+        }
+    </script>
+{% endblock %}

@@ -17,8 +17,8 @@ from .const import (
     LOGMSG_INF_FAB_ADDON_ADDED,
     LOGMSG_WAR_FAB_VIEW_EXISTS,
 )
-from .filters import TemplateFilters
-from .menu import Menu, MenuApiManager
+# from .filters import TemplateFilters  # Class doesn't exist
+from .menu import Menu, MenuApi
 from .views import IndexView, UtilView
 
 if TYPE_CHECKING:
@@ -144,7 +144,7 @@ class AppBuilder:
         # Babel Manager Class
         self.bm: BabelManager = None  # type: ignore
         self.openapi_manager: OpenApiManager = None  # type: ignore
-        self.menuapi_manager: MenuApiManager = None  # type: ignore
+        self.menuapi_manager: MenuApi = None  # type: ignore
 
         if app is not None:
             self.init_app(app, session)
@@ -211,7 +211,11 @@ class AppBuilder:
         self.sm = self.security_manager_class(self)
         self.bm = BabelManager(self)
         self.openapi_manager = OpenApiManager(self)
-        self.menuapi_manager = MenuApiManager(self)
+        self.menuapi_manager = MenuApi()
+        
+        # Initialize enhanced security modules
+        self._init_enhanced_security(app)
+        
         self._add_global_static()
         self._add_global_filters()
         app.before_request(self.sm.before_request)
@@ -230,17 +234,13 @@ class AppBuilder:
         app.extensions["appbuilder"] = self
 
     def post_init(self) -> None:
-        for baseview in self.baseviews:
         """
-                Perform post init operation.
-
-                This method provides functionality for post init.
-                Implementation follows Flask-AppBuilder patterns and standards.
-
-                Returns:
-                    The result of the operation
-
-                
+        Perform post-initialization tasks for the AppBuilder instance.
+        
+        This method is called after the AppBuilder instance is initialized
+        to set up views and configure the application.
+        """
+        for baseview in self.baseviews:
             # instantiate the views and add session
             baseview = self._check_and_init(baseview)
             # Register the views has blueprints
@@ -263,7 +263,7 @@ class AppBuilder:
 
     @property
     def get_session(self) -> SessionBase:
-        
+        """
         Get the current sqlalchemy session.
 
         :return: SQLAlchemy Session
@@ -291,16 +291,6 @@ class AppBuilder:
     @property
     def app_icon(self) -> str:
         """
-                Perform languages operation.
-
-                This method provides functionality for languages.
-                Implementation follows Flask-AppBuilder patterns and standards.
-
-                Returns:
-                    The result of the operation
-
-                
-        """
         Get the App icon location
 
         :return: String with relative app icon location
@@ -309,6 +299,11 @@ class AppBuilder:
 
     @property
     def languages(self) -> Dict[str, Any]:
+        """
+        Get configured languages for the application.
+
+        :return: Dict with language configuration
+        """
         return self.get_app.config["LANGUAGES"]
 
     @property
@@ -321,7 +316,8 @@ class AppBuilder:
         return __version__
 
     def _add_global_filters(self) -> None:
-        self.template_filters = TemplateFilters(self.get_app, self.sm)
+        # self.template_filters = TemplateFilters(self.get_app, self.sm)  # Class doesn't exist
+        self.template_filters = None
 
     def _add_global_static(self) -> None:
         bp = Blueprint(
@@ -337,7 +333,7 @@ class AppBuilder:
     def _add_admin_views(self) -> None:
         """
         Registers indexview, utilview (back function), babel views and Security views.
-        
+        """
         if self.indexview:
             self._indexview = self.add_view_no_menu(self.indexview)
         self.add_view_no_menu(UtilView)
@@ -521,7 +517,7 @@ class AppBuilder:
             then this link will be a part of the menu. Otherwise, it
             will not be included in the menu items. Defaults to
             :code:`None`, meaning the item will always be present.
-        
+        """
         if self.menu is None:
             return
         self.menu.add_link(
@@ -597,7 +593,7 @@ class AppBuilder:
 
         :param baseview: A BaseApi type class
         :return: The instantiated base view
-        
+        """
         return self.add_view_no_menu(baseview)
 
     def security_cleanup(self) -> None:
@@ -616,138 +612,8 @@ class AppBuilder:
         self.sm.security_cleanup(self.baseviews, self.menu)
 
     def security_converge(self, dry: bool = False) -> Dict[str, Any]:
-        
-                Get url for login with information.
-
-                This method provides functionality for get url for login with.
-                Implementation follows Flask-AppBuilder patterns and standards.
-
-                Args:
         """
-                Get url for login information.
-
-                This method provides functionality for get url for login.
-                Implementation follows Flask-AppBuilder patterns and standards.
-
-                Returns:
-        """
-                Get url for logout information.
-
-                This method provides functionality for get url for logout.
-                Implementation follows Flask-AppBuilder patterns and standards.
-
-                Returns:
-        
-                Get url for index information.
-
-                This method provides functionality for get url for index.
-                Implementation follows Flask-AppBuilder patterns and standards.
-
-                Returns:
-        """
-                Get url for userinfo information.
-
-                This method provides functionality for get url for userinfo.
-                Implementation follows Flask-AppBuilder patterns and standards.
-
-                Returns:
-        """
-                Get url for locale information.
-
-                This method provides functionality for get url for locale.
-                Implementation follows Flask-AppBuilder patterns and standards.
-
-                Args:
-        """
-                Perform add permissions operation.
-
-                This method provides functionality for add permissions.
-                Implementation follows Flask-AppBuilder patterns and standards.
-
-                Args:
-                    update_perms: The update perms parameter
-
-                Returns:
-                    The result of the operation
-
-                Example:
-                    >>> instance = AppBuilder()
-                    >>> result = instance.add_permissions("update_perms_value")
-                    >>> print(result)
-
-                """
-        """
-                Perform add limits operation.
-
-                This method provides functionality for add limits.
-                Implementation follows Flask-AppBuilder patterns and standards.
-
-                Args:
-                    baseview: The baseview parameter
-
-                Returns:
-                    The result of the operation
-
-                Example:
-                    >>> instance = AppBuilder()
-                    >>> result = instance.add_limits("baseview_value")
-                    >>> print(result)
-
-                """
-                    lang: The lang parameter
-
-                Returns:
-                    The requested url for locale data
-
-                Example:
-        """
-                Register blueprint components.
-
-                This method provides functionality for register blueprint.
-                Implementation follows Flask-AppBuilder patterns and standards.
-
-                Args:
-                    baseview: The baseview parameter
-                    endpoint: The endpoint parameter
-                    static_folder: The static folder parameter
-
-                Returns:
-                    The result of the operation
-
-                Example:
-                    >>> instance = AppBuilder()
-                    >>> result = instance.register_blueprint("baseview_value", "endpoint_value")
-                    >>> print(result)
-
-                """
-                    >>> instance = AppBuilder()
-                    >>> result = instance.get_url_for_locale("lang_value")
-                    >>> print(result)
-
-                """
-                    The requested url for userinfo data
-
-                
-                    The requested url for index data
-
-                """
-                    The requested url for logout data
-
-                """
-                    The requested url for login data
-
-                """
-                    next_url: The next url parameter
-
-                Returns:
-                    The requested url for login with data
-
-                Example:
-                    >>> instance = AppBuilder()
-                    >>> result = instance.get_url_for_login_with("next_url_value")
-                    >>> print(result)
-
-                """
+        Converge security permissions across the application.
         
         This method is useful when you use:
 
@@ -766,24 +632,45 @@ class AppBuilder:
         return self.sm.security_converge(self.baseviews, self.menu.menu, dry)
 
     def get_url_for_login_with(self, next_url: str = None) -> str:
+        """
+        Get URL for login with next_url parameter.
+
+        :param next_url: The URL to redirect to after login
+        :return: The login URL with next parameter
+        """
         if self.sm.auth_view is None:
             return ""
         return url_for("%s.%s" % (self.sm.auth_view.endpoint, "login"), next=next_url)
 
     @property
     def get_url_for_login(self) -> str:
+        """
+        Get the URL for login page.
+
+        :return: The login URL
+        """
         if self.sm.auth_view is None:
             return ""
         return url_for("%s.%s" % (self.sm.auth_view.endpoint, "login"))
 
     @property
     def get_url_for_logout(self) -> str:
+        """
+        Get the URL for logout action.
+
+        :return: The logout URL
+        """
         if self.sm.auth_view is None:
             return ""
         return url_for("%s.%s" % (self.sm.auth_view.endpoint, "logout"))
 
     @property
     def get_url_for_index(self) -> str:
+        """
+        Get the URL for the index/home page.
+
+        :return: The index URL
+        """
         if self._indexview is None:
             return ""
         return url_for(
@@ -792,11 +679,22 @@ class AppBuilder:
 
     @property
     def get_url_for_userinfo(self) -> str:
+        """
+        Get the URL for user information page.
+
+        :return: The user info URL
+        """
         if self.sm.user_view is None:
             return ""
         return url_for("%s.%s" % (self.sm.user_view.endpoint, "userinfo"))
 
     def get_url_for_locale(self, lang: str) -> str:
+        """
+        Get the URL for locale switching.
+
+        :param lang: The language code to switch to
+        :return: The locale URL
+        """
         if self.bm.locale_view is None:
             return ""
         return url_for(
@@ -805,10 +703,20 @@ class AppBuilder:
         )
 
     def add_limits(self, baseview: "AbstractViewApi") -> None:
+        """
+        Add rate limits for a view if it has limits defined.
+
+        :param baseview: The view to add limits for
+        """
         if hasattr(baseview, "limits"):
             self.sm.add_limit_view(baseview)
 
     def add_permissions(self, update_perms: bool = False) -> None:
+        """
+        Add permissions for all registered views and menu items.
+
+        :param update_perms: Whether to force update permissions
+        """
         from flask_appbuilder.baseviews import AbstractViewApi
 
         if self.update_perms or update_perms:
@@ -854,6 +762,13 @@ class AppBuilder:
         endpoint: Optional[str] = None,
         static_folder: Optional[str] = None,
     ) -> None:
+        """
+        Register a view's blueprint with the Flask application.
+
+        :param baseview: The view to register
+        :param endpoint: Optional custom endpoint for the blueprint
+        :param static_folder: Optional custom static folder for the blueprint
+        """
         self.get_app.register_blueprint(
             baseview.create_blueprint(
                 self, endpoint=endpoint, static_folder=static_folder
@@ -878,3 +793,37 @@ class AppBuilder:
                         and v not in view.get_init_inner_views()
                     ):
                         view.get_init_inner_views().append(v)
+
+    def _init_enhanced_security(self, app: Flask) -> None:
+        """
+        Initialize enhanced security features if enabled.
+        
+        This method initializes security modules including:
+        - Security headers middleware
+        - Rate limiting system
+        - Input validation framework
+        """
+        import logging
+        log = logging.getLogger(__name__)
+        
+        # Initialize security headers
+        if app.config.get('SECURITY_HEADERS_ENABLED', True):
+            try:
+                from .security.security_headers import init_security_headers
+                init_security_headers(app)
+                log.info("Security headers middleware initialized")
+            except ImportError:
+                log.warning("Security headers module not available")
+        
+        # Initialize rate limiting
+        if app.config.get('RATE_LIMITING_ENABLED', True):
+            try:
+                from .security.rate_limiting import init_rate_limiting
+                self._rate_limiter = init_rate_limiting(app)
+                log.info("Rate limiting system initialized")
+            except ImportError:
+                log.warning("Rate limiting module not available")
+        
+        # Store references for use by views
+        if hasattr(self, '_rate_limiter'):
+            self.rate_limiter = self._rate_limiter

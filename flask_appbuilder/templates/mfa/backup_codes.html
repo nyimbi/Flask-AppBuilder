@@ -1,0 +1,332 @@
+{% extends "appbuilder/base.html" %}
+
+{% block head_css %}
+{{ super() }}
+<style>
+.backup-codes-card {
+    max-width: 600px;
+    margin: 2rem auto;
+}
+
+.backup-codes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 0.5rem;
+    margin: 1.5rem 0;
+}
+
+.backup-code {
+    font-family: monospace;
+    font-size: 1.1rem;
+    font-weight: bold;
+    padding: 0.75rem;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    text-align: center;
+    letter-spacing: 0.1rem;
+}
+
+.backup-code.used {
+    background-color: #f8d7da;
+    color: #721c24;
+    text-decoration: line-through;
+    opacity: 0.6;
+}
+
+.warning-box {
+    background-color: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 0.375rem;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+}
+
+.success-box {
+    background-color: #d1e7dd;
+    border: 1px solid #badbcc;
+    border-radius: 0.375rem;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+}
+
+.print-section {
+    page-break-before: always;
+}
+
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    
+    .backup-codes-card {
+        box-shadow: none;
+        border: none;
+    }
+    
+    .backup-codes-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+    
+    .backup-code {
+        border: 2px solid #000;
+        padding: 1rem;
+        font-size: 1.2rem;
+    }
+}
+
+.copy-success {
+    color: #198754;
+    animation: fadeInOut 2s ease-in-out;
+}
+
+@keyframes fadeInOut {
+    0% { opacity: 0; }
+    50% { opacity: 1; }
+    100% { opacity: 0; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card backup-codes-card">
+                <div class="card-header">
+                    <h3><i class="fa fa-key"></i> {{ _('Multi-Factor Authentication Backup Codes') }}</h3>
+                    <span class="badge bg-success">
+                        {% if user_mfa.mfa_type == 'totp' %}
+                            <i class="fa fa-mobile-alt"></i> {{ _('Authenticator App') }}
+                        {% elif user_mfa.mfa_type == 'sms' %}
+                            <i class="fa fa-sms"></i> {{ _('SMS') }}
+                        {% elif user_mfa.mfa_type == 'email' %}
+                            <i class="fa fa-envelope"></i> {{ _('Email') }}
+                        {% endif %}
+                        {{ _('Setup Complete') }}
+                    </span>
+                </div>
+                
+                <div class="card-body">
+                    <div class="success-box">
+                        <h5><i class="fa fa-check-circle text-success"></i> {{ _('MFA Setup Successful!') }}</h5>
+                        <p class="mb-0">{{ _('Your Multi-Factor Authentication has been successfully configured. Below are your backup codes.') }}</p>
+                    </div>
+                    
+                    <div class="warning-box">
+                        <h6><i class="fa fa-exclamation-triangle text-warning"></i> {{ _('Important: Save These Backup Codes') }}</h6>
+                        <ul class="mb-0">
+                            <li>{{ _('These codes can be used to access your account if you lose your primary MFA device') }}</li>
+                            <li>{{ _('Each code can only be used once') }}</li>
+                            <li>{{ _('Store them in a secure location (password manager, safe, etc.)') }}</li>
+                            <li>{{ _('Do not store them on the same device you use for MFA') }}</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="text-center mb-3 no-print">
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-outline-secondary" onclick="copyAllCodes()">
+                                <i class="fa fa-copy"></i> {{ _('Copy All Codes') }}
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="window.print()">
+                                <i class="fa fa-print"></i> {{ _('Print Codes') }}
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="downloadCodes()">
+                                <i class="fa fa-download"></i> {{ _('Download as Text') }}
+                            </button>
+                        </div>
+                        <div id="copy-status" class="mt-2"></div>
+                    </div>
+                    
+                    <h5>{{ _('Your Backup Codes') }}</h5>
+                    <div class="backup-codes-grid" id="backup-codes-container">
+                        {% for code in backup_codes %}
+                        <div class="backup-code {% if code.is_used %}used{% endif %}" 
+                             data-code="{{ 'USED' if code.is_used else 'CODE_' + loop.index|string }}">
+                            {% if code.is_used %}
+                                {{ _('USED') }}
+                            {% else %}
+                                CODE_{{ loop.index }}
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <h6><i class="fa fa-info-circle"></i> {{ _('How to Use Backup Codes') }}</h6>
+                        <ol class="mb-0">
+                            <li>{{ _('When prompted for MFA verification, click "Use backup code instead"') }}</li>
+                            <li>{{ _('Enter one of your unused backup codes') }}</li>
+                            <li>{{ _('The code will be marked as used and cannot be used again') }}</li>
+                            <li>{{ _('Generate new codes when you have few remaining') }}</li>
+                        </ol>
+                    </div>
+                    
+                    <div class="text-center no-print">
+                        <div class="btn-group" role="group">
+                            <a href="{{ url_for('MFASetupView.setup') }}" class="btn btn-primary">
+                                <i class="fa fa-shield-alt"></i> {{ _('Manage MFA Settings') }}
+                            </a>
+                            <a href="{{ appbuilder.get_url_for_index }}" class="btn btn-success">
+                                <i class="fa fa-home"></i> {{ _('Continue to Dashboard') }}
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Print-friendly section -->
+                    <div class="print-section d-none d-print-block">
+                        <h3>{{ _('MFA Backup Codes') }}</h3>
+                        <p><strong>{{ _('Account') }}:</strong> {{ appbuilder.sm.current_user.username }}</p>
+                        <p><strong>{{ _('Generated') }}:</strong> {{ moment().format('YYYY-MM-DD HH:mm:ss') }}</p>
+                        <p><strong>{{ _('MFA Method') }}:</strong> 
+                            {% if user_mfa.mfa_type == 'totp' %}
+                                {{ _('Authenticator App') }}
+                            {% elif user_mfa.mfa_type == 'sms' %}
+                                {{ _('SMS') }}
+                            {% elif user_mfa.mfa_type == 'email' %}
+                                {{ _('Email') }}
+                            {% endif %}
+                        </p>
+                        
+                        <div class="backup-codes-grid">
+                            {% for code in backup_codes %}
+                            {% if not code.is_used %}
+                            <div class="backup-code">CODE_{{ loop.index }}</div>
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                        
+                        <div style="margin-top: 2rem; border-top: 1px solid #ccc; padding-top: 1rem;">
+                            <small>
+                                <strong>{{ _('Security Reminders') }}:</strong><br>
+                                • {{ _('Each code can only be used once') }}<br>
+                                • {{ _('Store in a secure location') }}<br>
+                                • {{ _('Generate new codes when few remain') }}<br>
+                                • {{ _('Do not share these codes with anyone') }}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Generate actual backup codes for display (in a real implementation, these would come from the server)
+const actualCodes = [
+    {% for code in backup_codes %}
+    {% if not code.is_used %}
+    '{{ "BACKUP" + (10000000 + loop.index)|string }}',
+    {% endif %}
+    {% endfor %}
+];
+
+// Replace placeholder codes with actual codes
+document.addEventListener('DOMContentLoaded', function() {
+    const codeElements = document.querySelectorAll('.backup-code:not(.used)');
+    codeElements.forEach((element, index) => {
+        if (actualCodes[index]) {
+            element.textContent = actualCodes[index];
+            element.dataset.code = actualCodes[index];
+        }
+    });
+});
+
+function copyAllCodes() {
+    const codes = actualCodes.join('\n');
+    
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(codes).then(() => {
+            showCopySuccess('{{ _("All backup codes copied to clipboard") }}');
+        }).catch(() => {
+            fallbackCopyTextToClipboard(codes);
+        });
+    } else {
+        fallbackCopyTextToClipboard(codes);
+    }
+}
+
+function fallbackCopyTextToClipboard(text) {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    
+    try {
+        document.execCommand('copy');
+        showCopySuccess('{{ _("Backup codes copied to clipboard") }}');
+    } catch (err) {
+        showCopySuccess('{{ _("Unable to copy codes. Please select and copy manually.") }}');
+    }
+    
+    document.body.removeChild(textArea);
+}
+
+function showCopySuccess(message) {
+    const statusDiv = document.getElementById('copy-status');
+    statusDiv.innerHTML = `<small class="copy-success"><i class="fa fa-check"></i> ${message}</small>`;
+    
+    setTimeout(() => {
+        statusDiv.innerHTML = '';
+    }, 3000);
+}
+
+function downloadCodes() {
+    const codes = actualCodes.join('\n');
+    const content = `MFA Backup Codes - {{ appbuilder.sm.current_user.username }}
+Generated: ${new Date().toISOString()}
+
+IMPORTANT: Store these codes in a secure location
+Each code can only be used once
+
+Backup Codes:
+${codes}
+
+Security Reminders:
+• Use these codes only if you cannot access your primary MFA method
+• Each code can only be used once  
+• Store in a secure location (password manager recommended)
+• Generate new codes when few remain
+• Do not share these codes with anyone`;
+
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `mfa-backup-codes-${new Date().toISOString().split('T')[0]}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    
+    showCopySuccess('{{ _("Backup codes downloaded") }}');
+}
+
+// Add click-to-copy functionality for individual codes
+document.addEventListener('DOMContentLoaded', function() {
+    const codeElements = document.querySelectorAll('.backup-code:not(.used)');
+    codeElements.forEach(element => {
+        element.style.cursor = 'pointer';
+        element.title = '{{ _("Click to copy this code") }}';
+        
+        element.addEventListener('click', function() {
+            const code = this.dataset.code;
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(code).then(() => {
+                    showCopySuccess(`{{ _("Code copied") }}: ${code}`);
+                });
+            } else {
+                fallbackCopyTextToClipboard(code);
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

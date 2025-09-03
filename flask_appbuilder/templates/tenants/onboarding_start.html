@@ -1,0 +1,309 @@
+{% extends "appbuilder/baselayout.html" %}
+
+{% block head_css %}
+{{ super() }}
+<style>
+.plan-card {
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 10px;
+    transition: all 0.3s ease;
+    height: 100%;
+}
+
+.plan-card:hover {
+    border-color: #007bff;
+    transform: translateY(-5px);
+    box-shadow: 0 4px 15px rgba(0, 123, 255, 0.15);
+}
+
+.plan-card.recommended {
+    border-color: #28a745;
+    position: relative;
+}
+
+.plan-card.recommended::before {
+    content: "Recommended";
+    position: absolute;
+    top: -10px;
+    left: 20px;
+    background: #28a745;
+    color: white;
+    padding: 5px 15px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.plan-price {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #007bff;
+    margin: 15px 0;
+}
+
+.plan-features {
+    list-style: none;
+    padding: 0;
+}
+
+.plan-features li {
+    padding: 5px 0;
+    border-bottom: 1px solid #f8f9fa;
+}
+
+.plan-features li:last-child {
+    border-bottom: none;
+}
+
+.plan-features li i {
+    color: #28a745;
+    margin-right: 10px;
+    width: 16px;
+}
+
+.plan-limits {
+    background: #f8f9fa;
+    border-radius: 4px;
+    padding: 15px;
+    margin-top: 20px;
+}
+
+.hero-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 60px 0;
+    text-align: center;
+}
+
+.hero-section h1 {
+    font-size: 3rem;
+    margin-bottom: 20px;
+}
+
+.hero-section p {
+    font-size: 1.2rem;
+    margin-bottom: 30px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="hero-section">
+    <div class="container">
+        <h1>Start Your SaaS Journey</h1>
+        <p>Transform your Flask-AppBuilder application into a powerful multi-tenant SaaS platform</p>
+        <a href="{{ url_for('TenantOnboardingView.signup') }}" class="btn btn-light btn-lg">Get Started Free</a>
+    </div>
+</div>
+
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-12 text-center mb-5">
+            <h2>Choose Your Plan</h2>
+            <p class="lead">Select the plan that best fits your needs. You can upgrade or downgrade at any time.</p>
+        </div>
+    </div>
+    
+    <div class="row">
+        {% for plan in plans %}
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="plan-card {% if plan.recommended %}recommended{% endif %}">
+                <h3 class="text-center">{{ plan.name }}</h3>
+                
+                <div class="plan-price text-center">
+                    {% if plan.id == 'free' %}
+                        Free
+                    {% elif plan.id == 'starter' %}
+                        $29<small>/month</small>
+                    {% elif plan.id == 'professional' %}
+                        $99<small>/month</small>
+                    {% elif plan.id == 'enterprise' %}
+                        $299<small>/month</small>
+                    {% endif %}
+                </div>
+                
+                <ul class="plan-features">
+                    {% if plan.features.basic_crud %}
+                    <li><i class="fa fa-check"></i> Basic CRUD Operations</li>
+                    {% endif %}
+                    
+                    {% if plan.features.export_csv %}
+                    <li><i class="fa fa-check"></i> CSV Export</li>
+                    {% endif %}
+                    
+                    {% if plan.features.basic_charts %}
+                    <li><i class="fa fa-check"></i> Basic Charts</li>
+                    {% endif %}
+                    
+                    {% if plan.features.analytics_dashboard %}
+                    <li><i class="fa fa-check"></i> Analytics Dashboard</li>
+                    {% else %}
+                    <li><i class="fa fa-times text-muted"></i> <span class="text-muted">Analytics Dashboard</span></li>
+                    {% endif %}
+                    
+                    {% if plan.features.advanced_export %}
+                    <li><i class="fa fa-check"></i> Excel & PDF Export</li>
+                    {% else %}
+                    <li><i class="fa fa-times text-muted"></i> <span class="text-muted">Excel & PDF Export</span></li>
+                    {% endif %}
+                    
+                    {% if plan.features.alerting %}
+                    <li><i class="fa fa-check"></i> Alerting System</li>
+                    {% else %}
+                    <li><i class="fa fa-times text-muted"></i> <span class="text-muted">Alerting System</span></li>
+                    {% endif %}
+                    
+                    {% if plan.features.custom_branding %}
+                    <li><i class="fa fa-check"></i> Custom Branding</li>
+                    {% else %}
+                    <li><i class="fa fa-times text-muted"></i> <span class="text-muted">Custom Branding</span></li>
+                    {% endif %}
+                    
+                    {% if plan.features.api_access %}
+                    <li><i class="fa fa-check"></i> API Access</li>
+                    {% else %}
+                    <li><i class="fa fa-times text-muted"></i> <span class="text-muted">API Access</span></li>
+                    {% endif %}
+                </ul>
+                
+                <div class="plan-limits">
+                    <h6>Resource Limits</h6>
+                    <small>
+                        <strong>Users:</strong> {{ plan.limits.max_users }}<br>
+                        <strong>Records:</strong> {{ plan.limits.max_records }}<br>
+                        {% if plan.limits.api_calls_per_month != 'Unlimited' and plan.limits.api_calls_per_month > 0 %}
+                        <strong>API Calls:</strong> {{ plan.limits.api_calls_per_month }}/month<br>
+                        {% endif %}
+                        <strong>Storage:</strong> {{ plan.limits.storage_gb }} GB
+                    </small>
+                </div>
+                
+                <div class="text-center mt-4">
+                    <a href="{{ url_for('TenantOnboardingView.signup', plan_id=plan.id) }}" 
+                       class="btn {% if plan.recommended %}btn-success{% else %}btn-outline-primary{% endif %} btn-block">
+                        {% if plan.id == 'free' %}Start Free{% else %}Start Trial{% endif %}
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">Why Choose Our Multi-Tenant Platform?</h4>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <h6><i class="fa fa-shield-alt text-primary"></i> Complete Isolation</h6>
+                            <p>Your tenant data is completely isolated from others with database-level security.</p>
+                        </div>
+                        <div class="col-md-4">
+                            <h6><i class="fa fa-credit-card text-primary"></i> Integrated Billing</h6>
+                            <p>Automatic subscription management and usage-based billing with Stripe integration.</p>
+                        </div>
+                        <div class="col-md-4">
+                            <h6><i class="fa fa-paint-brush text-primary"></i> White-Label Ready</h6>
+                            <p>Complete branding customization with your own domain, logo, and color scheme.</p>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-4">
+                            <h6><i class="fa fa-chart-line text-primary"></i> Usage Analytics</h6>
+                            <p>Real-time usage monitoring and analytics for all your tenant resources.</p>
+                        </div>
+                        <div class="col-md-4">
+                            <h6><i class="fa fa-users text-primary"></i> User Management</h6>
+                            <p>Complete tenant user management with role-based access control.</p>
+                        </div>
+                        <div class="col-md-4">
+                            <h6><i class="fa fa-rocket text-primary"></i> Scalable</h6>
+                            <p>Built to scale from a few tenants to thousands with optimized performance.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-4 mb-5">
+        <div class="col-12 text-center">
+            <h4>Frequently Asked Questions</h4>
+            <div class="accordion" id="faqAccordion">
+                <div class="card">
+                    <div class="card-header" id="faq1">
+                        <h6 class="mb-0">
+                            <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapse1">
+                                Can I change my plan later?
+                            </button>
+                        </h6>
+                    </div>
+                    <div id="collapse1" class="collapse" data-parent="#faqAccordion">
+                        <div class="card-body">
+                            Yes! You can upgrade or downgrade your plan at any time. Changes take effect immediately and billing is prorated.
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header" id="faq2">
+                        <h6 class="mb-0">
+                            <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapse2">
+                                Is my data secure and isolated?
+                            </button>
+                        </h6>
+                    </div>
+                    <div id="collapse2" class="collapse" data-parent="#faqAccordion">
+                        <div class="card-body">
+                            Absolutely. We use row-level security and tenant isolation to ensure your data is completely separate from other tenants. Each tenant can only access their own data.
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header" id="faq3">
+                        <h6 class="mb-0">
+                            <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapse3">
+                                Do you offer custom domains?
+                            </button>
+                        </h6>
+                    </div>
+                    <div id="collapse3" class="collapse" data-parent="#faqAccordion">
+                        <div class="card-body">
+                            Yes, Professional and Enterprise plans include custom domain support with automatic SSL certificates.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block tail_js %}
+{{ super() }}
+<script>
+$(document).ready(function() {
+    // Add smooth scrolling to anchor links
+    $('a[href^="#"]').on('click', function(event) {
+        var target = $(this.getAttribute('href'));
+        if( target.length ) {
+            event.preventDefault();
+            $('html, body').stop().animate({
+                scrollTop: target.offset().top - 80
+            }, 1000);
+        }
+    });
+    
+    // Track plan clicks
+    $('.plan-card a').on('click', function() {
+        var planId = $(this).attr('href').split('plan_id=')[1];
+        console.log('Selected plan:', planId);
+        // In a real implementation, you might send analytics events here
+    });
+});
+</script>
+{% endblock %}

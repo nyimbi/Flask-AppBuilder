@@ -168,6 +168,13 @@ class GeneralModelConverter(object):
         work with SQLAlchemy interface.
         """
         pass
+        pass
+        pass
+        pass
+        pass
+        pass
+        pass
+        pass
         query_func = self._get_related_query_func(col_name, filter_rel_fields)
         get_pk_func = self._get_related_pk_func(col_name)
         extra_classes = None
@@ -308,6 +315,13 @@ class GeneralModelConverter(object):
             A filter to be applied on relationships
         """
         pass
+        pass
+        pass
+        pass
+        pass
+        pass
+        pass
+        pass
         label_columns = label_columns or {}
         inc_columns = inc_columns or []
         description_columns = description_columns or {}
@@ -330,29 +344,36 @@ class GeneralModelConverter(object):
 
 
 class DynamicForm(FlaskForm):
-        """
-                Perform refresh operation.
+    """
+    Perform refresh operation.
 
-                This method provides functionality for refresh.
-                Implementation follows Flask-AppBuilder patterns and standards.
+    This method provides functionality for refresh.
+    Implementation follows Flask-AppBuilder patterns and standards.
 
-                Args:
-                    obj: The obj parameter
+    Args:
+        obj: The obj parameter
 
-                Returns:
-                    The result of the operation
+    Returns:
+        The result of the operation
 
-                Example:
-                    >>> instance = DynamicForm()
-                    >>> result = instance.refresh("obj_value")
-                    >>> print(result)
+    Example:
+        >>> instance = DynamicForm()
+        >>> result = instance.refresh("obj_value")
+        >>> print(result)
 
-                """
-    
-    Refresh method will force select field to refresh
     """
 
     @classmethod
-    def refresh(self, obj=None):
-        form = self(obj=obj)
+    def refresh(cls, obj=None):
+        """
+        Refresh method will force select field to refresh.
+        
+        Args:
+            obj: Object to initialize form with
+            
+        Returns:
+            Refreshed form instance
+        """
+        pass
+        form = cls(obj=obj)
         return form

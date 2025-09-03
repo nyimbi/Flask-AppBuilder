@@ -1,0 +1,366 @@
+{% extends "appbuilder/base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fa fa-bell"></i> {{ title or "Alert Rule" }}</h2>
+        <div class="btn-group">
+            <a href="{{ url_for('AlertConfigView.rules') }}" class="btn btn-secondary">
+                <i class="fa fa-arrow-left"></i> Back to Rules
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 col-md-10 col-sm-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        {% if rule %}
+                        <i class="fa fa-edit"></i> Edit Alert Rule: {{ rule.name }}
+                        {% else %}
+                        <i class="fa fa-plus"></i> Create New Alert Rule
+                        {% endif %}
+                    </h5>
+                </div>
+                
+                <form method="POST" id="alertRuleForm">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="card-body">
+                        <!-- Rule Basic Information -->
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <h6 class="text-muted mb-3">Basic Information</h6>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ form.name.label(class="form-label required") }}
+                                {{ form.name(class="form-control", placeholder="e.g., High CPU Usage Alert") }}
+                                {% if form.name.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.name.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.severity.label(class="form-label required") }}
+                                {{ form.severity(class="form-select") }}
+                                {% if form.severity.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.severity.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                {{ form.description.label(class="form-label") }}
+                                {{ form.description(class="form-control", rows="3", placeholder="Describe what this alert monitors and when it should trigger") }}
+                                {% if form.description.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.description.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        
+                        <!-- Metric Configuration -->
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <h6 class="text-muted mb-3">Metric Configuration</h6>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ form.metric_name.label(class="form-label required") }}
+                                {{ form.metric_name(class="form-control", placeholder="e.g., cpu_usage") }}
+                                <small class="form-text text-muted">
+                                    The name of the metric to monitor
+                                </small>
+                                {% if form.metric_name.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.metric_name.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-3">
+                                {{ form.condition.label(class="form-label required") }}
+                                {{ form.condition(class="form-select") }}
+                                {% if form.condition.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.condition.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-3">
+                                {{ form.threshold_value.label(class="form-label required") }}
+                                {{ form.threshold_value(class="form-control", placeholder="80.0") }}
+                                {% if form.threshold_value.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.threshold_value.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <div class="alert alert-info">
+                                    <i class="fa fa-info-circle"></i>
+                                    <strong>Condition Preview:</strong> 
+                                    Alert will trigger when <strong>{{ form.metric_name.data or "metric_name" }}</strong> 
+                                    <strong>{{ form.condition.data or ">" }}</strong> 
+                                    <strong>{{ form.threshold_value.data or "threshold_value" }}</strong>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        
+                        <!-- Alert Settings -->
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <h6 class="text-muted mb-3">Alert Settings</h6>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ form.cooldown_minutes.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.cooldown_minutes(class="form-control") }}
+                                    <span class="input-group-text">minutes</span>
+                                </div>
+                                <small class="form-text text-muted">
+                                    Minimum time between alerts for the same rule
+                                </small>
+                                {% if form.cooldown_minutes.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.cooldown_minutes.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.notification_channels.label(class="form-label") }}
+                                {{ form.notification_channels(class="form-select") }}
+                                <small class="form-text text-muted">
+                                    How to deliver alert notifications
+                                </small>
+                                {% if form.notification_channels.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.notification_channels.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <div class="form-check">
+                                    {{ form.enabled(class="form-check-input") }}
+                                    {{ form.enabled.label(class="form-check-label") }}
+                                    <small class="form-text text-muted d-block">
+                                        Enable this alert rule for monitoring
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Existing Rule Info -->
+                        {% if rule %}
+                        <hr>
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <h6 class="text-muted mb-3">Rule Information</h6>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <small class="text-muted">Created:</small><br>
+                                        <strong>{{ rule.created_at.strftime('%Y-%m-%d %H:%M:%S') if rule.created_at else 'Unknown' }}</strong>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <small class="text-muted">Created by:</small><br>
+                                        <strong>{{ rule.created_by or 'Unknown' }}</strong>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <small class="text-muted">Rule ID:</small><br>
+                                        <code>{{ rule.id }}</code>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="card-footer">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <button type="button" id="testRuleBtn" class="btn btn-outline-info">
+                                    <i class="fa fa-flask"></i> Test Rule
+                                </button>
+                            </div>
+                            <div>
+                                <a href="{{ url_for('AlertConfigView.rules') }}" class="btn btn-secondary me-2">
+                                    <i class="fa fa-times"></i> Cancel
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fa fa-save"></i> 
+                                    {% if rule %}Update Rule{% else %}Create Rule{% endif %}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Help Panel -->
+        <div class="col-lg-4 col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fa fa-question-circle"></i> Help & Examples
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <h6>Metric Names</h6>
+                    <p class="small">Common metrics you can monitor:</p>
+                    <ul class="small">
+                        <li><code>cpu_usage</code> - CPU utilization percentage</li>
+                        <li><code>memory_usage</code> - Memory usage percentage</li>
+                        <li><code>disk_usage</code> - Disk space usage</li>
+                        <li><code>total_users</code> - Total user count</li>
+                        <li><code>active_sessions</code> - Active user sessions</li>
+                    </ul>
+                    
+                    <h6 class="mt-3">Severity Levels</h6>
+                    <div class="small">
+                        <div class="mb-1">
+                            <span class="badge badge-secondary">Low</span> 
+                            Informational alerts
+                        </div>
+                        <div class="mb-1">
+                            <span class="badge badge-info">Medium</span> 
+                            Standard monitoring
+                        </div>
+                        <div class="mb-1">
+                            <span class="badge badge-warning">High</span> 
+                            Requires attention
+                        </div>
+                        <div class="mb-1">
+                            <span class="badge badge-danger">Critical</span> 
+                            Immediate action needed
+                        </div>
+                    </div>
+                    
+                    <h6 class="mt-3">Condition Examples</h6>
+                    <ul class="small">
+                        <li><strong>&gt;</strong> Alert when metric exceeds threshold</li>
+                        <li><strong>&lt;</strong> Alert when metric falls below threshold</li>
+                        <li><strong>&gt;=</strong> Alert when metric is at or above threshold</li>
+                        <li><strong>&lt;=</strong> Alert when metric is at or below threshold</li>
+                    </ul>
+                    
+                    <div class="alert alert-warning small mt-3">
+                        <i class="fa fa-exclamation-triangle"></i>
+                        <strong>Note:</strong> Make sure the metric name matches exactly with your registered metric providers.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Real-time condition preview update
+    const metricField = document.querySelector('[name="metric_name"]');
+    const conditionField = document.querySelector('[name="condition"]');
+    const thresholdField = document.querySelector('[name="threshold_value"]');
+    
+    function updatePreview() {
+        const preview = document.querySelector('.alert-info strong');
+        if (preview) {
+            const metric = metricField.value || 'metric_name';
+            const condition = conditionField.value || '>';
+            const threshold = thresholdField.value || 'threshold_value';
+            
+            preview.parentElement.innerHTML = `
+                <i class="fa fa-info-circle"></i>
+                <strong>Condition Preview:</strong> 
+                Alert will trigger when <strong>${metric}</strong> 
+                <strong>${condition}</strong> 
+                <strong>${threshold}</strong>
+            `;
+        }
+    }
+    
+    [metricField, conditionField, thresholdField].forEach(field => {
+        if (field) {
+            field.addEventListener('input', updatePreview);
+            field.addEventListener('change', updatePreview);
+        }
+    });
+    
+    // Test rule functionality
+    document.getElementById('testRuleBtn').addEventListener('click', function() {
+        const formData = new FormData(document.getElementById('alertRuleForm'));
+        
+        // This would need to be implemented as an API endpoint
+        alert('Rule testing functionality would be implemented here.\n\nThis would:\n1. Validate the metric exists\n2. Get current metric value\n3. Test the condition\n4. Show preview of alert behavior');
+    });
+    
+    // Form validation
+    document.getElementById('alertRuleForm').addEventListener('submit', function(e) {
+        const requiredFields = ['name', 'metric_name', 'threshold_value'];
+        let isValid = true;
+        
+        requiredFields.forEach(fieldName => {
+            const field = document.querySelector(`[name="${fieldName}"]`);
+            if (field && !field.value.trim()) {
+                isValid = false;
+                field.classList.add('is-invalid');
+            } else if (field) {
+                field.classList.remove('is-invalid');
+            }
+        });
+        
+        if (!isValid) {
+            e.preventDefault();
+            alert('Please fill in all required fields.');
+        }
+    });
+});
+</script>
+
+<style>
+.required::after {
+    content: " *";
+    color: #dc3545;
+}
+
+.form-control.is-invalid,
+.form-select.is-invalid {
+    border-color: #dc3545;
+}
+
+.badge {
+    font-size: 0.75em;
+}
+
+.alert {
+    border-radius: 0.375rem;
+}
+
+.card {
+    border-radius: 0.375rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+</style>
+{% endblock %}

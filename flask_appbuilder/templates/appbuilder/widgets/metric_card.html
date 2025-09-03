@@ -1,0 +1,134 @@
+{% extends "appbuilder/base.html" %}
+
+{# 
+Metric Card Widget Template
+
+Displays a single metric with value, trend indicator, and optional icon.
+Designed to work within Bootstrap grid system for responsive dashboards.
+#}
+
+<div class="metric-card card border-0 shadow-sm h-100">
+    <div class="card-body p-3">
+        <div class="d-flex align-items-center justify-content-between">
+            <div class="metric-content flex-grow-1">
+                {# Metric Title #}
+                <h6 class="card-subtitle mb-1 text-muted small">{{ title }}</h6>
+                
+                {# Metric Value #}
+                <h3 class="card-title mb-0 fw-bold text-{{ color }}">{{ value }}</h3>
+                
+                {# Optional Subtitle #}
+                {% if subtitle %}
+                <small class="text-muted d-block">{{ subtitle }}</small>
+                {% endif %}
+                
+                {# Trend Indicator #}
+                {% if has_trend and trend is not none %}
+                <div class="metric-trend mt-2">
+                    <small class="{{ trend_class }} fw-semibold">
+                        <i class="fas {{ trend_icon }} me-1"></i>
+                        {{ trend_text }}
+                    </small>
+                </div>
+                {% endif %}
+            </div>
+            
+            {# Metric Icon #}
+            <div class="metric-icon flex-shrink-0 ms-3">
+                <div class="d-flex align-items-center justify-content-center rounded-circle bg-{{ color }}-subtle" 
+                     style="width: 60px; height: 60px;">
+                    <i class="fas {{ icon }} fa-lg text-{{ color }}"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    {# Optional Card Footer for Actions #}
+    {% if show_actions %}
+    <div class="card-footer bg-transparent border-0 pt-0">
+        <div class="d-flex justify-content-between align-items-center">
+            {% if detail_url %}
+            <a href="{{ detail_url }}" class="btn btn-sm btn-outline-{{ color }}">
+                View Details
+            </a>
+            {% endif %}
+            
+            {% if last_updated %}
+            <small class="text-muted">
+                Updated {{ last_updated.strftime('%H:%M') }}
+            </small>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{# CSS for metric card styling #}
+<style>
+.metric-card {
+    transition: all 0.2s ease-in-out;
+    min-height: 120px;
+}
+
+.metric-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.12) !important;
+}
+
+.metric-content .card-title {
+    font-size: 1.8rem;
+    line-height: 1.2;
+}
+
+.trend-up {
+    color: #28a745 !important;
+}
+
+.trend-down {
+    color: #dc3545 !important;
+}
+
+.trend-neutral {
+    color: #6c757d !important;
+}
+
+.metric-trend {
+    font-size: 0.8rem;
+}
+
+.bg-primary-subtle {
+    background-color: rgba(13, 110, 253, 0.1) !important;
+}
+
+.bg-success-subtle {
+    background-color: rgba(25, 135, 84, 0.1) !important;
+}
+
+.bg-warning-subtle {
+    background-color: rgba(255, 193, 7, 0.1) !important;
+}
+
+.bg-danger-subtle {
+    background-color: rgba(220, 53, 69, 0.1) !important;
+}
+
+.bg-info-subtle {
+    background-color: rgba(13, 202, 240, 0.1) !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 576px) {
+    .metric-content .card-title {
+        font-size: 1.5rem;
+    }
+    
+    .metric-icon {
+        width: 50px !important;
+        height: 50px !important;
+    }
+    
+    .metric-icon i {
+        font-size: 1rem !important;
+    }
+}
+</style>

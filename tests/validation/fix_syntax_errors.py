@@ -34,6 +34,45 @@ class SyntaxErrorFixer:
         self.fixes_applied = 0
         self.files_fixed = 0
     
+    def analyze_syntax_errors(self) -> Dict:
+        """
+        Analyze syntax errors across all Python files.
+        
+        Returns:
+            Dictionary containing analysis results
+        """
+        error_files = []
+        python_files = list(self.base_path.rglob("*.py"))
+        total_files = 0
+        
+        for file_path in python_files:
+            if any(part.startswith('__pycache__') for part in file_path.parts):
+                continue
+            
+            total_files += 1
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                ast.parse(content)
+            except SyntaxError as e:
+                error_files.append({
+                    'file': str(file_path),
+                    'error': str(e),
+                    'line': getattr(e, 'lineno', 0)
+                })
+            except Exception as e:
+                error_files.append({
+                    'file': str(file_path),
+                    'error': f"Parse error: {str(e)}",
+                    'line': 0
+                })
+        
+        return {
+            'total_files_analyzed': total_files,
+            'files_with_errors': error_files,
+            'error_count': len(error_files)
+        }
+
     def find_syntax_error_files(self) -> List[Path]:
         """
         Find all Python files with syntax errors.

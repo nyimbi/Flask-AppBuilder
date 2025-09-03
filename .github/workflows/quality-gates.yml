@@ -1,0 +1,219 @@
+name: Flask-AppBuilder Quality Gates
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+  workflow_dispatch:
+    inputs:
+      strict_mode:
+        description: 'Enable strict quality validation'
+        required: false
+        default: 'false'
+
+jobs:
+  quality-validation:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.9, 3.10, 3.11]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e .
+        pip install pytest pytest-cov pytest-mock
+    
+    - name: Run Syntax Validation
+      id: syntax
+      run: |
+        echo "::group::Syntax Validation"
+        python tests/validation/fix_syntax_errors.py flask_appbuilder --analyze-only
+        echo "::endgroup::"
+        echo "syntax_passed=true" >> $GITHUB_OUTPUT
+      continue-on-error: false
+    
+    - name: Run Test Suite
+      id: tests
+      run: |
+        echo "::group::Test Suite Execution"
+        python -m pytest tests/ci/test_integration_workflows.py tests/ci/test_documentation_validation.py -v --tb=short --junitxml=test-results.xml
+        echo "::endgroup::"
+        echo "tests_passed=true" >> $GITHUB_OUTPUT
+      continue-on-error: false
+    
+    - name: Run Documentation Validation
+      id: docs
+      run: |
+        echo "::group::Documentation Analysis"
+        python -c "
+        import sys
+        sys.path.append('tests/ci')
+        from test_documentation_validation import DocumentationValidator
+        validator = DocumentationValidator('flask_appbuilder')
+        results = validator.analyze_directory(['__pycache__', '.git', 'tests', 'examples'])
+        coverage = results['summary']['documentation_coverage_percentage']
+        print(f'Documentation Coverage: {coverage:.1f}%')
+        if coverage < 60.0:
+          print(f'ERROR: Documentation coverage {coverage:.1f}% below minimum 60.0%')
+          sys.exit(1)
+        print('✅ Documentation validation passed')
+        "
+        echo "::endgroup::"
+        echo "docs_passed=true" >> $GITHUB_OUTPUT
+    
+    - name: Run Quality Validation Pipeline
+      id: pipeline
+      run: |
+        echo "::group::Comprehensive Quality Validation"
+        python tests/validation/quality_validation_pipeline.py flask_appbuilder
+        pipeline_exit_code=$?
+        echo "::endgroup::"
+        
+        if [ $pipeline_exit_code -eq 0 ]; then
+          echo "pipeline_passed=true" >> $GITHUB_OUTPUT
+          echo "✅ Quality pipeline validation passed - Production Ready!"
+        else
+          echo "pipeline_passed=false" >> $GITHUB_OUTPUT
+          echo "⚠️ Quality pipeline validation has issues - Review needed"
+          if [ "${{ github.event.inputs.strict_mode }}" == "true" ]; then
+            echo "🚫 Strict mode enabled - Failing build"
+            exit 1
+          fi
+        fi
+    
+    - name: Upload Test Results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: test-results-python-${{ matrix.python-version }}
+        path: |
+          test-results.xml
+          quality_validation_report_*.json
+    
+    - name: Quality Gate Summary
+      run: |
+        echo "## 📊 Quality Gate Results" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY  
+        echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+        echo "| Syntax Validation | ${{ steps.syntax.outputs.syntax_passed == 'true' && '✅ PASSED' || '❌ FAILED' }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Test Suite | ${{ steps.tests.outputs.tests_passed == 'true' && '✅ PASSED' || '❌ FAILED' }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Documentation | ${{ steps.docs.outputs.docs_passed == 'true' && '✅ PASSED' || '❌ FAILED' }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Overall Pipeline | ${{ steps.pipeline.outputs.pipeline_passed == 'true' && '✅ PASSED' || '⚠️ NEEDS REVIEW' }} |" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [ "${{ steps.pipeline.outputs.pipeline_passed }}" == "true" ]; then
+          echo "🎉 **Flask-AppBuilder meets production quality standards!**" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "📋 **Flask-AppBuilder needs improvements for production readiness.**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Please review the quality validation report and address identified issues." >> $GITHUB_STEP_SUMMARY
+        fi
+
+  security-scan:
+    runs-on: ubuntu-latest
+    needs: quality-validation
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.11
+    
+    - name: Install security scanning tools
+      run: |
+        pip install bandit safety
+    
+    - name: Run Bandit Security Scan
+      run: |
+        echo "::group::Security Vulnerability Scan"
+        bandit -r flask_appbuilder -f json -o bandit-report.json || true
+        bandit -r flask_appbuilder -f txt
+        echo "::endgroup::"
+      continue-on-error: true
+    
+    - name: Run Safety Check
+      run: |
+        echo "::group::Dependency Vulnerability Check"
+        safety check --json --output safety-report.json || true
+        safety check
+        echo "::endgroup::"
+      continue-on-error: true
+    
+    - name: Upload Security Reports
+      uses: actions/upload-artifact@v3
+      with:
+        name: security-reports
+        path: |
+          bandit-report.json
+          safety-report.json
+
+  performance-check:
+    runs-on: ubuntu-latest
+    needs: quality-validation
+    if: github.event_name == 'pull_request'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.11
+    
+    - name: Install performance testing tools
+      run: |
+        pip install -e .
+        pip install pytest-benchmark memory-profiler
+    
+    - name: Run Performance Benchmarks
+      run: |
+        echo "::group::Performance Benchmarks"
+        python -c "
+        import time
+        import psutil
+        import os
+        from pathlib import Path
+        
+        # Measure import performance
+        start_time = time.time()
+        import flask_appbuilder
+        import_time = time.time() - start_time
+        
+        # Memory usage
+        process = psutil.Process(os.getpid())
+        memory_mb = process.memory_info().rss / 1024 / 1024
+        
+        # File size analysis
+        fab_path = Path('flask_appbuilder')
+        total_size = sum(f.stat().st_size for f in fab_path.rglob('*.py')) / 1024 / 1024
+        
+        print(f'📊 Performance Metrics:')
+        print(f'   Import Time: {import_time:.3f}s')
+        print(f'   Memory Usage: {memory_mb:.1f}MB')
+        print(f'   Codebase Size: {total_size:.1f}MB')
+        
+        # Set thresholds
+        if import_time > 2.0:
+          print('⚠️ Import time is high - consider optimization')
+        if memory_mb > 100:
+          print('⚠️ Memory usage is high - check for memory leaks')  
+        if total_size > 10:
+          print('⚠️ Codebase is large - consider modularization')
+        "
+        echo "::endgroup::"

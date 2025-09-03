@@ -3,7 +3,7 @@ import os
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 CSRF_ENABLED = True
-SECRET_KEY = "\2\1thisismyscretkey\1\2\e\y\y\h"
+SECRET_KEY = os.environ.get("SECRET_KEY", "dev-key-change-in-production")
 
 OPENID_PROVIDERS = [
     {"name": "Google", "url": "https://www.google.com/accounts/o8/id"},

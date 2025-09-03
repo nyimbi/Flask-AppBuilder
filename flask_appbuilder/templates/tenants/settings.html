@@ -1,0 +1,607 @@
+{% extends "appbuilder/baselayout.html" %}
+
+{% block head_css %}
+{{ super() }}
+<style>
+.settings-section {
+    background: white;
+    border-radius: 8px;
+    padding: 30px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border-left: 4px solid #007bff;
+}
+
+.color-picker-input {
+    width: 100px;
+    height: 40px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.logo-preview {
+    max-width: 200px;
+    max-height: 100px;
+    border: 2px dashed #dee2e6;
+    padding: 20px;
+    text-align: center;
+    border-radius: 8px;
+    background: #f8f9fa;
+}
+
+.logo-preview img {
+    max-width: 100%;
+    max-height: 80px;
+}
+
+.file-upload-area {
+    border: 2px dashed #dee2e6;
+    border-radius: 8px;
+    padding: 30px;
+    text-align: center;
+    background: #f8f9fa;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.file-upload-area:hover {
+    border-color: #007bff;
+    background: #e3f2fd;
+}
+
+.file-upload-area.dragover {
+    border-color: #28a745;
+    background: #d4edda;
+}
+
+.branding-preview {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 20px;
+    background: #f8f9fa;
+    margin-top: 20px;
+}
+
+.navbar-preview {
+    background-color: var(--navbar-bg, #343a40);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+}
+
+.color-swatch {
+    width: 30px;
+    height: 30px;
+    border-radius: 4px;
+    display: inline-block;
+    border: 1px solid #dee2e6;
+    margin-right: 10px;
+    cursor: pointer;
+}
+
+.domain-setup {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.custom-css-editor {
+    min-height: 200px;
+    font-family: 'Monaco', 'Consolas', monospace;
+    font-size: 14px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fa fa-cog"></i> Tenant Settings
+        </h1>
+        <div>
+            <a href="{{ url_for('TenantAdminView.dashboard') }}" class="btn btn-secondary">
+                <i class="fa fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <form id="settings-form" method="post" enctype="multipart/form-data">
+        <div class="row">
+            <div class="col-lg-8">
+                <!-- Basic Information -->
+                <div class="settings-section">
+                    <h4><i class="fa fa-building"></i> Basic Information</h4>
+                    <p class="text-muted">Update your organization's basic information and contact details.</p>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="name">Organization Name *</label>
+                                <input type="text" class="form-control" id="name" name="name" 
+                                       value="{{ settings.name or tenant.name }}" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="billing_email">Billing Email</label>
+                                <input type="email" class="form-control" id="billing_email" name="billing_email"
+                                       value="{{ settings.billing_email or tenant.billing_email or '' }}">
+                                <small class="form-text text-muted">Email for billing notifications</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="phone">Phone Number</label>
+                                <input type="tel" class="form-control" id="phone" name="phone"
+                                       value="{{ settings.phone or tenant.phone or '' }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="subdomain">Subdomain</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" value="{{ tenant.slug }}" readonly>
+                                    <div class="input-group-append">
+                                        <span class="input-group-text">.{{ request.host.split('.', 1)[-1] if '.' in request.host else 'yourdomain.com' }}</span>
+                                    </div>
+                                </div>
+                                <small class="form-text text-muted">Contact support to change your subdomain</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="description">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"
+                                  placeholder="Brief description of your organization">{{ settings.description or tenant.description or '' }}</textarea>
+                    </div>
+                </div>
+
+                <!-- Branding Settings -->
+                {% if tenant.has_feature('custom_branding') %}
+                <div class="settings-section">
+                    <h4><i class="fa fa-paint-brush"></i> Branding & Appearance</h4>
+                    <p class="text-muted">Customize your application's look and feel with your brand colors and logo.</p>
+                    
+                    <!-- Logo Upload -->
+                    <div class="form-group">
+                        <label>Organization Logo</label>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="file-upload-area" onclick="document.getElementById('logo_file').click();">
+                                    <i class="fa fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                                    <p class="mb-0">Click to upload logo or drag & drop</p>
+                                    <small class="text-muted">PNG, JPG, GIF up to 2MB. Recommended size: 400x200px</small>
+                                </div>
+                                <input type="file" id="logo_file" name="logo_file" accept="image/*" style="display: none;">
+                            </div>
+                            <div class="col-md-6">
+                                <div class="logo-preview" id="logo-preview">
+                                    {% if settings.branding and settings.branding.get('logo_url') %}
+                                        <img src="{{ settings.branding.logo_url }}" alt="Current Logo">
+                                    {% else %}
+                                        <i class="fa fa-image fa-3x text-muted mb-2"></i>
+                                        <p class="text-muted mb-0">Current Logo</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Color Scheme -->
+                    <div class="form-group">
+                        <label>Color Scheme</label>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <label for="primary_color" class="small">Primary Color</label>
+                                <div class="d-flex align-items-center">
+                                    <input type="color" class="color-picker-input mr-2" id="primary_color" name="colors[primary]"
+                                           value="{{ settings.branding.colors.primary if settings.branding and settings.branding.colors else '#007bff' }}">
+                                    <input type="text" class="form-control form-control-sm" id="primary_color_text" 
+                                           value="{{ settings.branding.colors.primary if settings.branding and settings.branding.colors else '#007bff' }}">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="secondary_color" class="small">Secondary Color</label>
+                                <div class="d-flex align-items-center">
+                                    <input type="color" class="color-picker-input mr-2" id="secondary_color" name="colors[secondary]"
+                                           value="{{ settings.branding.colors.secondary if settings.branding and settings.branding.colors else '#6c757d' }}">
+                                    <input type="text" class="form-control form-control-sm" id="secondary_color_text"
+                                           value="{{ settings.branding.colors.secondary if settings.branding and settings.branding.colors else '#6c757d' }}">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="success_color" class="small">Success Color</label>
+                                <div class="d-flex align-items-center">
+                                    <input type="color" class="color-picker-input mr-2" id="success_color" name="colors[success]"
+                                           value="{{ settings.branding.colors.success if settings.branding and settings.branding.colors else '#28a745' }}">
+                                    <input type="text" class="form-control form-control-sm" id="success_color_text"
+                                           value="{{ settings.branding.colors.success if settings.branding and settings.branding.colors else '#28a745' }}">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="danger_color" class="small">Danger Color</label>
+                                <div class="d-flex align-items-center">
+                                    <input type="color" class="color-picker-input mr-2" id="danger_color" name="colors[danger]"
+                                           value="{{ settings.branding.colors.danger if settings.branding and settings.branding.colors else '#dc3545' }}">
+                                    <input type="text" class="form-control form-control-sm" id="danger_color_text"
+                                           value="{{ settings.branding.colors.danger if settings.branding and settings.branding.colors else '#dc3545' }}">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Custom CSS -->
+                    <div class="form-group">
+                        <label for="custom_css">Custom CSS</label>
+                        <textarea class="form-control custom-css-editor" id="custom_css" name="custom_css" 
+                                  placeholder="/* Add your custom CSS here */"></textarea>
+                        <small class="form-text text-muted">
+                            Advanced: Add custom CSS to further customize your application's appearance.
+                        </small>
+                    </div>
+
+                    <!-- Branding Preview -->
+                    <div class="branding-preview" id="branding-preview">
+                        <h6>Preview</h6>
+                        <div class="navbar-preview" id="navbar-preview">
+                            <div class="d-flex align-items-center">
+                                <div class="navbar-brand">
+                                    <img id="preview-logo" src="{{ settings.branding.logo_url if settings.branding and settings.branding.get('logo_url') else '/static/img/logo.png' }}" 
+                                         alt="Logo" style="height: 30px; margin-right: 10px;">
+                                    <span id="preview-app-name">{{ settings.name or tenant.name }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header" style="background-color: var(--primary-color, #007bff); color: white;">
+                                Sample Card Header
+                            </div>
+                            <div class="card-body">
+                                <button class="btn btn-primary" id="preview-button">Primary Button</button>
+                                <button class="btn btn-success ml-2">Success Button</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="settings-section">
+                    <h4><i class="fa fa-paint-brush"></i> Branding & Appearance</h4>
+                    <div class="alert alert-info">
+                        <i class="fa fa-info-circle"></i>
+                        <strong>Upgrade Required:</strong> Custom branding is available in Professional and Enterprise plans.
+                        <a href="{{ url_for('TenantAdminView.billing_portal') }}" class="alert-link">Upgrade now</a> to customize your brand.
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Custom Domain -->
+                <div class="settings-section domain-setup">
+                    <h4><i class="fa fa-globe"></i> Custom Domain</h4>
+                    {% if tenant.has_feature('custom_branding') %}
+                        <p class="text-white-50">Connect your own domain to provide a fully white-labeled experience.</p>
+                        
+                        <div class="form-group">
+                            <label for="custom_domain" class="text-white">Custom Domain</label>
+                            <input type="text" class="form-control" id="custom_domain" name="custom_domain"
+                                   value="{{ tenant.custom_domain or '' }}" placeholder="app.yourcompany.com">
+                            <small class="text-white-50">
+                                After adding your domain, point your DNS CNAME record to: {{ tenant.slug }}.{{ request.host.split('.', 1)[-1] if '.' in request.host else 'yourdomain.com' }}
+                            </small>
+                        </div>
+                        
+                        {% if tenant.custom_domain %}
+                        <div class="alert alert-light">
+                            <i class="fa fa-check-circle text-success"></i>
+                            Your custom domain <strong>{{ tenant.custom_domain }}</strong> is configured.
+                            <br><small>SSL certificate will be automatically provisioned within 24 hours.</small>
+                        </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-white-50">
+                            <i class="fa fa-lock"></i> Custom domains are available in Professional and Enterprise plans.
+                            <a href="{{ url_for('TenantAdminView.billing_portal') }}" class="text-white">
+                                <u>Upgrade your plan</u>
+                            </a> to use your own domain.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                <!-- Current Plan -->
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">Current Plan</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="text-center">
+                            <h4 class="text-primary">{{ tenant.plan_id.title() }} Plan</h4>
+                            {% if tenant.plan_id == 'free' %}
+                                <p class="text-muted">No monthly charge</p>
+                            {% elif tenant.plan_id == 'starter' %}
+                                <p class="text-muted">$29/month</p>
+                            {% elif tenant.plan_id == 'professional' %}
+                                <p class="text-muted">$99/month</p>
+                            {% elif tenant.plan_id == 'enterprise' %}
+                                <p class="text-muted">$299/month</p>
+                            {% endif %}
+                        </div>
+                        
+                        <hr>
+                        
+                        <div class="small">
+                            <strong>Features included:</strong>
+                            <ul class="list-unstyled mt-2">
+                                {% set features = tenant.get_feature_flags() %}
+                                {% for feature, enabled in features.items() %}
+                                    {% if enabled %}
+                                    <li><i class="fa fa-check text-success"></i> {{ feature.replace('_', ' ').title() }}</li>
+                                    {% endif %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        
+                        <div class="text-center mt-3">
+                            <a href="{{ url_for('TenantAdminView.billing_portal') }}" class="btn btn-outline-primary btn-sm">
+                                Manage Billing
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Tips -->
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">Quick Tips</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="small">
+                            <div class="mb-3">
+                                <strong><i class="fa fa-lightbulb text-warning"></i> Logo Best Practices:</strong>
+                                <ul class="mb-0 mt-1">
+                                    <li>Use transparent PNG for best results</li>
+                                    <li>Recommended size: 400x200px</li>
+                                    <li>Keep file size under 500KB</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <strong><i class="fa fa-palette text-info"></i> Color Guidelines:</strong>
+                                <ul class="mb-0 mt-1">
+                                    <li>Ensure sufficient contrast for accessibility</li>
+                                    <li>Test colors in both light and dark themes</li>
+                                    <li>Consider your brand's color psychology</li>
+                                </ul>
+                            </div>
+                            
+                            <div>
+                                <strong><i class="fa fa-globe text-success"></i> Domain Setup:</strong>
+                                <ul class="mb-0 mt-1">
+                                    <li>Add CNAME record in your DNS settings</li>
+                                    <li>SSL certificate auto-generated</li>
+                                    <li>Changes may take up to 48 hours</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <button type="button" class="btn btn-secondary" onclick="resetForm()">
+                                    <i class="fa fa-undo"></i> Reset Changes
+                                </button>
+                            </div>
+                            <div>
+                                <button type="submit" class="btn btn-success btn-lg">
+                                    <i class="fa fa-save"></i> Save Settings
+                                    <span class="loading-spinner spinner-border spinner-border-sm ml-2" style="display: none;"></span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block tail_js %}
+{{ super() }}
+<script>
+$(document).ready(function() {
+    // Logo file upload handling
+    $('#logo_file').on('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                $('#logo-preview').html(`<img src="${e.target.result}" alt="Logo Preview">`);
+                $('#preview-logo').attr('src', e.target.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // Drag and drop for logo upload
+    $('.file-upload-area').on('dragover', function(e) {
+        e.preventDefault();
+        $(this).addClass('dragover');
+    });
+
+    $('.file-upload-area').on('dragleave', function(e) {
+        e.preventDefault();
+        $(this).removeClass('dragover');
+    });
+
+    $('.file-upload-area').on('drop', function(e) {
+        e.preventDefault();
+        $(this).removeClass('dragover');
+        
+        const files = e.originalEvent.dataTransfer.files;
+        if (files.length > 0) {
+            $('#logo_file')[0].files = files;
+            $('#logo_file').trigger('change');
+        }
+    });
+
+    // Color picker synchronization
+    $('.color-picker-input').on('change', function() {
+        const color = $(this).val();
+        const textInput = $(this).siblings('input[type="text"]');
+        textInput.val(color);
+        updatePreview();
+    });
+
+    $('input[type="text"][id$="_color_text"]').on('change', function() {
+        const color = $(this).val();
+        if (isValidHexColor(color)) {
+            const colorInput = $(this).siblings('input[type="color"]');
+            colorInput.val(color);
+            updatePreview();
+        }
+    });
+
+    // App name change handling
+    $('#name').on('input', function() {
+        $('#preview-app-name').text($(this).val());
+    });
+
+    // Real-time preview updates
+    function updatePreview() {
+        const primaryColor = $('#primary_color').val();
+        const secondaryColor = $('#secondary_color').val();
+        const successColor = $('#success_color').val();
+        const dangerColor = $('#danger_color').val();
+        
+        // Update CSS variables for preview
+        const root = document.documentElement;
+        root.style.setProperty('--primary-color', primaryColor);
+        root.style.setProperty('--secondary-color', secondaryColor);
+        root.style.setProperty('--success-color', successColor);
+        root.style.setProperty('--danger-color', dangerColor);
+        
+        // Update preview elements
+        $('#navbar-preview').css('background-color', primaryColor);
+        $('#preview-button').css('background-color', primaryColor);
+        $('.card-header', '#branding-preview').css('background-color', primaryColor);
+    }
+
+    // Form submission
+    $('#settings-form').on('submit', function(e) {
+        e.preventDefault();
+        
+        const submitBtn = $(this).find('button[type="submit"]');
+        const spinner = submitBtn.find('.loading-spinner');
+        
+        submitBtn.prop('disabled', true);
+        spinner.show();
+        
+        // Prepare form data
+        const formData = new FormData(this);
+        
+        // Add branding data as JSON
+        const brandingData = {
+            colors: {
+                primary: $('#primary_color').val(),
+                secondary: $('#secondary_color').val(),
+                success: $('#success_color').val(),
+                danger: $('#danger_color').val()
+            }
+        };
+        
+        formData.append('branding', JSON.stringify(brandingData));
+        
+        $.ajax({
+            url: '{{ url_for("TenantAdminView.settings") }}',
+            method: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                if (response.success || response.redirect) {
+                    showSuccess('Settings saved successfully!');
+                    setTimeout(function() {
+                        window.location.reload();
+                    }, 2000);
+                } else {
+                    showError(response.message || 'Failed to save settings');
+                }
+            },
+            error: function(xhr) {
+                const response = xhr.responseJSON;
+                showError(response ? response.error : 'Failed to save settings');
+            },
+            complete: function() {
+                submitBtn.prop('disabled', false);
+                spinner.hide();
+            }
+        });
+    });
+
+    // Helper functions
+    function isValidHexColor(hex) {
+        return /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(hex);
+    }
+
+    function resetForm() {
+        if (confirm('Are you sure you want to reset all changes?')) {
+            window.location.reload();
+        }
+    }
+
+    function showSuccess(message) {
+        const alertHtml = `
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="fa fa-check-circle"></i> ${message}
+                <button type="button" class="close" data-dismiss="alert">
+                    <span>&times;</span>
+                </button>
+            </div>
+        `;
+        
+        $('.container-fluid').prepend(alertHtml);
+        
+        setTimeout(function() {
+            $('.alert').fadeOut();
+        }, 5000);
+    }
+
+    function showError(message) {
+        const alertHtml = `
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="fa fa-exclamation-triangle"></i> ${message}
+                <button type="button" class="close" data-dismiss="alert">
+                    <span>&times;</span>
+                </button>
+            </div>
+        `;
+        
+        $('.container-fluid').prepend(alertHtml);
+        
+        setTimeout(function() {
+            $('.alert').fadeOut();
+        }, 5000);
+    }
+
+    // Initialize preview
+    updatePreview();
+});
+</script>
+{% endblock %}

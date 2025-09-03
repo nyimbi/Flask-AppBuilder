@@ -1,0 +1,62 @@
+{% extends "appbuilder/base.html" %}
+
+{% block title %}Dashboard Error{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="card-title mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Dashboard Error
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <p class="lead">We encountered an error while loading the dashboard.</p>
+                    
+                    {% if error_message %}
+                    <div class="alert alert-warning">
+                        <strong>Error Details:</strong><br>
+                        {{ error_message }}
+                    </div>
+                    {% endif %}
+                    
+                    <h5>What you can do:</h5>
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="fas fa-sync-alt text-primary me-2"></i>
+                            <a href="javascript:window.location.reload()" class="text-decoration-none">
+                                Refresh the page
+                            </a>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-home text-success me-2"></i>
+                            <a href="{{ url_for('IndexView.index') }}" class="text-decoration-none">
+                                Return to home page
+                            </a>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-chart-bar text-info me-2"></i>
+                            <a href="{{ url_for('MetricsDashboardView.index') }}" class="text-decoration-none">
+                                Try the simple metrics dashboard
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between">
+                        <button onclick="history.back()" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Go Back
+                        </button>
+                        <button onclick="window.location.reload()" class="btn btn-primary">
+                            <i class="fas fa-sync-alt me-2"></i>Try Again
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

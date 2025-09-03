@@ -1,0 +1,193 @@
+{% extends "appbuilder/base.html" %}
+
+{% block head_css %}
+{{ super() }}
+<style>
+.mfa-setup-card {
+    max-width: 600px;
+    margin: 2rem auto;
+}
+
+.mfa-method-card {
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    margin-bottom: 1rem;
+    padding: 1rem;
+}
+
+.mfa-method-active {
+    border-color: #198754;
+    background-color: #f8fff9;
+}
+
+.mfa-method-type {
+    font-weight: bold;
+    color: #0d6efd;
+}
+
+.phone-masked {
+    color: #6c757d;
+    font-family: monospace;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card mfa-setup-card">
+                <div class="card-header">
+                    <h3><i class="fa fa-shield-alt"></i> {{ _('Multi-Factor Authentication Setup') }}</h3>
+                </div>
+                
+                <div class="card-body">
+                    {% if existing_methods %}
+                    <div class="mb-4">
+                        <h5>{{ _('Your Current MFA Methods') }}</h5>
+                        {% for method in existing_methods %}
+                        <div class="mfa-method-card {% if method.is_active %}mfa-method-active{% endif %}">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="mfa-method-type">
+                                        {% if method.type == 'totp' %}
+                                            <i class="fa fa-mobile-alt"></i> {{ _('Authenticator App') }}
+                                        {% elif method.type == 'sms' %}
+                                            <i class="fa fa-sms"></i> {{ _('SMS') }}
+                                            {% if method.phone_number %}
+                                                <span class="phone-masked">{{ method.phone_number }}</span>
+                                            {% endif %}
+                                        {% elif method.type == 'email' %}
+                                            <i class="fa fa-envelope"></i> {{ _('Email') }}
+                                            {% if method.email %}
+                                                <span class="text-muted">{{ method.email }}</span>
+                                            {% endif %}
+                                        {% endif %}
+                                    </span>
+                                    <div class="mt-1">
+                                        {% if method.is_active %}
+                                            <span class="badge bg-success">{{ _('Active') }}</span>
+                                        {% else %}
+                                            <span class="badge bg-warning">{{ _('Pending Verification') }}</span>
+                                        {% endif %}
+                                        {% if method.last_used %}
+                                            <span class="text-muted ms-2">{{ _('Last used') }}: {{ method.last_used.strftime('%Y-%m-%d %H:%M') }}</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div>
+                                    <form method="post" action="{{ url_for('MFASetupView.remove', mfa_id=method.id) }}" style="display: inline;">
+                                        {{ csrf_token() }}
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" 
+                                                onclick="return confirm('{{ _('Are you sure you want to remove this MFA method?') }}');">
+                                            <i class="fa fa-trash"></i> {{ _('Remove') }}
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        
+                        <div class="text-center mb-3">
+                            <a href="{{ url_for('MFASetupView.manage') }}" class="btn btn-outline-primary">
+                                <i class="fa fa-cog"></i> {{ _('Manage MFA Methods') }}
+                            </a>
+                        </div>
+                        
+                        <hr>
+                    </div>
+                    {% endif %}
+                    
+                    <h5>{{ _('Add New MFA Method') }}</h5>
+                    <p class="text-muted">{{ _('Choose an additional method to secure your account') }}</p>
+                    
+                    <form method="post">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ form.mfa_type.label(class="form-label") }}
+                            {{ form.mfa_type(class="form-select") }}
+                            {% if form.mfa_type.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.mfa_type.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div id="sms-fields" style="display: none;">
+                            <div class="mb-3">
+                                {{ form.phone_number.label(class="form-label") }}
+                                {{ form.phone_number(class="form-control", placeholder="+1234567890") }}
+                                <div class="form-text">{{ form.phone_number.description }}</div>
+                                {% if form.phone_number.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.phone_number.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div id="email-fields" style="display: none;">
+                            <div class="mb-3">
+                                {{ form.email.label(class="form-label") }}
+                                {{ form.email(class="form-control", placeholder=appbuilder.sm.current_user.email) }}
+                                <div class="form-text">{{ form.email.description }}</div>
+                                {% if form.email.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.email.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fa fa-plus"></i> {{ _('Set Up MFA Method') }}
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <div class="mt-4">
+                        <div class="alert alert-info">
+                            <h6><i class="fa fa-info-circle"></i> {{ _('What is Multi-Factor Authentication?') }}</h6>
+                            <p class="mb-0">{{ _('MFA adds an extra layer of security to your account by requiring a second form of verification when you log in. This helps protect your account even if your password is compromised.') }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const mfaTypeSelect = document.getElementById('mfa_type');
+    const smsFields = document.getElementById('sms-fields');
+    const emailFields = document.getElementById('email-fields');
+    
+    function toggleFields() {
+        const selectedType = mfaTypeSelect.value;
+        
+        // Hide all conditional fields
+        smsFields.style.display = 'none';
+        emailFields.style.display = 'none';
+        
+        // Show relevant fields
+        if (selectedType === 'sms') {
+            smsFields.style.display = 'block';
+        } else if (selectedType === 'email') {
+            emailFields.style.display = 'block';
+        }
+    }
+    
+    mfaTypeSelect.addEventListener('change', toggleFields);
+    toggleFields(); // Initialize on page load
+});
+</script>
+{% endblock %}

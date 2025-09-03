@@ -1,664 +1,172 @@
 {% extends "appbuilder/base.html" %}
-
-{% block head_css %}
-  {{ super() }}
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.css" rel="stylesheet">
-  <style>
-    .analytics-card {
-      transition: transform 0.2s, box-shadow 0.2s;
-      border-left: 4px solid transparent;
-    }
-    
-    .analytics-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    }
-    
-    .analytics-card.success {
-      border-left-color: #28a745;
-    }
-    
-    .analytics-card.warning {
-      border-left-color: #ffc107;
-    }
-    
-    .analytics-card.danger {
-      border-left-color: #dc3545;
-    }
-    
-    .analytics-card.info {
-      border-left-color: #17a2b8;
-    }
-    
-    .metric-value {
-      font-size: 2.5rem;
-      font-weight: bold;
-      margin: 0;
-    }
-    
-    .metric-label {
-      color: #6c757d;
-      font-size: 0.9rem;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    
-    .metric-trend {
-      font-size: 0.8rem;
-      font-weight: 600;
-    }
-    
-    .metric-trend.positive {
-      color: #28a745;
-    }
-    
-    .metric-trend.negative {
-      color: #dc3545;
-    }
-    
-    .chart-container {
-      position: relative;
-      height: 300px;
-      margin: 1rem 0;
-    }
-    
-    .wizard-selector {
-      margin-bottom: 2rem;
-      padding: 1rem;
-      background: #f8f9fa;
-      border-radius: 8px;
-    }
-    
-    .date-range-picker {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-    }
-    
-    .insight-item {
-      padding: 1rem;
-      margin-bottom: 1rem;
-      border-radius: 8px;
-      border-left: 4px solid;
-    }
-    
-    .insight-item.high-priority {
-      border-left-color: #dc3545;
-      background-color: #f8d7da;
-    }
-    
-    .insight-item.medium-priority {
-      border-left-color: #ffc107;
-      background-color: #fff3cd;
-    }
-    
-    .insight-item.low-priority {
-      border-left-color: #17a2b8;
-      background-color: #d1ecf1;
-    }
-    
-    .real-time-indicator {
-      display: inline-block;
-      width: 10px;
-      height: 10px;
-      background-color: #28a745;
-      border-radius: 50%;
-      animation: pulse 2s infinite;
-      margin-right: 0.5rem;
-    }
-    
-    @keyframes pulse {
-      0% { opacity: 1; }
-      50% { opacity: 0.5; }
-      100% { opacity: 1; }
-    }
-    
-    .loading-spinner {
-      display: inline-block;
-      width: 20px;
-      height: 20px;
-      border: 3px solid #f3f3f3;
-      border-top: 3px solid #007bff;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-    
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-    
-    .wizard-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 1.5rem;
-      margin-top: 2rem;
-    }
-  </style>
-{% endblock %}
-
 {% block content %}
 <div class="container-fluid">
-  <div class="row">
-    <div class="col-12">
-      <div class="card">
-        <div class="card-header">
-          <div class="d-flex justify-content-between align-items-center">
-            <div>
-              <h3 class="mb-0">
-                <i class="fa fa-chart-line"></i> Wizard Analytics Dashboard
-                <span class="real-time-indicator"></span>
-                <small class="text-muted">Live</small>
-              </h3>
-              <p class="text-muted mb-0">Comprehensive insights into wizard form performance</p>
-            </div>
-            <div class="btn-group">
-              <button type="button" class="btn btn-outline-primary" onclick="exportAllData()">
-                <i class="fa fa-download"></i> Export Data
-              </button>
-              <button type="button" class="btn btn-outline-info" onclick="refreshData()">
-                <i class="fa fa-refresh"></i> Refresh
-              </button>
-            </div>
-          </div>
+    <div class="row">
+        <div class="col-12">
+            <h2>Analytics Dashboard - {{ overview.tenant_info.name }}</h2>
+            <p class="text-muted">Plan: {{ overview.tenant_info.plan|title }} | Status: {{ overview.tenant_info.status|title }}</p>
         </div>
-        
-        <div class="card-body">
-          <!-- Wizard Selector -->
-          <div class="wizard-selector">
-            <div class="row align-items-center">
-              <div class="col-md-4">
-                <label class="form-label">Select Wizard</label>
-                <select class="form-select" id="wizardSelect" onchange="selectWizard()">
-                  <option value="">All Wizards Overview</option>
-                  {% for wizard in wizards %}
-                  <option value="{{ wizard.id }}">{{ wizard.title }}</option>
-                  {% endfor %}
-                </select>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Date Range</label>
-                <div class="date-range-picker">
-                  <input type="date" class="form-control" id="startDate" value="{{ default_start_date }}">
-                  <span>to</span>
-                  <input type="date" class="form-control" id="endDate" value="{{ default_end_date }}">
-                  <button type="button" class="btn btn-primary" onclick="updateDateRange()">
-                    Apply
-                  </button>
-                </div>
-              </div>
-              <div class="col-md-2 text-end">
-                <label class="form-label">&nbsp;</label>
-                <div>
-                  <button type="button" class="btn btn-outline-secondary" onclick="setQuickRange('today')">Today</button>
-                  <button type="button" class="btn btn-outline-secondary" onclick="setQuickRange('week')">7 Days</button>
-                  <button type="button" class="btn btn-outline-secondary" onclick="setQuickRange('month')">30 Days</button>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Overview Metrics -->
-          <div id="overviewMetrics" class="row mb-4">
-            <div class="col-md-3">
-              <div class="card analytics-card success">
-                <div class="card-body text-center">
-                  <h2 class="metric-value text-success" id="totalCompletions">-</h2>
-                  <p class="metric-label">Total Completions</p>
-                  <div class="metric-trend positive" id="completionsTrend">
-                    <i class="fa fa-arrow-up"></i> Loading...
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-3">
-              <div class="card analytics-card info">
-                <div class="card-body text-center">
-                  <h2 class="metric-value text-info" id="completionRate">-</h2>
-                  <p class="metric-label">Completion Rate</p>
-                  <div class="metric-trend" id="completionRateTrend">
-                    <i class="fa fa-chart-line"></i> Loading...
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-3">
-              <div class="card analytics-card warning">
-                <div class="card-body text-center">
-                  <h2 class="metric-value text-warning" id="avgCompletionTime">-</h2>
-                  <p class="metric-label">Avg. Completion Time</p>
-                  <div class="metric-trend" id="timeTrend">
-                    <i class="fa fa-clock"></i> Loading...
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-3">
-              <div class="card analytics-card danger">
-                <div class="card-body text-center">
-                  <h2 class="metric-value text-danger" id="dropOffRate">-</h2>
-                  <p class="metric-label">Drop-off Rate</p>
-                  <div class="metric-trend negative" id="dropOffTrend">
-                    <i class="fa fa-arrow-down"></i> Loading...
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Charts Row -->
-          <div class="row mb-4">
-            <div class="col-md-8">
-              <div class="card">
-                <div class="card-header">
-                  <h5 class="mb-0"><i class="fa fa-funnel-dollar"></i> Conversion Funnel</h5>
-                </div>
-                <div class="card-body">
-                  <div class="chart-container">
-                    <canvas id="conversionFunnelChart"></canvas>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-4">
-              <div class="card">
-                <div class="card-header">
-                  <h5 class="mb-0"><i class="fa fa-mobile-alt"></i> Device Breakdown</h5>
-                </div>
-                <div class="card-body">
-                  <div class="chart-container">
-                    <canvas id="deviceBreakdownChart"></canvas>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Insights and Performance -->
-          <div class="row mb-4">
-            <div class="col-md-6">
-              <div class="card">
-                <div class="card-header">
-                  <h5 class="mb-0"><i class="fa fa-lightbulb"></i> AI-Powered Insights</h5>
-                </div>
-                <div class="card-body">
-                  <div id="insightsList">
-                    <div class="text-center text-muted">
-                      <div class="loading-spinner"></div>
-                      Loading insights...
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="card">
-                <div class="card-header">
-                  <h5 class="mb-0"><i class="fa fa-tachometer-alt"></i> Performance Metrics</h5>
-                </div>
-                <div class="card-body">
-                  <div id="performanceMetrics">
-                    <div class="text-center text-muted">
-                      <div class="loading-spinner"></div>
-                      Loading performance data...
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Wizard Grid (when no specific wizard selected) -->
-          <div id="wizardGrid" class="wizard-grid">
-            {% for wizard in wizards %}
-            <div class="card analytics-card" onclick="viewWizardDetails('{{ wizard.id }}')">
-              <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start mb-3">
-                  <h6 class="card-title mb-0">{{ wizard.title }}</h6>
-                  <button type="button" class="btn btn-sm btn-outline-primary">
-                    <i class="fa fa-chart-bar"></i>
-                  </button>
-                </div>
-                <p class="card-text text-muted small">{{ wizard.description }}</p>
-                
-                <div class="row text-center mt-3">
-                  <div class="col-4">
-                    <div class="metric-value small" id="starts-{{ wizard.id }}">-</div>
-                    <div class="metric-label">Starts</div>
-                  </div>
-                  <div class="col-4">
-                    <div class="metric-value small" id="completions-{{ wizard.id }}">-</div>
-                    <div class="metric-label">Completions</div>
-                  </div>
-                  <div class="col-4">
-                    <div class="metric-value small" id="rate-{{ wizard.id }}">-</div>
-                    <div class="metric-label">Rate</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            {% endfor %}
-          </div>
-        </div>
-      </div>
     </div>
-  </div>
-</div>
-{% endblock %}
 
-{% block tail_js %}
-  {{ super() }}
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-  <script>
-    let currentWizardId = null;
-    let conversionChart = null;
-    let deviceChart = null;
-    
-    // Initialize dashboard
-    document.addEventListener('DOMContentLoaded', function() {
-      loadOverviewData();
-      loadWizardGridData();
-      setupRealTimeUpdates();
-    });
-    
-    function selectWizard() {
-      const select = document.getElementById('wizardSelect');
-      currentWizardId = select.value;
-      
-      if (currentWizardId) {
-        window.location.href = `/wizard-analytics/wizard/${currentWizardId}?start_date=${document.getElementById('startDate').value}&end_date=${document.getElementById('endDate').value}`;
-      } else {
-        loadOverviewData();
-        document.getElementById('wizardGrid').style.display = 'grid';
-      }
-    }
-    
-    function updateDateRange() {
-      if (currentWizardId) {
-        selectWizard(); // Reload with new date range
-      } else {
-        loadOverviewData();
-        loadWizardGridData();
-      }
-    }
-    
-    function setQuickRange(range) {
-      const endDate = new Date();
-      let startDate = new Date();
-      
-      switch(range) {
-        case 'today':
-          startDate = new Date();
-          break;
-        case 'week':
-          startDate.setDate(endDate.getDate() - 7);
-          break;
-        case 'month':
-          startDate.setDate(endDate.getDate() - 30);
-          break;
-      }
-      
-      document.getElementById('startDate').value = startDate.toISOString().split('T')[0];
-      document.getElementById('endDate').value = endDate.toISOString().split('T')[0];
-      updateDateRange();
-    }
-    
-    function loadOverviewData() {
-      // This would aggregate data across all wizards
-      // For now, show placeholder loading state
-      showLoadingMetrics();
-      
-      // Simulate loading
-      setTimeout(() => {
-        document.getElementById('totalCompletions').textContent = '1,247';
-        document.getElementById('completionRate').textContent = '68.5%';
-        document.getElementById('avgCompletionTime').textContent = '4.2m';
-        document.getElementById('dropOffRate').textContent = '31.5%';
-        
-        document.getElementById('completionsTrend').innerHTML = '<i class="fa fa-arrow-up"></i> +12% vs last period';
-        document.getElementById('completionRateTrend').innerHTML = '<i class="fa fa-arrow-up"></i> +5.2% vs last period';
-        document.getElementById('timeTrend').innerHTML = '<i class="fa fa-arrow-down"></i> -0.8m vs last period';
-        document.getElementById('dropOffTrend').innerHTML = '<i class="fa fa-arrow-down"></i> -5.2% vs last period';
-        
-        loadOverviewCharts();
-        loadOverviewInsights();
-      }, 1000);
-    }
-    
-    function loadWizardGridData() {
-      // Load summary stats for each wizard
-      {% for wizard in wizards %}
-      loadWizardSummary('{{ wizard.id }}');
-      {% endfor %}
-    }
-    
-    function loadWizardSummary(wizardId) {
-      // Simulate API call
-      setTimeout(() => {
-        // Mock data - in real implementation, would fetch from API
-        const mockData = {
-          starts: Math.floor(Math.random() * 500) + 100,
-          completions: Math.floor(Math.random() * 300) + 50,
-        };
-        mockData.rate = (mockData.completions / mockData.starts * 100).toFixed(1) + '%';
-        
-        document.getElementById(`starts-${wizardId}`).textContent = mockData.starts.toLocaleString();
-        document.getElementById(`completions-${wizardId}`).textContent = mockData.completions.toLocaleString();
-        document.getElementById(`rate-${wizardId}`).textContent = mockData.rate;
-      }, Math.random() * 1000 + 500);
-    }
-    
-    function showLoadingMetrics() {
-      const metrics = ['totalCompletions', 'completionRate', 'avgCompletionTime', 'dropOffRate'];
-      const trends = ['completionsTrend', 'completionRateTrend', 'timeTrend', 'dropOffTrend'];
-      
-      metrics.forEach(id => {
-        document.getElementById(id).innerHTML = '<div class="loading-spinner"></div>';
-      });
-      
-      trends.forEach(id => {
-        document.getElementById(id).innerHTML = '<i class="fa fa-chart-line"></i> Loading...';
-      });
-    }
-    
-    function loadOverviewCharts() {
-      // Conversion Funnel Chart
-      const funnelCtx = document.getElementById('conversionFunnelChart').getContext('2d');
-      
-      if (conversionChart) {
-        conversionChart.destroy();
-      }
-      
-      conversionChart = new Chart(funnelCtx, {
-        type: 'bar',
-        data: {
-          labels: ['Started', 'Step 1', 'Step 2', 'Step 3', 'Completed'],
-          datasets: [{
-            label: 'Users',
-            data: [1000, 850, 720, 650, 580],
-            backgroundColor: [
-              '#007bff',
-              '#17a2b8',
-              '#ffc107',
-              '#fd7e14',
-              '#28a745'
-            ],
-            borderColor: [
-              '#0056b3',
-              '#117a8b',
-              '#d39e00',
-              '#dc3545',
-              '#1e7e34'
-            ],
-            borderWidth: 1
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              display: false
-            }
-          },
-          scales: {
-            y: {
-              beginAtZero: true
-            }
-          }
-        }
-      });
-      
-      // Device Breakdown Chart
-      const deviceCtx = document.getElementById('deviceBreakdownChart').getContext('2d');
-      
-      if (deviceChart) {
-        deviceChart.destroy();
-      }
-      
-      deviceChart = new Chart(deviceCtx, {
-        type: 'doughnut',
-        data: {
-          labels: ['Desktop', 'Mobile', 'Tablet'],
-          datasets: [{
-            data: [45, 40, 15],
-            backgroundColor: [
-              '#007bff',
-              '#28a745',
-              '#ffc107'
-            ],
-            borderWidth: 0
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              position: 'bottom'
-            }
-          }
-        }
-      });
-    }
-    
-    function loadOverviewInsights() {
-      const insightsList = document.getElementById('insightsList');
-      
-      // Mock insights
-      const insights = [
-        {
-          type: 'warning',
-          priority: 'high',
-          title: 'High Drop-off Detected',
-          description: 'Customer Registration Form shows 45% drop-off at Step 2',
-          recommendation: 'Consider simplifying the contact details section'
-        },
-        {
-          type: 'success',
-          priority: 'medium',
-          title: 'Mobile Experience Improving',
-          description: 'Mobile completion rate increased by 12% this month',
-          recommendation: 'Continue optimizing for mobile users'
-        },
-        {
-          type: 'info',
-          priority: 'low',
-          title: 'Peak Usage Times',
-          description: 'Most form submissions occur between 2-4 PM',
-          recommendation: 'Consider scheduling maintenance outside peak hours'
-        }
-      ];
-      
-      insightsList.innerHTML = insights.map(insight => `
-        <div class="insight-item ${insight.priority}-priority">
-          <div class="d-flex justify-content-between align-items-start mb-2">
-            <h6 class="mb-0">${insight.title}</h6>
-            <span class="badge badge-${insight.priority === 'high' ? 'danger' : insight.priority === 'medium' ? 'warning' : 'info'}">${insight.priority}</span>
-          </div>
-          <p class="mb-2 small">${insight.description}</p>
-          <small class="text-muted"><strong>Recommendation:</strong> ${insight.recommendation}</small>
+    <!-- Key Metrics Cards -->
+    <div class="row">
+        <!-- User Metrics -->
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title text-primary">{{ overview.user_metrics.total_users }}</h4>
+                    <p class="card-text">Total Users</p>
+                    <small class="text-success">+{{ overview.user_metrics.new_users_period }} new this period</small>
+                </div>
+            </div>
         </div>
-      `).join('');
-    }
-    
-    function loadOverviewPerformance() {
-      const performanceMetrics = document.getElementById('performanceMetrics');
-      
-      performanceMetrics.innerHTML = `
-        <div class="row">
-          <div class="col-6">
-            <div class="text-center">
-              <div class="metric-value small text-success">1.2s</div>
-              <div class="metric-label">Avg Load Time</div>
+
+        <!-- Active Users -->
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title text-primary">{{ overview.user_metrics.active_users_period }}</h4>
+                    <p class="card-text">Active Users</p>
+                    <small class="text-muted">
+                        {{ "%.1f"|format(overview.user_metrics.active_users_period / overview.user_metrics.total_users * 100) if overview.user_metrics.total_users > 0 else 0 }}% activity rate
+                    </small>
+                </div>
             </div>
-          </div>
-          <div class="col-6">
-            <div class="text-center">
-              <div class="metric-value small text-info">99.8%</div>
-              <div class="metric-label">Uptime</div>
-            </div>
-          </div>
-          <div class="col-6 mt-3">
-            <div class="text-center">
-              <div class="metric-value small text-warning">2.1%</div>
-              <div class="metric-label">Error Rate</div>
-            </div>
-          </div>
-          <div class="col-6 mt-3">
-            <div class="text-center">
-              <div class="metric-value small text-primary">847</div>
-              <div class="metric-label">Active Users</div>
-            </div>
-          </div>
         </div>
-      `;
+
+        <!-- API Calls -->
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title text-primary">{{ "{:,}".format(overview.usage_metrics.api_calls) }}</h4>
+                    <p class="card-text">API Calls</p>
+                    <small class="text-muted">
+                        {{ "%.0f"|format(overview.usage_metrics.api_calls / overview.user_metrics.total_users) if overview.user_metrics.total_users > 0 else 0 }} per user
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Revenue -->
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title text-primary">${{ "%.2f"|format(overview.billing_metrics.total_revenue) }}</h4>
+                    <p class="card-text">Total Revenue</p>
+                    <small class="text-muted">
+                        ${{ "%.2f"|format(overview.billing_metrics.monthly_revenue) }} base + ${{ "%.2f"|format(overview.billing_metrics.usage_charges) }} usage
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts and Details -->
+    <div class="row mt-4">
+        <!-- Usage Details -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Resource Usage</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tbody>
+                            <tr>
+                                <td>API Calls</td>
+                                <td class="text-right">{{ "{:,}".format(overview.usage_metrics.api_calls) }}</td>
+                            </tr>
+                            <tr>
+                                <td>Storage</td>
+                                <td class="text-right">{{ "%.2f"|format(overview.usage_metrics.storage_gb) }} GB</td>
+                            </tr>
+                            <tr>
+                                <td>Database Queries</td>
+                                <td class="text-right">{{ "{:,}".format(overview.usage_metrics.database_queries) }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Security Metrics -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Security Activity</h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        {% set security_score = overview.security_metrics.security_score %}
+                        <span class="badge 
+                            {% if security_score >= 90 %}badge-success
+                            {% elif security_score >= 75 %}badge-info
+                            {% elif security_score >= 60 %}badge-warning
+                            {% else %}badge-danger{% endif %} p-3">
+                            Security Score: {{ "%.0f"|format(security_score) }}/100
+                        </span>
+                    </div>
+                    <table class="table table-sm">
+                        <tbody>
+                            <tr>
+                                <td>Total Events</td>
+                                <td class="text-right">{{ overview.security_metrics.total_security_events }}</td>
+                            </tr>
+                            <tr>
+                                <td>Failed Logins</td>
+                                <td class="text-right">{{ overview.security_metrics.failed_login_attempts }}</td>
+                            </tr>
+                            <tr>
+                                <td>Security Violations</td>
+                                <td class="text-right">{{ overview.security_metrics.security_violations }}</td>
+                            </tr>
+                            <tr>
+                                <td>Unique IPs</td>
+                                <td class="text-right">{{ overview.security_metrics.unique_ip_addresses }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Additional Analytics Actions -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Analytics Tools</h5>
+                </div>
+                <div class="card-body">
+                    <a href="/analytics/reports" class="btn btn-primary mr-2">View Reports</a>
+                    <button class="btn btn-outline-secondary" onclick="loadComparativeAnalytics()">Compare with Peers</button>
+                    <button class="btn btn-outline-info" onclick="exportAnalytics()">Export Data</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function loadComparativeAnalytics() {
+        fetch('/analytics/api/comparative?benchmark=plan_peers')
+            .then(response => response.json())
+            .then(data => {
+                alert('Comparative data loaded. Check console for details.');
+                console.log(data);
+            });
     }
-    
-    function setupRealTimeUpdates() {
-      // Update real-time metrics every 30 seconds
-      setInterval(() => {
-        if (!currentWizardId) {
-          loadOverviewData();
-        }
-      }, 30000);
+
+    function exportAnalytics() {
+        const data = {{ overview|tojson }};
+        const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'analytics_{{ overview.tenant_info.slug }}_{{ overview.generated_at }}.json';
+        a.click();
     }
-    
-    function viewWizardDetails(wizardId) {
-      const startDate = document.getElementById('startDate').value;
-      const endDate = document.getElementById('endDate').value;
-      
-      window.location.href = `/wizard-analytics/wizard/${wizardId}?start_date=${startDate}&end_date=${endDate}`;
-    }
-    
-    function refreshData() {
-      const refreshBtn = document.querySelector('button[onclick="refreshData()"]');
-      refreshBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Refreshing...';
-      
-      setTimeout(() => {
-        if (currentWizardId) {
-          selectWizard();
-        } else {
-          loadOverviewData();
-          loadWizardGridData();
-        }
-        refreshBtn.innerHTML = '<i class="fa fa-refresh"></i> Refresh';
-      }, 1000);
-    }
-    
-    function exportAllData() {
-      const startDate = document.getElementById('startDate').value;
-      const endDate = document.getElementById('endDate').value;
-      
-      // Create download link
-      const link = document.createElement('a');
-      link.href = `/wizard-analytics/api/export/all?start_date=${startDate}&end_date=${endDate}&format=json`;
-      link.download = `wizard_analytics_${startDate}_${endDate}.json`;
-      link.click();
-    }
-    
-    // Load performance metrics after insights
-    setTimeout(loadOverviewPerformance, 1500);
-  </script>
+</script>
 {% endblock %}

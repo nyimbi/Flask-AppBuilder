@@ -1,0 +1,270 @@
+{% extends "appbuilder/base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fa fa-chart-line"></i> Monitoring Status</h2>
+        <div class="btn-group">
+            <button id="refreshStatus" class="btn btn-outline-primary">
+                <i class="fa fa-refresh"></i> Refresh
+            </button>
+            <a href="{{ url_for('AlertConfigView.index') }}" class="btn btn-secondary">
+                <i class="fa fa-dashboard"></i> Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- System Status Overview -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-primary">
+                <div class="card-body text-center">
+                    <i class="fa fa-heartbeat fa-2x text-primary mb-2"></i>
+                    <h4 class="card-title">{{ monitoring_status.get('status', 'Unknown') }}</h4>
+                    <p class="card-text small text-muted">System Status</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-info">
+                <div class="card-body text-center">
+                    <i class="fa fa-bell fa-2x text-info mb-2"></i>
+                    <h4 class="card-title">{{ monitoring_status.get('active_rules', 0) }}</h4>
+                    <p class="card-text small text-muted">Active Rules</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-warning">
+                <div class="card-body text-center">
+                    <i class="fa fa-exclamation-triangle fa-2x text-warning mb-2"></i>
+                    <h4 class="card-title">{{ monitoring_status.get('triggered_alerts', 0) }}</h4>
+                    <p class="card-text small text-muted">Triggered Today</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-success">
+                <div class="card-body text-center">
+                    <i class="fa fa-check-circle fa-2x text-success mb-2"></i>
+                    <h4 class="card-title">{{ monitoring_status.get('uptime_minutes', 0) }}m</h4>
+                    <p class="card-text small text-muted">Monitor Uptime</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Alerts -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fa fa-history"></i> Recent Alert Activity
+                        <span class="badge badge-info ms-2">Last 24 Hours</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_alerts %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Rule</th>
+                                    <th>Metric</th>
+                                    <th>Value</th>
+                                    <th>Severity</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for alert in recent_alerts %}
+                                <tr class="{% if alert.severity == 'critical' %}table-danger{% elif alert.severity == 'high' %}table-warning{% endif %}">
+                                    <td>
+                                        <small title="{{ alert.triggered_at.strftime('%Y-%m-%d %H:%M:%S') if alert.triggered_at else 'N/A' }}">
+                                            {{ alert.triggered_at.strftime('%H:%M:%S') if alert.triggered_at else 'N/A' }}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <strong>{{ alert.rule_name or 'Unknown Rule' }}</strong>
+                                    </td>
+                                    <td>
+                                        <code>{{ alert.metric_name or 'N/A' }}</code>
+                                    </td>
+                                    <td>
+                                        <strong>{{ alert.metric_value or 'N/A' }}</strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if alert.severity == 'critical' %}badge-danger
+                                            {% elif alert.severity == 'high' %}badge-warning
+                                            {% elif alert.severity == 'medium' %}badge-info
+                                            {% else %}badge-secondary
+                                            {% endif %}
+                                        ">
+                                            {{ alert.severity.upper() if alert.severity else 'UNKNOWN' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if alert.status == 'active' %}badge-danger
+                                            {% elif alert.status == 'acknowledged' %}badge-warning  
+                                            {% else %}badge-success
+                                            {% endif %}
+                                        ">
+                                            {{ alert.status.upper() if alert.status else 'UNKNOWN' }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fa fa-check-circle fa-3x text-success mb-3"></i>
+                        <h5>All Clear</h5>
+                        <p class="text-muted">No alerts triggered in the last 24 hours.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Monitoring Details -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fa fa-cogs"></i> Monitoring Configuration
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-6">Check Interval:</dt>
+                        <dd class="col-sm-6">{{ monitoring_status.get('check_interval', 'N/A') }} seconds</dd>
+                        
+                        <dt class="col-sm-6">Last Check:</dt>
+                        <dd class="col-sm-6">{{ monitoring_status.get('last_check', 'N/A') }}</dd>
+                        
+                        <dt class="col-sm-6">Total Metrics:</dt>
+                        <dd class="col-sm-6">{{ monitoring_status.get('total_metrics', 0) }}</dd>
+                        
+                        <dt class="col-sm-6">Failed Checks:</dt>
+                        <dd class="col-sm-6">{{ monitoring_status.get('failed_checks', 0) }}</dd>
+                    </dl>
+                    
+                    {% if monitoring_status.get('errors') %}
+                    <div class="alert alert-warning">
+                        <h6><i class="fa fa-exclamation-triangle"></i> Recent Errors</h6>
+                        <ul class="small mb-0">
+                            {% for error in monitoring_status.errors %}
+                            <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fa fa-line-chart"></i> Performance Metrics
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-6">Avg Check Time:</dt>
+                        <dd class="col-sm-6">{{ monitoring_status.get('avg_check_time', 'N/A') }}ms</dd>
+                        
+                        <dt class="col-sm-6">Memory Usage:</dt>
+                        <dd class="col-sm-6">{{ monitoring_status.get('memory_usage', 'N/A') }}MB</dd>
+                        
+                        <dt class="col-sm-6">CPU Usage:</dt>
+                        <dd class="col-sm-6">{{ monitoring_status.get('cpu_usage', 'N/A') }}%</dd>
+                        
+                        <dt class="col-sm-6">Thread Count:</dt>
+                        <dd class="col-sm-6">{{ monitoring_status.get('thread_count', 'N/A') }}</dd>
+                    </dl>
+                    
+                    <div class="progress mb-2" style="height: 20px;">
+                        <div class="progress-bar {% if monitoring_status.get('health_score', 100) >= 80 %}bg-success{% elif monitoring_status.get('health_score', 100) >= 60 %}bg-warning{% else %}bg-danger{% endif %}" 
+                             role="progressbar" 
+                             style="width: {{ monitoring_status.get('health_score', 100) }}%">
+                            {{ monitoring_status.get('health_score', 100) }}% Health
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-refresh functionality
+    let autoRefresh = false;
+    let refreshInterval;
+    
+    document.getElementById('refreshStatus').addEventListener('click', function() {
+        location.reload();
+    });
+    
+    // Optional: Add auto-refresh toggle
+    function toggleAutoRefresh() {
+        autoRefresh = !autoRefresh;
+        if (autoRefresh) {
+            refreshInterval = setInterval(() => {
+                location.reload();
+            }, 30000); // Refresh every 30 seconds
+        } else {
+            clearInterval(refreshInterval);
+        }
+    }
+    
+    // Real-time status updates (would need WebSocket implementation)
+    // This is a placeholder for real-time functionality
+    function updateStatus() {
+        // Fetch current status from API
+        fetch('/alerts/api/monitoring/status')
+        .then(response => response.json())
+        .then(data => {
+            // Update DOM elements with new status
+            console.log('Status updated:', data);
+        })
+        .catch(error => {
+            console.error('Error updating status:', error);
+        });
+    }
+});
+</script>
+
+<style>
+.card {
+    border-radius: 0.375rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.badge {
+    font-size: 0.75em;
+}
+
+.progress {
+    border-radius: 0.25rem;
+}
+
+.table-responsive {
+    border-radius: 0.375rem;
+}
+
+.fa-2x {
+    margin-bottom: 0.5rem;
+}
+</style>
+{% endblock %}

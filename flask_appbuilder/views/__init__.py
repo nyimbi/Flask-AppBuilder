@@ -5,7 +5,7 @@ Enhanced view functionality including wizard form views.
 This module provides both original Flask-AppBuilder views and wizard views.
 """
 
-# Import original views from the main views.py file
+# Import original views from the parent directory's views.py
 import importlib.util
 import os.path
 import sys
@@ -30,9 +30,10 @@ if os.path.exists(views_file):
     SimpleFormView = fab_views.SimpleFormView
     PublicFormView = fab_views.PublicFormView
     BaseView = fab_views.BaseView
+    RestCRUDView = fab_views.RestCRUDView
 else:
     # Fallback - import from baseviews
-    from ..baseviews import BaseView
+    from flask_appbuilder.baseviews import BaseView
     # Create dummy classes for missing views
     class IndexView(BaseView):
         route_base = ""
@@ -49,6 +50,11 @@ else:
     BaseFormView = BaseView
     SimpleFormView = BaseView
     PublicFormView = BaseView
+    RestCRUDView = BaseView
+
+# Import essential decorators and functions that other modules need
+from flask_appbuilder.baseviews import expose, expose_api
+from flask_appbuilder.security.decorators import has_access
 
 # Import enhanced views only if dependencies are available
 try:
@@ -103,6 +109,12 @@ __all__ = [
     'SimpleFormView',
     'PublicFormView',
     'BaseView',
+    'RestCRUDView',
+    
+    # Essential decorators and functions
+    'expose',
+    'expose_api', 
+    'has_access',
 ]
 
 # Add enhanced views if available

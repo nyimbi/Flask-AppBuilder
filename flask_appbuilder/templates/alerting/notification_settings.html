@@ -1,0 +1,439 @@
+{% extends "appbuilder/base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fa fa-envelope"></i> Notification Settings</h2>
+        <div class="btn-group">
+            <button id="testNotifications" class="btn btn-outline-info">
+                <i class="fa fa-flask"></i> Test Notifications
+            </button>
+            <a href="{{ url_for('AlertConfigView.index') }}" class="btn btn-secondary">
+                <i class="fa fa-dashboard"></i> Dashboard
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Notification Channels -->
+        <div class="col-lg-8 col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fa fa-bell"></i> Notification Channels
+                    </h5>
+                </div>
+                <form method="POST" id="notificationSettingsForm">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="card-body">
+                        <!-- Email Notifications -->
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6><i class="fa fa-envelope"></i> Email Notifications</h6>
+                                <div class="form-check form-switch">
+                                    {{ form.email_enabled(class="form-check-input") }}
+                                    <label class="form-check-label" for="{{ form.email_enabled.id }}">
+                                        Enable Email
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div id="emailSettings" class="{% if not form.email_enabled.data %}collapse{% endif %}">
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        {{ form.email_recipients.label(class="form-label") }}
+                                        {{ form.email_recipients(class="form-control", placeholder="admin@example.com, alerts@example.com") }}
+                                        <small class="form-text text-muted">
+                                            Comma-separated list of email addresses
+                                        </small>
+                                        {% if form.email_recipients.errors %}
+                                        <div class="text-danger small">
+                                            {% for error in form.email_recipients.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6">
+                                        {{ form.email_severity_filter.label(class="form-label") }}
+                                        {{ form.email_severity_filter(class="form-select") }}
+                                        <small class="form-text text-muted">
+                                            Only send emails for alerts at this severity or higher
+                                        </small>
+                                        {% if form.email_severity_filter.errors %}
+                                        <div class="text-danger small">
+                                            {% for error in form.email_severity_filter.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        {{ form.email_cooldown.label(class="form-label") }}
+                                        <div class="input-group">
+                                            {{ form.email_cooldown(class="form-control") }}
+                                            <span class="input-group-text">minutes</span>
+                                        </div>
+                                        <small class="form-text text-muted">
+                                            Minimum time between email notifications for the same alert
+                                        </small>
+                                        {% if form.email_cooldown.errors %}
+                                        <div class="text-danger small">
+                                            {% for error in form.email_cooldown.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Email Format</label>
+                                        <div class="form-check">
+                                            {{ form.email_format(class="form-check-input") }}
+                                            {{ form.email_format.label(class="form-check-label") }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <!-- In-App Notifications -->
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6><i class="fa fa-bell"></i> In-App Notifications</h6>
+                                <div class="form-check form-switch">
+                                    {{ form.inapp_enabled(class="form-check-input") }}
+                                    <label class="form-check-label" for="{{ form.inapp_enabled.id }}">
+                                        Enable In-App
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div id="inappSettings" class="{% if not form.inapp_enabled.data %}collapse{% endif %}">
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        {{ form.inapp_severity_filter.label(class="form-label") }}
+                                        {{ form.inapp_severity_filter(class="form-select") }}
+                                        <small class="form-text text-muted">
+                                            Show in-app notifications for this severity and above
+                                        </small>
+                                        {% if form.inapp_severity_filter.errors %}
+                                        <div class="text-danger small">
+                                            {% for error in form.inapp_severity_filter.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6">
+                                        {{ form.inapp_auto_dismiss.label(class="form-label") }}
+                                        <div class="input-group">
+                                            {{ form.inapp_auto_dismiss(class="form-control") }}
+                                            <span class="input-group-text">seconds</span>
+                                        </div>
+                                        <small class="form-text text-muted">
+                                            Auto-dismiss notifications after this time (0 = manual)
+                                        </small>
+                                        {% if form.inapp_auto_dismiss.errors %}
+                                        <div class="text-danger small">
+                                            {% for error in form.inapp_auto_dismiss.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-12">
+                                        <div class="form-check">
+                                            {{ form.inapp_sound_enabled(class="form-check-input") }}
+                                            {{ form.inapp_sound_enabled.label(class="form-check-label") }}
+                                        </div>
+                                        <div class="form-check">
+                                            {{ form.inapp_desktop_enabled(class="form-check-input") }}
+                                            {{ form.inapp_desktop_enabled.label(class="form-check-label") }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <!-- Webhook Notifications -->
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6><i class="fa fa-link"></i> Webhook Notifications</h6>
+                                <div class="form-check form-switch">
+                                    {{ form.webhook_enabled(class="form-check-input") }}
+                                    <label class="form-check-label" for="{{ form.webhook_enabled.id }}">
+                                        Enable Webhooks
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div id="webhookSettings" class="{% if not form.webhook_enabled.data %}collapse{% endif %}">
+                                <div class="row mb-3">
+                                    <div class="col-md-12">
+                                        {{ form.webhook_urls.label(class="form-label") }}
+                                        {{ form.webhook_urls(class="form-control", rows="3", placeholder="https://hooks.slack.com/services/...\nhttps://api.example.com/webhook") }}
+                                        <small class="form-text text-muted">
+                                            One webhook URL per line
+                                        </small>
+                                        {% if form.webhook_urls.errors %}
+                                        <div class="text-danger small">
+                                            {% for error in form.webhook_urls.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        {{ form.webhook_severity_filter.label(class="form-label") }}
+                                        {{ form.webhook_severity_filter(class="form-select") }}
+                                        <small class="form-text text-muted">
+                                            Send webhooks for this severity and above
+                                        </small>
+                                        {% if form.webhook_severity_filter.errors %}
+                                        <div class="text-danger small">
+                                            {% for error in form.webhook_severity_filter.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6">
+                                        {{ form.webhook_timeout.label(class="form-label") }}
+                                        <div class="input-group">
+                                            {{ form.webhook_timeout(class="form-control") }}
+                                            <span class="input-group-text">seconds</span>
+                                        </div>
+                                        <small class="form-text text-muted">
+                                            HTTP timeout for webhook requests
+                                        </small>
+                                        {% if form.webhook_timeout.errors %}
+                                        <div class="text-danger small">
+                                            {% for error in form.webhook_timeout.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-12">
+                                        <div class="form-check">
+                                            {{ form.webhook_retry_enabled(class="form-check-input") }}
+                                            {{ form.webhook_retry_enabled.label(class="form-check-label") }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card-footer">
+                        <div class="d-flex justify-content-between">
+                            <button type="button" id="resetDefaults" class="btn btn-outline-warning">
+                                <i class="fa fa-undo"></i> Reset to Defaults
+                            </button>
+                            <div>
+                                <a href="{{ url_for('AlertConfigView.index') }}" class="btn btn-secondary me-2">
+                                    <i class="fa fa-times"></i> Cancel
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fa fa-save"></i> Save Settings
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Help & Preview -->
+        <div class="col-lg-4 col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fa fa-question-circle"></i> Notification Help
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <h6>Severity Levels</h6>
+                    <div class="small mb-3">
+                        <div class="mb-1">
+                            <span class="badge badge-secondary">Low</span> 
+                            Informational alerts
+                        </div>
+                        <div class="mb-1">
+                            <span class="badge badge-info">Medium</span> 
+                            Standard monitoring
+                        </div>
+                        <div class="mb-1">
+                            <span class="badge badge-warning">High</span> 
+                            Requires attention
+                        </div>
+                        <div class="mb-1">
+                            <span class="badge badge-danger">Critical</span> 
+                            Immediate action needed
+                        </div>
+                    </div>
+                    
+                    <h6>Email Templates</h6>
+                    <p class="small">Emails include alert details, metric values, and direct links to the dashboard.</p>
+                    
+                    <h6>Webhook Format</h6>
+                    <p class="small">Webhooks send JSON payloads compatible with Slack, Discord, and custom integrations.</p>
+                    
+                    <div class="alert alert-info small">
+                        <i class="fa fa-lightbulb"></i>
+                        <strong>Tip:</strong> Use different severity filters for different channels to reduce noise.
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Test Results -->
+            <div class="card mt-3" id="testResults" style="display: none;">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fa fa-flask"></i> Test Results
+                    </h6>
+                </div>
+                <div class="card-body" id="testResultsContent">
+                    <!-- Test results will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Toggle sections based on checkboxes
+    document.getElementById('{{ form.email_enabled.id }}').addEventListener('change', function() {
+        const settings = document.getElementById('emailSettings');
+        if (this.checked) {
+            settings.classList.remove('collapse');
+        } else {
+            settings.classList.add('collapse');
+        }
+    });
+    
+    document.getElementById('{{ form.inapp_enabled.id }}').addEventListener('change', function() {
+        const settings = document.getElementById('inappSettings');
+        if (this.checked) {
+            settings.classList.remove('collapse');
+        } else {
+            settings.classList.add('collapse');
+        }
+    });
+    
+    document.getElementById('{{ form.webhook_enabled.id }}').addEventListener('change', function() {
+        const settings = document.getElementById('webhookSettings');
+        if (this.checked) {
+            settings.classList.remove('collapse');
+        } else {
+            settings.classList.add('collapse');
+        }
+    });
+    
+    // Test notifications
+    document.getElementById('testNotifications').addEventListener('click', function() {
+        const testResults = document.getElementById('testResults');
+        const testResultsContent = document.getElementById('testResultsContent');
+        
+        testResultsContent.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Testing notifications...';
+        testResults.style.display = 'block';
+        
+        // This would need to be implemented as an API endpoint
+        fetch('/alerts/api/test-notifications', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                'email_enabled': document.getElementById('{{ form.email_enabled.id }}').checked,
+                'inapp_enabled': document.getElementById('{{ form.inapp_enabled.id }}').checked,
+                'webhook_enabled': document.getElementById('{{ form.webhook_enabled.id }}').checked,
+                'test_message': 'This is a test notification from the Flask-AppBuilder alert system.'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            let html = '<h6>Test Results:</h6><ul class="small">';
+            
+            if (data.email) {
+                html += `<li><i class="fa fa-${data.email.success ? 'check text-success' : 'times text-danger'}"></i> Email: ${data.email.message}</li>`;
+            }
+            
+            if (data.inapp) {
+                html += `<li><i class="fa fa-${data.inapp.success ? 'check text-success' : 'times text-danger'}"></i> In-App: ${data.inapp.message}</li>`;
+            }
+            
+            if (data.webhook) {
+                html += `<li><i class="fa fa-${data.webhook.success ? 'check text-success' : 'times text-danger'}"></i> Webhook: ${data.webhook.message}</li>`;
+            }
+            
+            html += '</ul>';
+            testResultsContent.innerHTML = html;
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            testResultsContent.innerHTML = '<div class="text-danger"><i class="fa fa-exclamation-triangle"></i> Error testing notifications</div>';
+        });
+    });
+    
+    // Reset to defaults
+    document.getElementById('resetDefaults').addEventListener('click', function() {
+        if (confirm('Reset all notification settings to defaults?')) {
+            // Reset form values to defaults
+            document.getElementById('{{ form.email_enabled.id }}').checked = true;
+            document.getElementById('{{ form.inapp_enabled.id }}').checked = true;
+            document.getElementById('{{ form.webhook_enabled.id }}').checked = false;
+            
+            // Trigger change events
+            document.getElementById('{{ form.email_enabled.id }}').dispatchEvent(new Event('change'));
+            document.getElementById('{{ form.inapp_enabled.id }}').dispatchEvent(new Event('change'));
+            document.getElementById('{{ form.webhook_enabled.id }}').dispatchEvent(new Event('change'));
+        }
+    });
+    
+    // Form validation
+    document.getElementById('notificationSettingsForm').addEventListener('submit', function(e) {
+        let isValid = true;
+        
+        // Check if at least one notification method is enabled
+        const emailEnabled = document.getElementById('{{ form.email_enabled.id }}').checked;
+        const inappEnabled = document.getElementById('{{ form.inapp_enabled.id }}').checked;
+        const webhookEnabled = document.getElementById('{{ form.webhook_enabled.id }}').checked;
+        
+        if (!emailEnabled && !inappEnabled && !webhookEnabled) {
+            alert('Please enable at least one notification method.');
+            e.preventDefault();
+            return false;
+        }
+        
+        return isValid;
+    });
+});
+</script>
+
+<style>
+.form-check-input:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.collapse {
+    transition: height 0.35s ease;
+}
+
+.badge {
+    font-size: 0.75em;
+}
+
+.alert {
+    border-radius: 0.375rem;
+}
+
+.card {
+    border-radius: 0.375rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+</style>
+{% endblock %}

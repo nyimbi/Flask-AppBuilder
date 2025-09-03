@@ -1,0 +1,97 @@
+{
+  "timestamp": "2025-08-11 18:32:11",
+  "total_checks": 5,
+  "passed_checks": 3,
+  "failed_checks": 2,
+  "overall_score": 44.164,
+  "execution_time": 2.6002748012542725,
+  "production_ready": false,
+  "recommendations": [
+    "🔧 Fix all syntax errors before proceeding with production deployment",
+    "📝 Run automated syntax fixer: python tests/validation/fix_syntax_errors.py",
+    "🧪 Improve test pass rate from 0.0% to above 80.0%",
+    "🔍 Investigate and fix failing tests before deployment",
+    "⚠️  Overall quality below production standards - comprehensive review needed"
+  ],
+  "results": [
+    {
+      "check_name": "Syntax Validation",
+      "passed": false,
+      "score": 0.0,
+      "details": {},
+      "issues": [
+        "Syntax validation failed: 'SyntaxErrorFixer' object has no attribute 'analyze_syntax_errors'"
+      ],
+      "execution_time": 0.0019230842590332031,
+      "error_message": "'SyntaxErrorFixer' object has no attribute 'analyze_syntax_errors'"
+    },
+    {
+      "check_name": "Test Suite Validation",
+      "passed": false,
+      "score": 0.0,
+      "details": {},
+      "issues": [
+        "Test execution failed: Could not parse test results"
+      ],
+      "execution_time": 1.369459867477417,
+      "error_message": "Could not parse test results"
+    },
+    {
+      "check_name": "Documentation Validation",
+      "passed": true,
+      "score": 65.82,
+      "details": {
+        "total_files": 155,
+        "files_with_issues": 97,
+        "total_classes": 592,
+        "documented_classes": 449,
+        "total_methods": 1726,
+        "documented_methods": 1075,
+        "coverage_percentage": 65.82
+      },
+      "issues": [
+        "97 files have documentation gaps"
+      ],
+      "execution_time": 0.6519548892974854,
+      "error_message": null
+    },
+    {
+      "check_name": "Code Quality Validation",
+      "passed": true,
+      "score": 75.0,
+      "details": {
+        "total_python_files": 155,
+        "large_files": 22,
+        "todo_fixme_count": 3,
+        "classes_without_docs": 143,
+        "complex_functions": 16
+      },
+      "issues": [
+        "22 files are very large (>1000 lines)",
+        "Many classes without docstrings: 143",
+        "Functions with complex signatures: 16"
+      ],
+      "execution_time": 0.3455779552459717,
+      "error_message": null
+    },
+    {
+      "check_name": "Production Readiness Check",
+      "passed": true,
+      "score": 80.0,
+      "details": {
+        "files_without_error_handling": 31,
+        "files_with_logging": 83,
+        "total_files": 155,
+        "security_files": 11,
+        "circular_import_risk": 277,
+        "config_management": true
+      },
+      "issues": [
+        "31 files lack error handling",
+        "High risk of circular imports: 277 relative imports"
+      ],
+      "execution_time": 0.2306380271911621,
+      "error_message": null
+    }
+  ]
+}

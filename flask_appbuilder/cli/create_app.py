@@ -288,7 +288,7 @@ from sqlalchemy.orm import relationship
 
 class GraphSchema(AuditMixin, Model):
     """Graph schema definitions"""
-    __tablename__ = 'graph_schemas'
+    __tablename__ = 'ab_graph_schemas'
     
     id = Column(Integer, primary_key=True)
     name = Column(String(64), unique=True, nullable=False)
@@ -300,7 +300,7 @@ class GraphSchema(AuditMixin, Model):
 
 class QueryTemplate(AuditMixin, Model):
     """Saved query templates"""
-    __tablename__ = 'query_templates'
+    __tablename__ = 'ab_query_templates'
     
     id = Column(Integer, primary_key=True) 
     name = Column(String(128), nullable=False)
@@ -313,7 +313,7 @@ class QueryTemplate(AuditMixin, Model):
 
 class AnalyticsReport(AuditMixin, Model):
     """Analytics reports and dashboards"""
-    __tablename__ = 'analytics_reports'
+    __tablename__ = 'ab_analytics_reports'
     
     id = Column(Integer, primary_key=True)
     title = Column(String(128), nullable=False)
@@ -325,7 +325,7 @@ class AnalyticsReport(AuditMixin, Model):
 
 class MLModel(AuditMixin, Model):
     """Machine learning models"""
-    __tablename__ = 'ml_models'
+    __tablename__ = 'ab_ml_models'
     
     id = Column(Integer, primary_key=True)
     name = Column(String(128), nullable=False)
@@ -339,7 +339,7 @@ class MLModel(AuditMixin, Model):
 
 class CollaborationSession(AuditMixin, Model):
     """Collaboration sessions"""
-    __tablename__ = 'collaboration_sessions'
+    __tablename__ = 'ab_collaboration_sessions'
     
     id = Column(Integer, primary_key=True)
     session_name = Column(String(128), nullable=False)
@@ -352,7 +352,7 @@ class CollaborationSession(AuditMixin, Model):
 
 class GraphOptimizationJob(AuditMixin, Model):
     """Graph optimization job tracking"""
-    __tablename__ = 'optimization_jobs'
+    __tablename__ = 'ab_optimization_jobs'
     
     id = Column(Integer, primary_key=True)
     graph_name = Column(String(64), nullable=False)

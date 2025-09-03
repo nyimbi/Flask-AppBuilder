@@ -1,0 +1,429 @@
+{% extends "appbuilder/base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="fa fa-line-chart"></i> 
+            Metric: <code>{{ metric_name or 'Unknown' }}</code>
+        </h2>
+        <div class="btn-group">
+            <button class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                <i class="fa fa-clock-o"></i> {{ current_timerange or '24h' }}
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="?timerange=1h">Last Hour</a></li>
+                <li><a class="dropdown-item" href="?timerange=6h">Last 6 Hours</a></li>
+                <li><a class="dropdown-item" href="?timerange=24h">Last 24 Hours</a></li>
+                <li><a class="dropdown-item" href="?timerange=7d">Last 7 Days</a></li>
+                <li><a class="dropdown-item" href="?timerange=30d">Last 30 Days</a></li>
+            </ul>
+            <button id="refreshData" class="btn btn-outline-primary">
+                <i class="fa fa-refresh"></i> Refresh
+            </button>
+            <a href="{{ url_for('AlertConfigView.index') }}" class="btn btn-secondary">
+                <i class="fa fa-dashboard"></i> Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Metric Overview -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-primary">
+                <div class="card-body text-center">
+                    <i class="fa fa-tachometer fa-2x text-primary mb-2"></i>
+                    <h4 class="card-title">{{ metric_stats.get('current_value', 'N/A') }}</h4>
+                    <p class="card-text small text-muted">Current Value</p>
+                    {% if metric_stats.get('trend') %}
+                    <small class="
+                        {% if metric_stats.trend > 0 %}text-success
+                        {% elif metric_stats.trend < 0 %}text-danger
+                        {% else %}text-muted
+                        {% endif %}
+                    ">
+                        <i class="fa fa-{% if metric_stats.trend > 0 %}arrow-up{% elif metric_stats.trend < 0 %}arrow-down{% else %}minus{% endif %}"></i>
+                        {{ metric_stats.trend_display or '' }}
+                    </small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-success">
+                <div class="card-body text-center">
+                    <i class="fa fa-arrow-up fa-2x text-success mb-2"></i>
+                    <h4 class="card-title">{{ metric_stats.get('max_value', 'N/A') }}</h4>
+                    <p class="card-text small text-muted">Peak Value</p>
+                    {% if metric_stats.get('max_timestamp') %}
+                    <small class="text-muted">{{ metric_stats.max_timestamp }}</small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-info">
+                <div class="card-body text-center">
+                    <i class="fa fa-arrow-down fa-2x text-info mb-2"></i>
+                    <h4 class="card-title">{{ metric_stats.get('min_value', 'N/A') }}</h4>
+                    <p class="card-text small text-muted">Low Value</p>
+                    {% if metric_stats.get('min_timestamp') %}
+                    <small class="text-muted">{{ metric_stats.min_timestamp }}</small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-secondary">
+                <div class="card-body text-center">
+                    <i class="fa fa-calculator fa-2x text-secondary mb-2"></i>
+                    <h4 class="card-title">{{ metric_stats.get('avg_value', 'N/A') }}</h4>
+                    <p class="card-text small text-muted">Average Value</p>
+                    {% if metric_stats.get('std_dev') %}
+                    <small class="text-muted">±{{ metric_stats.std_dev }}</small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Metric Chart -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fa fa-line-chart"></i> Metric Timeline
+                        </h5>
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-secondary" onclick="toggleChartType('line')">Line</button>
+                            <button class="btn btn-outline-secondary" onclick="toggleChartType('area')">Area</button>
+                            <button class="btn btn-outline-secondary" onclick="toggleChartType('bar')">Bar</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="metricChart" style="height: 400px;">
+                        {% if metric_data %}
+                        <!-- Chart placeholder - would be populated by Chart.js or similar -->
+                        <canvas id="metricChartCanvas"></canvas>
+                        {% else %}
+                        <div class="text-center py-5">
+                            <i class="fa fa-line-chart fa-3x text-muted mb-3"></i>
+                            <h5>No Data Available</h5>
+                            <p class="text-muted">No metric data found for the selected time range.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Rules & Data Table -->
+    <div class="row">
+        <div class="col-md-6">
+            <!-- Related Alert Rules -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fa fa-bell"></i> Related Alert Rules
+                        {% if alert_rules %}
+                        <span class="badge badge-info ms-2">{{ alert_rules|length }}</span>
+                        {% endif %}
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if alert_rules %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Rule Name</th>
+                                    <th>Condition</th>
+                                    <th>Severity</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for rule in alert_rules %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ url_for('AlertConfigView.edit_rule', rule_id=rule.id) }}">
+                                            {{ rule.name }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-light">
+                                            {{ rule.condition }} {{ rule.threshold_value }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if rule.severity == 'critical' %}badge-danger
+                                            {% elif rule.severity == 'high' %}badge-warning
+                                            {% elif rule.severity == 'medium' %}badge-info
+                                            {% else %}badge-secondary
+                                            {% endif %}
+                                        ">
+                                            {{ rule.severity.upper() }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge {% if rule.enabled %}badge-success{% else %}badge-secondary{% endif %}">
+                                            {{ 'Enabled' if rule.enabled else 'Disabled' }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-3">
+                        <i class="fa fa-bell-slash fa-2x text-muted mb-2"></i>
+                        <p class="text-muted">No alert rules configured for this metric.</p>
+                        <a href="{{ url_for('AlertConfigView.create_rule', metric_name=metric_name) }}" class="btn btn-primary btn-sm">
+                            <i class="fa fa-plus"></i> Create Alert Rule
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <!-- Recent Alerts -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fa fa-exclamation-triangle"></i> Recent Alerts
+                        {% if recent_alerts %}
+                        <span class="badge badge-warning ms-2">{{ recent_alerts|length }}</span>
+                        {% endif %}
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if recent_alerts %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Triggered</th>
+                                    <th>Value</th>
+                                    <th>Severity</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for alert in recent_alerts %}
+                                <tr class="{% if alert.severity == 'critical' %}table-danger{% elif alert.severity == 'high' %}table-warning{% endif %}">
+                                    <td>
+                                        <small title="{{ alert.triggered_at.strftime('%Y-%m-%d %H:%M:%S') if alert.triggered_at }}">
+                                            {{ alert.triggered_at.strftime('%m/%d %H:%M') if alert.triggered_at else 'N/A' }}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <strong>{{ alert.metric_value or 'N/A' }}</strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if alert.severity == 'critical' %}badge-danger
+                                            {% elif alert.severity == 'high' %}badge-warning
+                                            {% elif alert.severity == 'medium' %}badge-info
+                                            {% else %}badge-secondary
+                                            {% endif %}
+                                        ">
+                                            {{ alert.severity.upper() if alert.severity else 'UNKNOWN' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if alert.status == 'active' %}badge-danger
+                                            {% elif alert.status == 'acknowledged' %}badge-warning
+                                            {% else %}badge-success
+                                            {% endif %}
+                                        ">
+                                            {{ alert.status.upper() if alert.status else 'UNKNOWN' }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-3">
+                        <i class="fa fa-check-circle fa-2x text-success mb-2"></i>
+                        <p class="text-muted">No recent alerts for this metric.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Raw Data Table -->
+    {% if show_raw_data and metric_data %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="card-title mb-0">
+                            <i class="fa fa-table"></i> Raw Data Points
+                        </h6>
+                        <button class="btn btn-outline-secondary btn-sm" onclick="exportMetricData()">
+                            <i class="fa fa-download"></i> Export CSV
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>Value</th>
+                                    <th>Source</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for data_point in metric_data[:100] %}
+                                <tr>
+                                    <td>
+                                        {{ data_point.timestamp.strftime('%Y-%m-%d %H:%M:%S') if data_point.timestamp else 'N/A' }}
+                                    </td>
+                                    <td>
+                                        <strong>{{ data_point.value }}</strong>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ data_point.source or 'System' }}</small>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        {% if metric_data|length > 100 %}
+                        <div class="text-center text-muted">
+                            <small>Showing first 100 of {{ metric_data|length }} data points</small>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize chart if data is available
+    {% if metric_data %}
+    initializeMetricChart();
+    {% endif %}
+    
+    // Auto-refresh functionality
+    document.getElementById('refreshData').addEventListener('click', function() {
+        location.reload();
+    });
+});
+
+function initializeMetricChart() {
+    const ctx = document.getElementById('metricChartCanvas').getContext('2d');
+    
+    // Sample chart data (would be populated from metric_data)
+    const chartData = {
+        labels: [
+            {% if metric_data %}
+            {% for data_point in metric_data[-20:] %}
+            '{{ data_point.timestamp.strftime("%H:%M") if data_point.timestamp else "N/A" }}',
+            {% endfor %}
+            {% endif %}
+        ],
+        datasets: [{
+            label: '{{ metric_name }}',
+            data: [
+                {% if metric_data %}
+                {% for data_point in metric_data[-20:] %}
+                {{ data_point.value or 0 }},
+                {% endfor %}
+                {% endif %}
+            ],
+            borderColor: 'rgb(75, 192, 192)',
+            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+            tension: 0.1
+        }]
+    };
+    
+    const config = {
+        type: 'line',
+        data: chartData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: false
+                }
+            }
+        }
+    };
+    
+    window.metricChart = new Chart(ctx, config);
+}
+
+function toggleChartType(type) {
+    if (window.metricChart) {
+        window.metricChart.config.type = type;
+        window.metricChart.update();
+    }
+}
+
+function exportMetricData() {
+    const url = `/alerts/api/metric/${encodeURIComponent('{{ metric_name }}')}/export?` + 
+                `timerange={{ current_timerange or '24h' }}&format=csv`;
+    window.open(url, '_blank');
+}
+</script>
+
+<style>
+.fa-2x {
+    font-size: 2em;
+    margin-bottom: 0.5rem;
+}
+
+.badge {
+    font-size: 0.75em;
+}
+
+.card {
+    border-radius: 0.375rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.table-responsive {
+    border-radius: 0.375rem;
+}
+
+#metricChart {
+    position: relative;
+}
+
+.btn-group-sm > .btn, .btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+}
+</style>
+
+<!-- Include Chart.js if not already included -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}

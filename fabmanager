@@ -1,0 +1,134 @@
+#!/usr/bin/env python3
+"""
+Enhanced Flask-AppBuilder Manager
+
+Standalone CLI tool for creating enhanced Flask-AppBuilder applications.
+This tool provides all the functionality of the original fabmanager plus
+advanced enhancements.
+
+Usage:
+    ./fabmanager create-ext-app --name myapp
+    ./fabmanager create-ext-app --name myapp --engine postgresql --no-mfa
+    ./fabmanager --help
+"""
+
+import sys
+import os
+import click
+from pathlib import Path
+
+# Add the current directory to Python path
+current_dir = Path(__file__).parent.absolute()
+sys.path.insert(0, str(current_dir))
+
+# Import our enhanced app generator
+from scripts.create_enhanced_fab_app import create_enhanced_app
+
+
+@click.group()
+@click.version_option(version="4.8.0-enhanced", prog_name="fabmanager")
+def cli():
+    """Enhanced Flask-AppBuilder Manager
+    
+    Create and manage Flask-AppBuilder applications with advanced enhancements
+    including MFA, Wallet Systems, Enhanced Widgets, and more.
+    """
+    pass
+
+
+@cli.command()
+@click.option("--name", prompt="Application name", help="Name of the application")
+@click.option("--engine", default="postgresql", 
+              type=click.Choice(["postgresql", "sqlite"]), 
+              help="Database engine")
+@click.option("--target-dir", default=".", 
+              help="Target directory for the application")
+@click.option("--no-mfa", is_flag=True, 
+              help="Skip Multi-Factor Authentication system")
+@click.option("--no-wallet", is_flag=True, 
+              help="Skip Wallet system")
+@click.option("--no-widgets", is_flag=True, 
+              help="Skip enhanced widget library")
+@click.option("--no-mixins", is_flag=True, 
+              help="Skip mixin integration system")
+@click.option("--no-field-analysis", is_flag=True, 
+              help="Skip field analysis system")
+@click.option("--no-sample-data", is_flag=True, 
+              help="Skip sample data creation")
+def create_ext_app(name, engine, target_dir, no_mfa, no_wallet, no_widgets, 
+                   no_mixins, no_field_analysis, no_sample_data):
+    """Create a complete Enhanced Flask-AppBuilder application.
+    
+    This command creates a fully-featured Flask-AppBuilder application with all
+    advanced enhancements including MFA, Wallet System, Enhanced Widgets,
+    Mixin Integration, and Field Analysis.
+    
+    Example:
+        fabmanager create-ext-app --name myapp --engine postgresql
+        fabmanager create-ext-app --name myapp --no-mfa --no-wallet
+    """
+    
+    # Set up arguments for the enhanced app generator
+    sys.argv = [
+        'create_enhanced_fab_app.py',
+        '--name', name,
+        '--engine', engine,
+        '--target-dir', target_dir
+    ]
+    
+    if no_mfa:
+        sys.argv.append('--no-mfa')
+    if no_wallet:
+        sys.argv.append('--no-wallet')
+    if no_widgets:
+        sys.argv.append('--no-widgets')
+    if no_mixins:
+        sys.argv.append('--no-mixins')
+    if no_field_analysis:
+        sys.argv.append('--no-field-analysis')
+    if no_sample_data:
+        sys.argv.append('--no-sample-data')
+    
+    # Run the enhanced app generator
+    create_enhanced_app()
+
+
+@cli.command()
+@click.option("--name", prompt="Your new application name", 
+              help="Your application name")
+def create_basic_app(name):
+    """Create a basic Flask-AppBuilder application.
+    
+    This creates a standard Flask-AppBuilder application without enhancements.
+    Use create-ext-app for the full enhanced version.
+    """
+    click.echo(f"Creating basic Flask-AppBuilder application: {name}")
+    click.echo("Note: For enhanced features, use 'create-ext-app' instead")
+    
+    # For now, redirect to enhanced version with minimal features
+    sys.argv = [
+        'create_enhanced_fab_app.py',
+        '--name', name,
+        '--engine', 'sqlite',
+        '--target-dir', '.',
+        '--no-mfa',
+        '--no-wallet',
+        '--no-widgets',
+        '--no-mixins',
+        '--no-field-analysis',
+        '--no-sample-data'
+    ]
+    
+    create_enhanced_app()
+
+
+@cli.command()
+def version():
+    """Show version information."""
+    click.echo("Enhanced Flask-AppBuilder Manager")
+    click.echo("Version: 4.8.0-enhanced")
+    click.echo("Features: MFA, Wallet System, Enhanced Widgets, Mixins, Field Analysis")
+
+
+if __name__ == '__main__':
+    cli()

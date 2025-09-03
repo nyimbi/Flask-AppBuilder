@@ -4,8 +4,8 @@ from flask_appbuilder.security.manager import AUTH_OAUTH
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
-# Your App secret key
-SECRET_KEY = "\2\1thisismyscretkey\1\2\e\y\y\h"
+# Your App secret key - should be set via environment variable
+SECRET_KEY = os.environ.get("SECRET_KEY", "dev-key-change-in-production")
 
 # The SQLAlchemy connection string.
 SQLALCHEMY_DATABASE_URI = "sqlite:///" + os.path.join(basedir, "app.db")

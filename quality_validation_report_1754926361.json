@@ -1,0 +1,103 @@
+{
+  "timestamp": "2025-08-11 18:32:41",
+  "total_checks": 5,
+  "passed_checks": 4,
+  "failed_checks": 1,
+  "overall_score": 64.164,
+  "execution_time": 2.4849131107330322,
+  "production_ready": false,
+  "recommendations": [
+    "🧪 Improve test pass rate from 0.0% to above 80.0%",
+    "🔍 Investigate and fix failing tests before deployment",
+    "⚠️  Overall quality below production standards - comprehensive review needed"
+  ],
+  "results": [
+    {
+      "check_name": "Syntax Validation",
+      "passed": true,
+      "score": 100.0,
+      "details": {
+        "total_files": 155,
+        "files_with_errors": 0,
+        "error_files": []
+      },
+      "issues": [],
+      "execution_time": 0.19125699996948242,
+      "error_message": null
+    },
+    {
+      "check_name": "Test Suite Validation",
+      "passed": false,
+      "score": 0.0,
+      "details": {
+        "total_tests": 5,
+        "passed_tests": 0,
+        "failed_tests": 0,
+        "error_tests": 5,
+        "pass_rate": 0.0
+      },
+      "issues": [
+        "5 tests had errors"
+      ],
+      "execution_time": 1.0694899559020996,
+      "error_message": null
+    },
+    {
+      "check_name": "Documentation Validation",
+      "passed": true,
+      "score": 65.82,
+      "details": {
+        "total_files": 155,
+        "files_with_issues": 97,
+        "total_classes": 592,
+        "documented_classes": 449,
+        "total_methods": 1726,
+        "documented_methods": 1075,
+        "coverage_percentage": 65.82
+      },
+      "issues": [
+        "97 files have documentation gaps"
+      ],
+      "execution_time": 0.6491289138793945,
+      "error_message": null
+    },
+    {
+      "check_name": "Code Quality Validation",
+      "passed": true,
+      "score": 75.0,
+      "details": {
+        "total_python_files": 155,
+        "large_files": 22,
+        "todo_fixme_count": 3,
+        "classes_without_docs": 143,
+        "complex_functions": 16
+      },
+      "issues": [
+        "22 files are very large (>1000 lines)",
+        "Many classes without docstrings: 143",
+        "Functions with complex signatures: 16"
+      ],
+      "execution_time": 0.3439629077911377,
+      "error_message": null
+    },
+    {
+      "check_name": "Production Readiness Check",
+      "passed": true,
+      "score": 80.0,
+      "details": {
+        "files_without_error_handling": 31,
+        "files_with_logging": 83,
+        "total_files": 155,
+        "security_files": 11,
+        "circular_import_risk": 277,
+        "config_management": true
+      },
+      "issues": [
+        "31 files lack error handling",
+        "High risk of circular imports: 277 relative imports"
+      ],
+      "execution_time": 0.23019194602966309,
+      "error_message": null
+    }
+  ]
+}

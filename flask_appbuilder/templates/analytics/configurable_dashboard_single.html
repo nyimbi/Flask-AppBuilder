@@ -1,0 +1,72 @@
+{% extends "appbuilder/base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>{{ dashboard_config.get('title', 'Dashboard') }}</h2>
+        <div class="btn-group">
+            <a href="{{ url_for('DashboardLayoutView.form') }}" class="btn btn-primary btn-sm">
+                <i class="fa fa-cog"></i> Configure
+            </a>
+            <button id="refreshDashboard" class="btn btn-secondary btn-sm">
+                <i class="fa fa-refresh"></i> Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- Single Column Layout -->
+    <div class="col-lg-8 col-md-10 mx-auto">
+        {% for widget in widgets %}
+        <div class="card mb-4">
+            {% if widget.show_header %}
+            <div class="card-header">
+                <h5 class="card-title mb-0">{{ widget.title }}</h5>
+                {% if widget.subtitle %}
+                <small class="text-muted">{{ widget.subtitle }}</small>
+                {% endif %}
+            </div>
+            {% endif %}
+            <div class="card-body">
+                {{ widget.content|safe }}
+            </div>
+            {% if widget.footer %}
+            <div class="card-footer text-muted">
+                {{ widget.footer }}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if not widgets %}
+    <div class="col-lg-8 col-md-10 mx-auto">
+        <div class="alert alert-info text-center">
+            <h4><i class="fa fa-info-circle"></i> No Widgets Configured</h4>
+            <p>Your dashboard is empty. <a href="{{ url_for('DashboardLayoutView.form') }}">Configure widgets</a> to get started.</p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Auto-refresh functionality -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const refreshBtn = document.getElementById('refreshDashboard');
+    const autoRefresh = {{ dashboard_config.get('auto_refresh', false)|lower }};
+    const refreshInterval = {{ dashboard_config.get('refresh_interval', 300) * 1000 }};
+    
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', function() {
+            location.reload();
+        });
+    }
+    
+    // Auto-refresh if enabled
+    if (autoRefresh && refreshInterval > 0) {
+        setInterval(function() {
+            location.reload();
+        }, refreshInterval);
+    }
+});
+</script>
+{% endblock %}

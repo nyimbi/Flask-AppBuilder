@@ -1,0 +1,41 @@
+{% extends "appbuilder/base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="card-title mb-0">
+                        <i class="fa fa-exclamation-triangle"></i> Export Error
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-danger">
+                        <h5><i class="fa fa-times-circle"></i> Export Failed</h5>
+                        <p class="mb-0">{{ error or "An unknown error occurred during export." }}</p>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <h6>What you can do:</h6>
+                        <ul>
+                            <li>Check your export configuration and try again</li>
+                            <li>Reduce the number of records being exported</li>
+                            <li>Try a different export format</li>
+                            <li>Contact support if the problem persists</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a href="{{ url_for('ExportView.index') }}" class="btn btn-primary">
+                        <i class="fa fa-arrow-left"></i> Back to Export
+                    </a>
+                    <a href="{{ url_for('IndexView.index') }}" class="btn btn-secondary">
+                        <i class="fa fa-home"></i> Home
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

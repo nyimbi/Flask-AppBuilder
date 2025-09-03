@@ -237,3 +237,13 @@ class RegisterUser(Model):
     email = Column(String(64), nullable=False)
     registration_date = Column(DateTime, default=datetime.datetime.now, nullable=True)
     registration_hash = Column(String(256))
+
+
+# Import MFA models when MFA is enabled
+try:
+    from ..mfa.models import UserMFA, MFABackupCodes, MFAVerificationAttempt, MFAPolicy
+    __all__ = ['Permission', 'ViewMenu', 'PermissionView', 'Role', 'User', 'Group', 'RegisterUser', 
+               'UserMFA', 'MFABackupCodes', 'MFAVerificationAttempt', 'MFAPolicy', 'assoc_permissionview_role']
+except ImportError:
+    # MFA models not available, proceed without them
+    __all__ = ['Permission', 'ViewMenu', 'PermissionView', 'Role', 'User', 'Group', 'RegisterUser', 'assoc_permissionview_role']

@@ -5,46 +5,29 @@ from ..baseviews import BaseView, expose
 
 
 class LocaleView(BaseView):
+    """
+    Flask-AppBuilder view for locale interface operations.
+
+    The LocaleView class provides comprehensive functionality for
+    locale view operations.
+    """
+    
     route_base = "/lang"
 
     default_view = "index"
 
     @expose("/<string:locale>")
     def index(self, locale):
-    """
-        Flask-AppBuilder view for locale interface operations.
-
-        The LocaleView class provides comprehensive functionality for
-        locale view operations.
-        It integrates with the Flask-AppBuilder framework to provide
-        enterprise-grade features and capabilities.
-
-        Inherits from: BaseView
-
-        Example:
         """
-        pass
-                Perform index operation.
+        Perform index operation.
 
-                This method provides functionality for index.
-                Implementation follows Flask-AppBuilder patterns and standards.
+        This method provides functionality for index.
 
-                Args:
-                    locale: The locale parameter
+        Args:
+            locale: The locale parameter
 
-                Returns:
-                    The result of the operation
-
-                Example:
-                    >>> instance = LocaleView()
-                    >>> result = instance.index("locale_value")
-                    >>> print(result)
-
-                """
-            >>> instance = LocaleView()
-            >>> # Use instance methods to perform operations
-            >>> result = instance.main_method()
-
+        Returns:
+            The result of the operation
         """
         if locale not in self.appbuilder.bm.languages:
             abort(404, description="Locale not supported.")

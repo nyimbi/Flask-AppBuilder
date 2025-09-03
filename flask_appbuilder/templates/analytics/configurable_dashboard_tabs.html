@@ -1,0 +1,107 @@
+{% extends "appbuilder/base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>{{ dashboard_config.get('title', 'Dashboard') }}</h2>
+        <div class="btn-group">
+            <a href="{{ url_for('DashboardLayoutView.form') }}" class="btn btn-primary btn-sm">
+                <i class="fa fa-cog"></i> Configure
+            </a>
+            <button id="refreshDashboard" class="btn btn-secondary btn-sm">
+                <i class="fa fa-refresh"></i> Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- Tabbed Layout -->
+    <div class="card">
+        <div class="card-body">
+            <!-- Nav tabs -->
+            <ul class="nav nav-tabs" id="dashboardTabs" role="tablist">
+                {% for tab in dashboard_config.get('tabs', [{'name': 'Main', 'widgets': widgets}]) %}
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link {% if loop.first %}active{% endif %}" 
+                            id="tab-{{ loop.index0 }}" 
+                            data-bs-toggle="tab" 
+                            data-bs-target="#tab-content-{{ loop.index0 }}" 
+                            type="button" 
+                            role="tab" 
+                            aria-controls="tab-content-{{ loop.index0 }}" 
+                            aria-selected="{% if loop.first %}true{% else %}false{% endif %}">
+                        {% if tab.get('icon') %}<i class="{{ tab.icon }}"></i> {% endif %}
+                        {{ tab.get('name', 'Tab ' + loop.index|string) }}
+                    </button>
+                </li>
+                {% endfor %}
+            </ul>
+
+            <!-- Tab content -->
+            <div class="tab-content mt-3" id="dashboardTabsContent">
+                {% for tab in dashboard_config.get('tabs', [{'name': 'Main', 'widgets': widgets}]) %}
+                <div class="tab-pane fade {% if loop.first %}show active{% endif %}" 
+                     id="tab-content-{{ loop.index0 }}" 
+                     role="tabpanel" 
+                     aria-labelledby="tab-{{ loop.index0 }}">
+                    
+                    <div class="row">
+                        {% for widget in tab.get('widgets', []) %}
+                        <div class="col-lg-{{ widget.grid_size or 6 }} col-md-12 mb-4">
+                            <div class="card h-100">
+                                {% if widget.show_header %}
+                                <div class="card-header">
+                                    <h6 class="card-title mb-0">{{ widget.title }}</h6>
+                                </div>
+                                {% endif %}
+                                <div class="card-body">
+                                    {{ widget.content|safe }}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    {% if not tab.get('widgets') %}
+                    <div class="alert alert-info text-center">
+                        <h5><i class="fa fa-info-circle"></i> No Widgets in This Tab</h5>
+                        <p>This tab is empty. <a href="{{ url_for('DashboardLayoutView.form') }}">Configure widgets</a> for this tab.</p>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Auto-refresh functionality -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const refreshBtn = document.getElementById('refreshDashboard');
+    const autoRefresh = {{ dashboard_config.get('auto_refresh', false)|lower }};
+    const refreshInterval = {{ dashboard_config.get('refresh_interval', 300) * 1000 }};
+    
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', function() {
+            location.reload();
+        });
+    }
+    
+    // Auto-refresh if enabled
+    if (autoRefresh && refreshInterval > 0) {
+        setInterval(function() {
+            location.reload();
+        }, refreshInterval);
+    }
+    
+    // Tab switching analytics (optional)
+    const tabs = document.querySelectorAll('#dashboardTabs button[data-bs-toggle="tab"]');
+    tabs.forEach(tab => {
+        tab.addEventListener('shown.bs.tab', function(event) {
+            // Could send analytics about tab usage
+            console.log('Switched to tab:', event.target.textContent.trim());
+        });
+    });
+});
+</script>
+{% endblock %}

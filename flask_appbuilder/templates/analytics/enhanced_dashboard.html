@@ -1,0 +1,342 @@
+{% extends "appbuilder/base.html" %}
+{% import "appbuilder/general/lib.html" as lib %}
+
+{% block title %}Enhanced Analytics Dashboard{% endblock %}
+
+{% block head_css %}
+    {{ super() }}
+    <!-- Chart.js for trend charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .dashboard-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+        }
+        
+        .metric-cards-container {
+            margin-bottom: 2rem;
+        }
+        
+        .chart-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .time-range-selector {
+            background: white;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .dashboard-stats {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+        
+        .refresh-indicator {
+            display: none;
+            color: #28a745;
+        }
+        
+        .refresh-indicator.active {
+            display: inline-block;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Dashboard Header -->
+    <div class="dashboard-header rounded mb-4">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="h3 mb-2">Enhanced Analytics Dashboard</h1>
+                    <p class="mb-0 opacity-75">
+                        Real-time business metrics and trends
+                        {% if dashboard_data.time_range_label %}
+                        - {{ dashboard_data.time_range_label }}
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <div class="dashboard-stats text-white-50">
+                        {% if dashboard_data.last_updated %}
+                        <div><i class="fas fa-clock me-1"></i>
+                            Updated {{ dashboard_data.last_updated.strftime('%H:%M:%S') }}
+                        </div>
+                        {% endif %}
+                        {% if dashboard_data.system_status %}
+                        <div><i class="fas fa-check-circle me-1"></i>
+                            System {{ dashboard_data.system_status }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Time Range Selector -->
+    <div class="time-range-selector">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <h6 class="mb-0">Time Period</h6>
+                <small class="text-muted">Select time range for metrics and trends</small>
+            </div>
+            <div class="col-md-6">
+                <div class="d-flex justify-content-md-end">
+                    <div class="btn-group" role="group">
+                        {% for option in available_time_ranges %}
+                        <a href="{{ url_for('EnhancedDashboardView.index', time_range=option.value) }}" 
+                           class="btn {% if time_range == option.value %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                            {{ option.label }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                    <button class="btn btn-outline-secondary ms-2" onclick="refreshDashboard()" id="refresh-btn">
+                        <i class="fas fa-sync-alt" id="refresh-icon"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Metric Cards Row -->
+    <div class="metric-cards-container">
+        <div class="row g-3" id="metric-cards-row">
+            {% for card in metric_cards %}
+            <div class="col-xl-3 col-lg-4 col-md-6 col-sm-6">
+                {{ card.render_metric_card()|safe }}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- Trend Charts Section -->
+    {% if trend_charts %}
+    <div class="row">
+        <div class="col-12">
+            <h4 class="mb-3">Trend Analysis</h4>
+        </div>
+        {% for chart in trend_charts %}
+        <div class="col-lg-6 col-md-12">
+            <div class="chart-container">
+                <h5 class="mb-3">{{ chart.title }}</h5>
+                <canvas id="chart-{{ loop.index }}" style="height: {{ chart.height }};"></canvas>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <!-- Additional Dashboard Widgets -->
+    <div class="row mt-4">
+        <div class="col-lg-8">
+            <div class="chart-container">
+                <h5 class="mb-3">Recent Activity</h5>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Time</th>
+                                <th>Action</th>
+                                <th>User</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>{{ moment().format('HH:mm') }}</td>
+                                <td>Record Created</td>
+                                <td>{{ current_user.username if current_user.is_authenticated else 'System' }}</td>
+                                <td><span class="badge bg-success">Success</span></td>
+                            </tr>
+                            <tr>
+                                <td>{{ moment().subtract(5, 'minutes').format('HH:mm') }}</td>
+                                <td>Status Updated</td>
+                                <td>Admin</td>
+                                <td><span class="badge bg-primary">Completed</span></td>
+                            </tr>
+                            <tr>
+                                <td>{{ moment().subtract(12, 'minutes').format('HH:mm') }}</td>
+                                <td>Approval Request</td>
+                                <td>User123</td>
+                                <td><span class="badge bg-warning">Pending</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="chart-container">
+                <h5 class="mb-3">System Information</h5>
+                <div class="list-group list-group-flush">
+                    {% if dashboard_data.total_users %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-users me-2 text-primary"></i>Total Users</span>
+                        <span class="badge bg-primary rounded-pill">{{ dashboard_data.total_users }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-server me-2 text-success"></i>System Status</span>
+                        <span class="badge bg-success rounded-pill">{{ dashboard_data.system_status|title }}</span>
+                    </div>
+                    
+                    {% if dashboard_data.refresh_interval %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-clock me-2 text-info"></i>Refresh Rate</span>
+                        <span class="text-muted">{{ dashboard_data.refresh_interval // 60 }} min</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block tail_js %}
+    {{ super() }}
+    <script>
+        // Initialize trend charts
+        document.addEventListener('DOMContentLoaded', function() {
+            {% if trend_charts %}
+            {% for chart in trend_charts %}
+            initTrendChart('chart-{{ loop.index }}', {{ chart.data|tojson }}, '{{ chart.title }}');
+            {% endfor %}
+            {% endif %}
+            
+            // Auto-refresh functionality
+            {% if dashboard_data.refresh_interval %}
+            setInterval(refreshDashboard, {{ dashboard_data.refresh_interval * 1000 }});
+            {% endif %}
+        });
+        
+        function initTrendChart(canvasId, data, title) {
+            const ctx = document.getElementById(canvasId);
+            if (!ctx || !data || !data.length) return;
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.map(item => item.label || item.date),
+                    datasets: [{
+                        label: title,
+                        data: data.map(item => item.value),
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0,0,0,0.1)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function refreshDashboard() {
+            const refreshIcon = document.getElementById('refresh-icon');
+            const refreshBtn = document.getElementById('refresh-btn');
+            
+            // Show loading state
+            refreshIcon.classList.add('fa-spin');
+            refreshBtn.disabled = true;
+            
+            // Fetch updated metrics via API
+            fetch('{{ url_for("EnhancedDashboardView.api_metrics") }}?time_range={{ time_range }}')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        updateMetricCards(data.metrics);
+                        showRefreshSuccess();
+                    } else {
+                        showRefreshError(data.error);
+                    }
+                })
+                .catch(error => {
+                    showRefreshError(error.message);
+                })
+                .finally(() => {
+                    // Reset loading state
+                    refreshIcon.classList.remove('fa-spin');
+                    refreshBtn.disabled = false;
+                });
+        }
+        
+        function updateMetricCards(metrics) {
+            // In a real implementation, this would update the metric cards
+            // For now, just reload the page
+            window.location.reload();
+        }
+        
+        function showRefreshSuccess() {
+            // Show success indicator
+            const indicator = document.createElement('div');
+            indicator.className = 'alert alert-success alert-dismissible fade show position-fixed';
+            indicator.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 250px;';
+            indicator.innerHTML = `
+                <i class="fas fa-check me-2"></i>Dashboard updated successfully
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(indicator);
+            
+            // Auto-remove after 3 seconds
+            setTimeout(() => {
+                if (indicator.parentNode) {
+                    indicator.parentNode.removeChild(indicator);
+                }
+            }, 3000);
+        }
+        
+        function showRefreshError(error) {
+            console.error('Dashboard refresh error:', error);
+            
+            const indicator = document.createElement('div');
+            indicator.className = 'alert alert-warning alert-dismissible fade show position-fixed';
+            indicator.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 250px;';
+            indicator.innerHTML = `
+                <i class="fas fa-exclamation-triangle me-2"></i>Failed to refresh dashboard
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(indicator);
+            
+            setTimeout(() => {
+                if (indicator.parentNode) {
+                    indicator.parentNode.removeChild(indicator);
+                }
+            }, 5000);
+        }
+    </script>
+{% endblock %}

@@ -229,7 +229,13 @@ class DatabaseInitializer:
                     return False
                 
                 # Create admin user with default credentials
-                admin_password = os.environ.get('ADMIN_PASSWORD', 'admin123!')
+                admin_password = os.environ.get('ADMIN_PASSWORD')
+                if not admin_password:
+                    raise ValueError(
+                        "ADMIN_PASSWORD environment variable is required. "
+                        "Please set a secure password (minimum 12 characters, "
+                        "including uppercase, lowercase, numbers, and special characters)."
+                    )
                 
                 user = self.appbuilder.sm.add_user(
                     username='admin',
@@ -325,7 +331,7 @@ class DatabaseInitializer:
         logger.info("🎉 Database initialization completed successfully!")
         logger.info("🚀 The Flask-AppBuilder Apache AGE Graph Analytics Platform is ready!")
         logger.info("🔗 Access the application at: http://localhost:8080")
-        logger.info("👤 Login with username: admin, password: admin123!")
+        logger.info("👤 Login with username: admin, password: [set via ADMIN_PASSWORD env var]")
         
         return True
 

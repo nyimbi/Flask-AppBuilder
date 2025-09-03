@@ -1,0 +1,252 @@
+{# Presence Indicator Widget Template #}
+{# Shows active users and their presence status in collaboration sessions #}
+
+<div class="collaboration-presence-widget" 
+     data-session-id="{{ session_id or '' }}"
+     data-show-avatars="{{ show_avatars|tojson }}"
+     data-show-cursors="{{ show_cursors|tojson }}"
+     data-max-users="{{ max_users or 10 }}">
+     
+    <div class="presence-header">
+        <i class="fa fa-users"></i>
+        <span class="presence-title">Active Users</span>
+        <span class="presence-count" id="presence-counter">0</span>
+    </div>
+    
+    <div class="presence-users" id="presence-users">
+        <!-- User avatars will be dynamically populated -->
+    </div>
+    
+    {% if show_cursors %}
+    <div class="presence-cursors" id="presence-cursors">
+        <!-- Live cursors will be rendered here -->
+    </div>
+    {% endif %}
+    
+    <div class="presence-status" id="presence-status">
+        <span class="status-indicator" id="connection-status"></span>
+        <span class="status-text" id="status-message">Connecting...</span>
+    </div>
+</div>
+
+<style>
+.collaboration-presence-widget {
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid #e1e5e9;
+    border-radius: 8px;
+    padding: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    min-width: 200px;
+    font-size: 13px;
+}
+
+.presence-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+    font-weight: 500;
+}
+
+.presence-header i {
+    margin-right: 6px;
+    color: #495057;
+}
+
+.presence-count {
+    margin-left: auto;
+    background: #007bff;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 11px;
+    min-width: 18px;
+    text-align: center;
+}
+
+.presence-users {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 10px;
+    min-height: 32px;
+}
+
+.presence-user {
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.presence-user:hover {
+    transform: scale(1.1);
+}
+
+.presence-user img {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2px solid #28a745;
+}
+
+.presence-user.idle img {
+    border-color: #ffc107;
+}
+
+.presence-user.away img {
+    border-color: #dc3545;
+}
+
+.presence-user-tooltip {
+    position: absolute;
+    bottom: 35px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    z-index: 1000;
+}
+
+.presence-user:hover .presence-user-tooltip {
+    opacity: 1;
+}
+
+.presence-user-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 4px solid transparent;
+    border-top-color: #333;
+}
+
+.presence-status {
+    display: flex;
+    align-items: center;
+    font-size: 11px;
+    color: #6c757d;
+    border-top: 1px solid #f1f3f4;
+    padding-top: 8px;
+}
+
+.status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #dc3545;
+    margin-right: 6px;
+    transition: background 0.3s ease;
+}
+
+.status-indicator.connected {
+    background: #28a745;
+}
+
+.status-indicator.connecting {
+    background: #ffc107;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+.presence-empty {
+    text-align: center;
+    color: #6c757d;
+    font-style: italic;
+    padding: 10px 0;
+}
+</style>
+
+<script type="text/javascript">
+document.addEventListener('DOMContentLoaded', function() {
+    const widget = document.querySelector('.collaboration-presence-widget');
+    const sessionId = widget.dataset.sessionId;
+    const showAvatars = JSON.parse(widget.dataset.showAvatars);
+    const maxUsers = parseInt(widget.dataset.maxUsers);
+    
+    if (sessionId && window.CollaborationPresenceManager) {
+        // This widget will be managed by the main collaboration manager
+        // Register event handlers for presence updates
+        
+        function updatePresenceWidget(participants) {
+            const usersContainer = document.getElementById('presence-users');
+            const counter = document.getElementById('presence-counter');
+            
+            // Update counter
+            counter.textContent = participants.length;
+            
+            // Clear existing users
+            usersContainer.innerHTML = '';
+            
+            if (participants.length === 0) {
+                usersContainer.innerHTML = '<div class="presence-empty">No active users</div>';
+                return;
+            }
+            
+            // Add user elements (limit to maxUsers)
+            participants.slice(0, maxUsers).forEach(function(participant) {
+                const userEl = document.createElement('div');
+                userEl.className = 'presence-user ' + (participant.isActive ? 'active' : 'idle');
+                
+                if (showAvatars) {
+                    userEl.innerHTML = `
+                        <img src="${participant.avatar_url || '/static/appbuilder/img/default-avatar.png'}" 
+                             alt="${participant.display_name || participant.username}">
+                        <div class="presence-user-tooltip">
+                            ${participant.display_name || participant.username}
+                            <br><small>${participant.isActive ? 'Active' : 'Idle'}</small>
+                        </div>
+                    `;
+                } else {
+                    userEl.innerHTML = `
+                        <div class="presence-user-initials" style="background-color: ${participant.color}">
+                            ${(participant.display_name || participant.username).charAt(0).toUpperCase()}
+                        </div>
+                        <div class="presence-user-tooltip">
+                            ${participant.display_name || participant.username}
+                            <br><small>${participant.isActive ? 'Active' : 'Idle'}</small>
+                        </div>
+                    `;
+                }
+                
+                usersContainer.appendChild(userEl);
+            });
+            
+            // Show "and X more" if there are additional users
+            if (participants.length > maxUsers) {
+                const moreEl = document.createElement('div');
+                moreEl.className = 'presence-more';
+                moreEl.innerHTML = `<span>+${participants.length - maxUsers}</span>`;
+                usersContainer.appendChild(moreEl);
+            }
+        }
+        
+        function updateConnectionStatus(status, message) {
+            const indicator = document.getElementById('connection-status');
+            const statusMessage = document.getElementById('status-message');
+            
+            indicator.className = 'status-indicator ' + status;
+            statusMessage.textContent = message;
+        }
+        
+        // Make functions available globally for the collaboration manager
+        widget.updatePresence = updatePresenceWidget;
+        widget.updateStatus = updateConnectionStatus;
+        
+        // Initialize with empty state
+        updatePresenceWidget([]);
+        updateConnectionStatus('connecting', 'Connecting...');
+    }
+});
+</script>

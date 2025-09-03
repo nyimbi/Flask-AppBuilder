@@ -5,6 +5,7 @@ from flask_babel import lazy_gettext
 from .jsontools import dict_to_json
 from .widgets import ChartWidget, DirectChartWidget
 from ..baseviews import BaseModelView, expose
+from ..exceptions import FABException
 from ..models.group import DirectProcessData, GroupByProcessData
 from ..security.decorators import has_access
 from ..urltools import get_filter_args
@@ -22,11 +23,11 @@ class BaseChartView(BaseModelView):
     """
 
     chart_template = "appbuilder/general/charts/chart.html"
-    """ The chart template, override to implement your own 
+    """ The chart template, override to implement your own """
     chart_widget = ChartWidget
     """ Chart widget override to implement your own """
     search_widget = SearchWidget
-     Search widget override to implement your own """
+    """ Search widget override to implement your own """
 
     chart_title = "Chart"
     """ A title to be displayed on the chart """
@@ -40,13 +41,13 @@ class BaseChartView(BaseModelView):
     chart_type = "PieChart"
     """ The chart type PieChart, ColumnChart, LineChart """
     chart_3d = "true"
-    """ Will display in 3D? 
+    """ Will display in 3D? """
     width = 400
     """ The width """
     height = "400px"
 
     group_bys = {}
-    """ New for 0.6.4, on test, don't use yet 
+    # New for 0.6.4, on test, don't use yet
 
     def __init__(self, **kwargs):
         self._init_titles()
@@ -97,7 +98,7 @@ class GroupByChartView(BaseChartView):
             >>> # Use instance methods to perform operations
             >>> result = instance.main_method()
 
-        """
+        
 
             [{
                 'label': 'String',
@@ -283,22 +284,6 @@ class DirectByChartView(GroupByChartView):
               ]
 
     example::
-    
-        Flask-AppBuilder view for basesimplegroupbychart interface operations.
-
-        The BaseSimpleGroupByChartView class provides comprehensive functionality for
-        basesimplegroupbychart view operations.
-        It integrates with the Flask-AppBuilder framework to provide
-        enterprise-grade features and capabilities.
-
-        Inherits from: BaseChartView
-
-        Example:
-            >>> instance = BaseSimpleGroupByChartView()
-            >>> # Use instance methods to perform operations
-            >>> result = instance.main_method()
-
-        """
 
         class CountryDirectChartView(DirectByChartView):
             datamodel = SQLAInterface(CountryStats)
@@ -325,28 +310,28 @@ class DirectByChartView(GroupByChartView):
 
 class BaseSimpleGroupByChartView(BaseChartView):  # pragma: no cover
     group_by_columns = []
-     A list of columns to be possibly grouped by, this list must be filled """
+    """ A list of columns to be possibly grouped by, this list must be filled """
 
     def __init__(self, **kwargs):
-    """
-        Flask-AppBuilder view for basesimpledirectchart interface operations.
+        """
+        Flask-AppBuilder view for basesimplegroupbychart interface operations.
 
-        The BaseSimpleDirectChartView class provides comprehensive functionality for
-        basesimpledirectchart view operations.
+        The BaseSimpleGroupByChartView class provides comprehensive functionality for
+        basesimplegroupbychart view operations.
         It integrates with the Flask-AppBuilder framework to provide
         enterprise-grade features and capabilities.
 
         Inherits from: BaseChartView
 
         Example:
-            >>> instance = BaseSimpleDirectChartView()
+            >>> instance = BaseSimpleGroupByChartView()
             >>> # Use instance methods to perform operations
             >>> result = instance.main_method()
 
         """
         pass
         if not self.group_by_columns:
-            raise Exception(
+            raise FABException(
                 "Base Chart View property <group_by_columns> must not be empty"
             )
         else:
@@ -387,32 +372,30 @@ class BaseSimpleDirectChartView(BaseChartView):  # pragma: no cover
     direct_columns = []
     """
         Make chart using the column on the dict
-        chart_columns = {'chart label 1':('X column','Y1 Column','Y2 Column, ...),
+        chart_columns = {'chart label 1':('X column','Y1 Column','Y2 Column', ...),
                         'chart label 2': ('X Column','Y1 Column',...),...}
-    
+    """
 
     def __init__(self, **kwargs):
         """
-                Perform chart operation.
+        Flask-AppBuilder view for basesimpledirectchart interface operations.
 
-                This method provides functionality for chart.
-                Implementation follows Flask-AppBuilder patterns and standards.
+        The BaseSimpleDirectChartView class provides comprehensive functionality for
+        basesimpledirectchart view operations.
+        It integrates with the Flask-AppBuilder framework to provide
+        enterprise-grade features and capabilities.
 
-                Args:
-                    group_by: The group by parameter
+        Inherits from: BaseChartView
 
-                Returns:
-                    The result of the operation
+        Example:
+            >>> instance = BaseSimpleDirectChartView()
+            >>> # Use instance methods to perform operations
+            >>> result = instance.main_method()
 
-                Example:
-                    >>> instance = ChartView()
-                    >>> result = instance.chart("group_by_value")
-                    >>> print(result)
-
-                """
+        """
         pass
         if not self.direct_columns:
-            raise Exception(
+            raise FABException(
                 "Base Chart View property <direct_columns> must not be empty"
             )
         else:
@@ -516,7 +499,7 @@ class ChartView(BaseSimpleGroupByChartView):  # pragma: no cover
 
 
 class TimeChartView(BaseSimpleGroupByChartView):  # pragma: no cover
-    
+    """
     **DEPRECATED**
 
     Provides a simple way to draw some time charts on your application.
@@ -664,3 +647,215 @@ class DirectChartView(BaseSimpleDirectChartView):  # pragma: no cover
             widgets=widgets,
             appbuilder=self.appbuilder,
         )
+
+
+class ProcessStatusChartView(BaseChartView):
+    """
+    Chart view for displaying process status distribution.
+    
+    Extends BaseChartView to show status distribution for models
+    that use StateTrackingMixin or have a status field.
+    
+    This chart automatically groups records by status and shows
+    the count for each status in a pie chart format.
+    
+    Example usage:
+        class MyProcessStatusChart(ProcessStatusChartView):
+            datamodel = SQLAInterface(MyModel)
+            chart_title = "My Process Status Overview"
+    """
+    
+    chart_type = "PieChart"
+    chart_title = "Process Status Overview"
+    chart_3d = "true"
+    
+    def __init__(self, **kwargs):
+        """Initialize process status chart view."""
+        super(ProcessStatusChartView, self).__init__(**kwargs)
+        
+        # Set up default definitions for status grouping
+        if not hasattr(self, 'definitions') or not self.definitions:
+            self.definitions = [
+                {
+                    'label': 'Status Distribution',
+                    'group': 'status',
+                    'formatter': self._format_status_label,
+                    'series': [('Count', 'id')]
+                }
+            ]
+    
+    def _format_status_label(self, value):
+        """
+        Format status labels for display.
+        
+        :param value: Status value to format
+        :return: Formatted status label
+        """
+        if not value:
+            return 'Unknown'
+        
+        # Convert snake_case to Title Case
+        return str(value).replace('_', ' ').title()
+    
+    def _get_chart_widget(self, filters=None, definition=None, **kwargs):
+        """
+        Get chart widget with status data.
+        
+        :param filters: Query filters
+        :param definition: Chart definition
+        :param kwargs: Additional arguments
+        :return: Chart widget dictionary
+        """
+        if not definition:
+            definition = self.definitions[0] if self.definitions else {}
+        
+        # Use GroupByProcessData for status aggregation
+        group_by = GroupByProcessData(
+            self.datamodel,
+            ['status'],  # Group by status field
+            'count'      # Count aggregation
+        )
+        
+        # Apply filters if provided
+        if filters:
+            group_by._apply_filters(filters)
+        
+        # Get the grouped data
+        chart_data = group_by.apply_filter_and_group()
+        
+        # Format data for chart widget
+        formatted_data = self._format_chart_data(chart_data, definition)
+        
+        widgets = {}
+        widgets["chart"] = self.chart_widget(
+            route_base=self.route_base,
+            chart_title=self.chart_title,
+            chart_type=self.chart_type,
+            chart_3d=self.chart_3d,
+            height=self.height,
+            chart_data=formatted_data,
+            modelview_name=self.__class__.__name__,
+            **kwargs
+        )
+        
+        return widgets
+    
+    def _format_chart_data(self, raw_data, definition):
+        """
+        Format raw status data for chart display.
+        
+        :param raw_data: Raw data from GroupByProcessData
+        :param definition: Chart definition with formatter
+        :return: Formatted data for chart widget
+        """
+        formatted_data = []
+        
+        # Get formatter from definition
+        formatter = definition.get('formatter', lambda x: x)
+        
+        for item in raw_data:
+            if isinstance(item, dict):
+                status = item.get('status', 'Unknown')
+                count = item.get('count', 0)
+            else:
+                # Handle different data formats
+                status = getattr(item, 'status', 'Unknown')
+                count = getattr(item, 'count', 1)
+            
+            formatted_data.append({
+                'label': formatter(status),
+                'value': int(count),
+                'status': status
+            })
+        
+        return formatted_data
+    
+    @expose("/chart/")
+    @expose("/chart/<int:group_by>")
+    @has_access
+    def chart(self, group_by=0):
+        """
+        Render process status chart.
+        
+        :param group_by: Group by index (defaults to 0 for status grouping)
+        :return: Rendered chart template
+        """
+        try:
+            # Get chart definition
+            definition = self.definitions[group_by] if group_by < len(self.definitions) else self.definitions[0]
+            
+            # Get chart widget with data
+            widgets = self._get_chart_widget(
+                filters=getattr(self, '_filters', []),
+                definition=definition
+            )
+            
+            # Add search widget if available
+            if hasattr(self, 'search_form'):
+                form = self.search_form.refresh()
+                widgets = self._get_search_widget(form=form, widgets=widgets)
+            
+            self.update_redirect()
+            
+            return self.render_template(
+                self.chart_template,
+                route_base=self.route_base,
+                title=self.chart_title,
+                widgets=widgets,
+                appbuilder=self.appbuilder,
+                chart_data=widgets.get('chart', {}).get('chart_data', [])
+            )
+            
+        except Exception as e:
+            log.error(f"Error rendering process status chart: {e}")
+            # Return error message or empty chart
+            return self.render_template(
+                self.chart_template,
+                route_base=self.route_base,
+                title=f"{self.chart_title} (Error)",
+                widgets={},
+                appbuilder=self.appbuilder,
+                error_message=f"Failed to load chart: {str(e)}"
+            )
+    
+    def get_status_summary(self):
+        """
+        Get status summary data for dashboard widgets.
+        
+        :return: Dictionary with status counts and percentages
+        """
+        try:
+            # Get raw status data
+            group_by = GroupByProcessData(self.datamodel, ['status'], 'count')
+            raw_data = group_by.apply_filter_and_group()
+            
+            # Calculate summary statistics
+            total_count = sum(item.get('count', 0) for item in raw_data)
+            status_summary = {}
+            
+            for item in raw_data:
+                status = item.get('status', 'Unknown')
+                count = item.get('count', 0)
+                percentage = (count / total_count * 100) if total_count > 0 else 0
+                
+                status_summary[status] = {
+                    'count': count,
+                    'percentage': round(percentage, 1),
+                    'label': self._format_status_label(status)
+                }
+            
+            return {
+                'total_count': total_count,
+                'status_breakdown': status_summary,
+                'most_common_status': max(status_summary.items(), 
+                                        key=lambda x: x[1]['count'])[0] if status_summary else None
+            }
+            
+        except Exception as e:
+            log.error(f"Error getting status summary: {e}")
+            return {
+                'total_count': 0,
+                'status_breakdown': {},
+                'most_common_status': None,
+                'error': str(e)
+            }

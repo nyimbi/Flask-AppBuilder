@@ -1,0 +1,137 @@
+{
+  "migration_info": {
+    "description": "Example migration configuration for converting single-tenant Flask-AppBuilder app to multi-tenant",
+    "version": "1.0",
+    "created_date": "2025-01-01"
+  },
+  
+  "source_database": "postgresql://user:password@localhost:5432/single_tenant_db",
+  "target_database": "postgresql://user:password@localhost:5432/multi_tenant_db", 
+  
+  "tenant_slug": "migrated-tenant",
+  "tenant_name": "Migrated Tenant Organization",
+  "tenant_email": "admin@migratedtenant.com",
+  
+  "migration_options": {
+    "dry_run": false,
+    "backup": true,
+    "validate_after_migration": true,
+    "rollback_on_error": true
+  },
+  
+  "table_configuration": {
+    "tables_to_include": [
+      "customers",
+      "orders", 
+      "products",
+      "invoices",
+      "reports"
+    ],
+    
+    "tables_to_exclude": [
+      "ab_user",
+      "ab_role", 
+      "ab_permission",
+      "temp_logs",
+      "cache_table"
+    ],
+    
+    "custom_table_mappings": {
+      "customer": "customers_mt",
+      "order": "orders_mt"
+    }
+  },
+  
+  "data_transformations": {
+    "customers": {
+      "column_mappings": {
+        "company_name": "name"
+      },
+      "default_values": {
+        "status": "active"
+      },
+      "data_filters": {
+        "where": "active = 1"
+      }
+    },
+    
+    "orders": {
+      "foreign_key_mappings": {
+        "customer_id": "customers_mt.id"
+      }
+    }
+  },
+  
+  "tenant_configuration": {
+    "plan_id": "professional",
+    "resource_limits": {
+      "max_users": 50,
+      "max_records": 100000,
+      "api_calls_per_month": 100000,
+      "storage_gb": 10
+    },
+    
+    "features": {
+      "basic_crud": true,
+      "export_csv": true,
+      "basic_charts": true,
+      "analytics_dashboard": true,
+      "advanced_export": true,
+      "alerting": true,
+      "custom_branding": true,
+      "api_access": true
+    },
+    
+    "branding": {
+      "app_name": "Migrated Tenant App",
+      "colors": {
+        "primary": "#007bff",
+        "secondary": "#6c757d"
+      }
+    }
+  },
+  
+  "post_migration_actions": {
+    "create_admin_user": true,
+    "admin_user": {
+      "first_name": "Admin",
+      "last_name": "User", 
+      "email": "admin@migratedtenant.com",
+      "username": "admin",
+      "role": "admin"
+    },
+    
+    "setup_billing": false,
+    "stripe_customer_id": null,
+    
+    "send_welcome_email": true,
+    "welcome_email_template": "migration_welcome"
+  },
+  
+  "validation_rules": {
+    "check_data_integrity": true,
+    "verify_foreign_keys": true,
+    "validate_record_counts": true,
+    "check_tenant_isolation": true
+  },
+  
+  "backup_configuration": {
+    "backup_location": "/backups/migration",
+    "backup_format": "sql",
+    "compress_backup": true,
+    "retention_days": 30
+  },
+  
+  "logging": {
+    "log_level": "INFO",
+    "log_file": "/var/log/fab_migration.log",
+    "log_to_console": true
+  },
+  
+  "performance_settings": {
+    "batch_size": 1000,
+    "parallel_tables": false,
+    "connection_pool_size": 10,
+    "query_timeout": 300
+  }
+}

@@ -7,8 +7,16 @@ import wtforms
 from wtforms import widgets
 from wtforms.fields import Field, SelectField, SelectFieldBase
 from wtforms.validators import ValidationError
+from wtforms.widgets import TextInput
 
 IS_WTFORMS_LESS_THEN_3_1_0 = version.parse(wtforms.__version__) < version.parse("3.1.0")
+
+# Enhanced security imports
+try:
+    from .security.input_validation import InputValidator
+    SECURITY_VALIDATION_AVAILABLE = True
+except ImportError:
+    SECURITY_VALIDATION_AVAILABLE = False
 
 
 class AJAXSelectField(Field):
@@ -24,7 +32,7 @@ class AJAXSelectField(Field):
     :param: is_related:
         If the model column is a relationship or direct on
         this case use col_name with the pk
-    
+    """
 
     def __init__(
         self,
@@ -50,7 +58,6 @@ class AJAXSelectField(Field):
 
         :param value: The python object containing the value to process.
         """
-        pass
         if value:
             if self.is_related:
                 self.data = self.datamodel.get_related_interface(
@@ -62,7 +69,7 @@ class AJAXSelectField(Field):
             self.data = None
 
     def process_formdata(self, valuelist):
-        
+        """
         Process data received over the wire from a form.
         This will be called during form construction with data supplied
         through the `formdata` argument.
@@ -134,59 +141,17 @@ class QuerySelectField(SelectFieldBase):
         return self._object_list
 
     def iter_choices(self):
-        if self.allow_blank:
         """
-                Perform iter choices operation.
-
-                This method provides functionality for iter choices.
-                Implementation follows Flask-AppBuilder patterns and standards.
-
-                Returns:
-                    The result of the operation
-
-                """
+        Iterate over choices for the field.
+        
+        Yields:
+            Tuples of (value, label, selected) for WTForms < 3.1.0
+            or (value, label, selected, render_kw) for >= 3.1.0
+        """
+        if self.allow_blank:
             if IS_WTFORMS_LESS_THEN_3_1_0:
                 yield ("__None", self.blank_text, self.data is None)
             else:
-        """
-                Process formdata data.
-
-                This method provides functionality for process formdata.
-                Implementation follows Flask-AppBuilder patterns and standards.
-
-                Args:
-                    valuelist: The valuelist parameter
-
-                Returns:
-        """
-                Perform pre validate operation.
-
-                This method provides functionality for pre validate.
-                Implementation follows Flask-AppBuilder patterns and standards.
-
-                Args:
-                    form: The form parameter
-
-                Returns:
-                    The result of the operation
-
-                Example:
-                    >>> instance = QuerySelectField()
-                    >>> result = instance.pre_validate("form_value")
-                    >>> print(result)
-
-                """
-                    Dictionary containing operation results and status
-
-                Raises:
-                    Exception: If the operation fails or encounters an error
-
-                Example:
-                    >>> instance = QuerySelectField()
-                    >>> result = instance.process_formdata("valuelist_value")
-                    >>> print(result)
-
-                """
                 yield ("__None", self.blank_text, self.data is None, {})
 
         for pk, obj in self._get_object_list():
@@ -216,55 +181,6 @@ class QuerySelectField(SelectFieldBase):
 
 
 class QuerySelectMultipleField(QuerySelectField):
-        """
-                Perform iter choices operation.
-
-                This method provides functionality for iter choices.
-                Implementation follows Flask-AppBuilder patterns and standards.
-
-                Returns:
-        
-                Process formdata data.
-
-                This method provides functionality for process formdata.
-                Implementation follows Flask-AppBuilder patterns and standards.
-
-                Args:
-        """
-                Perform pre validate operation.
-
-                This method provides functionality for pre validate.
-                Implementation follows Flask-AppBuilder patterns and standards.
-
-                Args:
-                    form: The form parameter
-
-                Returns:
-                    The result of the operation
-
-                Example:
-                    >>> instance = QuerySelectMultipleField()
-                    >>> result = instance.pre_validate("form_value")
-                    >>> print(result)
-
-                """
-                    valuelist: The valuelist parameter
-
-                Returns:
-                    Dictionary containing operation results and status
-
-                Raises:
-                    Exception: If the operation fails or encounters an error
-
-                Example:
-                    >>> instance = QuerySelectMultipleField()
-                    >>> result = instance.process_formdata("valuelist_value")
-                    >>> print(result)
-
-                """
-                    The result of the operation
-
-                
     """
     Very similar to QuerySelectField with the difference that this will
     display a multiple select. The data property will hold a list with ORM
@@ -291,24 +207,11 @@ class QuerySelectMultipleField(QuerySelectField):
 
     def _get_data(self):
         """
-                Perform pre validate operation.
-
-                This method provides functionality for pre validate.
-                Implementation follows Flask-AppBuilder patterns and standards.
-
-                Args:
-                    form: The form parameter
-
-                Returns:
-                    The result of the operation
-
-                Example:
-                    >>> instance = EnumField()
-                    >>> result = instance.pre_validate("form_value")
-                    >>> print(result)
-
-                """
-        pass
+        Get the data for this field, processing form data if necessary.
+        
+        Returns:
+            List of selected objects
+        """
         formdata = self._formdata
         if formdata is not None:
             data = []
@@ -408,3 +311,59 @@ class EnumField(SelectField):
                 break
         else:
             raise ValueError(self.gettext("Not a valid choice"))
+
+
+class SecurityEnhancedStringField(Field):
+    """
+    String field with integrated security validation.
+    
+    This field automatically sanitizes input using Flask-AppBuilder's
+    input validation security module to prevent XSS and injection attacks.
+    """
+    
+    widget = TextInput()
+    
+    def __init__(self, label=None, validators=None, max_length=1000, 
+                 allow_html=False, **kwargs):
+        """
+        Initialize security-enhanced string field.
+        
+        :param label: Field label
+        :param validators: List of validators 
+        :param max_length: Maximum input length (default: 1000)
+        :param allow_html: Whether to allow limited HTML (default: False)
+        :param kwargs: Additional field arguments
+        """
+        super().__init__(label, validators, **kwargs)
+        self.max_length = max_length
+        self.allow_html = allow_html
+    
+    def process_formdata(self, valuelist):
+        """
+        Process and sanitize form data.
+        
+        :param valuelist: List of form values to process
+        """
+        if valuelist:
+            raw_value = valuelist[0]
+            
+            if SECURITY_VALIDATION_AVAILABLE:
+                try:
+                    # Apply security sanitization
+                    self.data = InputValidator.sanitize_string(
+                        raw_value, 
+                        max_length=self.max_length,
+                        allow_html=self.allow_html
+                    )
+                except Exception as e:
+                    # Log security validation error but don't break form processing
+                    import logging
+                    log = logging.getLogger(__name__)
+                    log.warning(f"Security validation failed for field {self.name}: {e}")
+                    # Fall back to basic sanitization
+                    self.data = raw_value[:self.max_length] if raw_value else ""
+            else:
+                # Fallback when security module not available
+                self.data = raw_value[:self.max_length] if raw_value else ""
+        else:
+            self.data = ""

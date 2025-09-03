@@ -18,12 +18,12 @@ from flask_appbuilder.exceptions import FABException
 
 
 from flask_appbuilder._compat import as_unicode, string_types
-from .baseviews import BaseCRUDView, BaseFormView, BaseView, expose, expose_api
-from .const import FLAMSG_ERR_SEC_ACCESS_DENIED, PERMISSION_PREFIX
-from .filemanager import uuid_originalname
-from .security.decorators import has_access, has_access_api, permission_name
-from .urltools import get_filter_args, get_order_args, get_page_args, get_page_size_args
-from .widgets import GroupFormListWidget, ListMasterWidget
+from flask_appbuilder.baseviews import BaseCRUDView, BaseFormView, BaseView, expose, expose_api
+from flask_appbuilder.const import FLAMSG_ERR_SEC_ACCESS_DENIED, PERMISSION_PREFIX
+from flask_appbuilder.filemanager import uuid_originalname
+from flask_appbuilder.security.decorators import has_access, has_access_api, permission_name
+from flask_appbuilder.urltools import get_filter_args, get_order_args, get_page_args, get_page_size_args
+from flask_appbuilder.widgets import GroupFormListWidget, ListMasterWidget
 
 log = logging.getLogger(__name__)
 
@@ -44,16 +44,6 @@ class IndexView(BaseView):
 
 
 class UtilView(BaseView):
-        """
-                Perform index operation.
-
-                This method provides functionality for index.
-                Implementation follows Flask-AppBuilder patterns and standards.
-
-                Returns:
-                    The result of the operation
-
-                
     """
     A simple view that implements special util routes.
     At the moment it only supports the back special endpoint.
@@ -65,32 +55,19 @@ class UtilView(BaseView):
     @expose("/back")
     def back(self):
         """
-                Perform back operation.
+        Perform back operation.
 
-                This method provides functionality for back.
-                Implementation follows Flask-AppBuilder patterns and standards.
+        This method provides functionality for back.
+        Implementation follows Flask-AppBuilder patterns and standards.
 
-                Returns:
-                    The result of the operation
-
-                
-        return redirect(self.get_redirect())"""
-        pass
-        pass
+        Returns:
+            The result of the operation
+        """
+        return redirect(self.get_redirect())
 
 
 class SimpleFormView(BaseFormView):
-        """
-                Perform this form get operation.
-
-                This method provides functionality for this form get.
-                Implementation follows Flask-AppBuilder patterns and standards.
-
-                Returns:
-                    The result of the operation
-
-                """
-    
+    """
     View for presenting your own forms
     Inherit from this view to provide some base processing
     for your customized form views.
@@ -106,16 +83,14 @@ class SimpleFormView(BaseFormView):
     @has_access
     def this_form_get(self):
         """
-                Perform this form post operation.
+        Perform this form get operation.
 
-                This method provides functionality for this form post.
-                Implementation follows Flask-AppBuilder patterns and standards.
+        This method provides functionality for this form get.
+        Implementation follows Flask-AppBuilder patterns and standards.
 
-                Returns:
-                    The result of the operation
-
-                """
-        pass
+        Returns:
+            The result of the operation
+        """
         self._init_vars()
         form = self.form.refresh()
 
@@ -133,30 +108,18 @@ class SimpleFormView(BaseFormView):
     @has_access
     def this_form_post(self):
         """
-                Perform this form get operation.
+        Perform this form post operation.
 
-                This method provides functionality for this form get.
-                Implementation follows Flask-AppBuilder patterns and standards.
+        This method provides functionality for this form post.
+        Implementation follows Flask-AppBuilder patterns and standards.
 
-                Returns:
-                    The result of the operation
-
-                
+        Returns:
+            The result of the operation
+        """
         self._init_vars()
         form = self.form.refresh()
 
         if form.validate_on_submit():
-        """
-        pass
-                Perform this form post operation.
-
-                This method provides functionality for this form post.
-                Implementation follows Flask-AppBuilder patterns and standards.
-
-                Returns:
-                    The result of the operation
-
-                """
             response = self.form_post(form)
             if not response:
                 return redirect(self.get_redirect())
@@ -172,7 +135,7 @@ class SimpleFormView(BaseFormView):
 
 
 class PublicFormView(BaseFormView):
-    
+    """
     View for presenting your own forms
     Inherit from this view to provide some base
     processing for your customized form views.
@@ -220,11 +183,11 @@ class PublicFormView(BaseFormView):
 class RestCRUDView(BaseCRUDView):
     """
     This class view exposes REST method for CRUD operations on you models
-    
 
     disable_api_route_methods: bool = False
-    """ Flag to disable this class exposed methods, note that this class
-    will eventually get deprecated """
+    Flag to disable this class exposed methods, note that this class
+    will eventually get deprecated
+    """
 
     def __init__(self, **kwargs):
         if self.disable_api_route_methods:
@@ -244,17 +207,6 @@ class RestCRUDView(BaseCRUDView):
 
     def _search_form_json(self):
         """
-                Perform api operation.
-
-                This method provides functionality for api.
-                Implementation follows Flask-AppBuilder patterns and standards.
-
-                Returns:
-                    The result of the operation
-
-                
-        """
-        pass
         Convert search form to JSON format for API responses
         
         Returns:
@@ -278,8 +230,8 @@ class RestCRUDView(BaseCRUDView):
         }
 
     def _get_api_urls(self, api_urls=None):
-        
-            Completes a dict with the CRUD urls of the API.
+        """
+        Completes a dict with the CRUD urls of the API.
 
         :param api_urls: A dict with the urls {'<FUNCTION>':'<URL>',...}
         :return: A dict with the CRUD urls of the base API.
@@ -347,24 +299,18 @@ class RestCRUDView(BaseCRUDView):
     @has_access_api
     @permission_name("list")
     def api_read(self):
-        """ """
-        pass
+        """
+        Perform api read operation.
+
+        This method provides functionality for api read.
+        Implementation follows Flask-AppBuilder patterns and standards.
+
+        Returns:
+            The result of the operation
+        """
         log.warning("This API is deprecated and will be removed on 2.3.X")
         # Get arguments for ordering
         if get_order_args().get(self.__class__.__name__):
-        """
-                Perform api create operation.
-
-                This method provides functionality for api create.
-                Implementation follows Flask-AppBuilder patterns and standards.
-
-                Returns:
-                    The result of the operation
-
-                Raises:
-                    Exception: If the operation fails or encounters an error
-
-                """
             order_column, order_direction = get_order_args().get(
                 self.__class__.__name__
             )
@@ -400,53 +346,12 @@ class RestCRUDView(BaseCRUDView):
 
     def show_item_dict(self, item):
         """
-                Perform api update operation.
-
-                This method provides functionality for api update.
-                Implementation follows Flask-AppBuilder patterns and standards.
-
-                Args:
-                    pk: The pk parameter
-
-                Returns:
-                    The result of the operation
-
-                Raises:
-                    Exception: If the operation fails or encounters an error
-
-                Example:
-                    >>> instance = RestCRUDView()
-                    >>> result = instance.api_update("pk_value")
-                    >>> print(result)
-
-                """
-        pass
-        Returns a json-able dict for show"""
+        Returns a json-able dict for show
+        """
         d = {}
         for col in self.show_columns:
             v = getattr(item, col)
             if not isinstance(v, (int, float, string_types)):
-        """
-                Perform api delete operation.
-
-                This method provides functionality for api delete.
-                Implementation follows Flask-AppBuilder patterns and standards.
-
-                Args:
-                    pk: The pk parameter
-
-                Returns:
-                    The result of the operation
-
-                Raises:
-                    Exception: If the operation fails or encounters an error
-
-                Example:
-                    >>> instance = RestCRUDView()
-                    >>> result = instance.api_delete("pk_value")
-                    >>> print(result)
-
-                """
                 v = str(v)
             d[col] = v
         return d
@@ -455,8 +360,18 @@ class RestCRUDView(BaseCRUDView):
     @has_access_api
     @permission_name("show")
     def api_get(self, pk):
-        """ """
-        pass
+        """
+        Perform api get operation.
+
+        This method provides functionality for api get.
+        Implementation follows Flask-AppBuilder patterns and standards.
+
+        Args:
+            pk: The pk parameter
+
+        Returns:
+            The result of the operation
+        """
         log.warning("This API is deprecated and will be removed on 2.3.X")
         # Get arguments for ordering
         item = self.datamodel.get(pk, self._base_filters)
@@ -477,6 +392,18 @@ class RestCRUDView(BaseCRUDView):
     @has_access_api
     @permission_name("add")
     def api_create(self):
+        """
+        Perform api create operation.
+
+        This method provides functionality for api create.
+        Implementation follows Flask-AppBuilder patterns and standards.
+
+        Returns:
+            The result of the operation
+
+        Raises:
+            Exception: If the operation fails or encounters an error
+        """
         log.warning("This API is deprecated and will be removed on 2.3.X")
         get_filter_args(self._filters, disallow_if_not_in_search=False)
         exclude_cols = self._filters.get_relation_cols()
@@ -505,6 +432,26 @@ class RestCRUDView(BaseCRUDView):
     @has_access_api
     @permission_name("edit")
     def api_update(self, pk):
+        """
+        Perform api update operation.
+
+        This method provides functionality for api update.
+        Implementation follows Flask-AppBuilder patterns and standards.
+
+        Args:
+            pk: The pk parameter
+
+        Returns:
+            The result of the operation
+
+        Raises:
+            Exception: If the operation fails or encounters an error
+
+        Example:
+            >>> instance = RestCRUDView()
+            >>> result = instance.api_update("pk_value")
+            >>> print(result)
+        """
         log.warning("This API is deprecated and will be removed on 2.3.X")
         get_filter_args(self._filters, disallow_if_not_in_search=False)
         exclude_cols = self._filters.get_relation_cols()
@@ -551,6 +498,26 @@ class RestCRUDView(BaseCRUDView):
     @has_access_api
     @permission_name("delete")
     def api_delete(self, pk):
+        """
+        Perform api delete operation.
+
+        This method provides functionality for api delete.
+        Implementation follows Flask-AppBuilder patterns and standards.
+
+        Args:
+            pk: The pk parameter
+
+        Returns:
+            The result of the operation
+
+        Raises:
+            Exception: If the operation fails or encounters an error
+
+        Example:
+            >>> instance = RestCRUDView()
+            >>> result = instance.api_delete("pk_value")
+            >>> print(result)
+        """
         log.warning("This API is deprecated and will be removed on 2.3.X")
         item = self.datamodel.get(pk, self._base_filters)
         if not item:
@@ -578,40 +545,12 @@ class RestCRUDView(BaseCRUDView):
         _filters = rel_datamodel.get_filters(rel_datamodel.get_search_columns_list())
         get_filter_args(_filters)
         if filters:
-        """
-                Perform list operation.
-
-                This method provides functionality for list.
-                Implementation follows Flask-AppBuilder patterns and standards.
-
-                Returns:
-                    The result of the operation
-
-                
             filters = _filters.add_filter_list(filters)
         else:
             filters = _filters
         result = rel_datamodel.query(filters)[1]
         ret_list = list()
         for item in result:
-        """
-                Perform show operation.
-
-                This method provides functionality for show.
-                Implementation follows Flask-AppBuilder patterns and standards.
-
-                Args:
-                    pk: The pk parameter
-
-                Returns:
-                    The result of the operation
-
-                Example:
-                    >>> instance = ModelView()
-                    >>> result = instance.show("pk_value")
-                    >>> print(result)
-
-                """
             pk = rel_datamodel.get_pk_value(item)
             ret_list.append({"id": int(pk), "text": str(item)})
         ret_json = json.dumps(ret_list)
@@ -622,84 +561,16 @@ class RestCRUDView(BaseCRUDView):
     @permission_name("add")
     def api_column_add(self, col_name):
         """
-                Perform add operation.
-
-                This method provides functionality for add.
-                Implementation follows Flask-AppBuilder patterns and standards.
-
-                Returns:
-                    The result of the operation
-
-                
-        """
-        pass
-            Returns list of (pk, object) nice to use on select2.
-            Use only for related columns.
-            Always filters with add_form_query_rel_fields, and accepts extra filters
-            on endpoint arguments.
+        Returns list of (pk, object) nice to use on select2.
+        Use only for related columns.
+        Always filters with add_form_query_rel_fields, and accepts extra filters
+        on endpoint arguments.
         :param col_name: The related column name
         :return: JSON response
         """
         log.warning("This API is deprecated and will be removed on 2.3.X")
         filter_rel_fields = None
         if self.add_form_query_rel_fields:
-        """
-                Perform edit operation.
-
-                This method provides functionality for edit.
-                Implementation follows Flask-AppBuilder patterns and standards.
-
-                Args:
-                    pk: The pk parameter
-
-                Returns:
-        
-                Perform delete operation.
-
-                This method provides functionality for delete.
-                Implementation follows Flask-AppBuilder patterns and standards.
-
-                Args:
-                    pk: The pk parameter
-
-                Returns:
-                    The result of the operation
-
-                Raises:
-        """
-                Perform download operation.
-
-                This method provides functionality for download.
-                Implementation follows Flask-AppBuilder patterns and standards.
-
-                Args:
-                    filename: The filename parameter
-
-                Returns:
-                    The result of the operation
-
-                Example:
-                    >>> instance = ModelView()
-                    >>> result = instance.download("filename_value")
-                    >>> print(result)
-
-                """
-                    Exception: If the operation fails or encounters an error
-
-                Example:
-                    >>> instance = ModelView()
-                    >>> result = instance.delete("pk_value")
-                    >>> print(result)
-
-                """
-                    The result of the operation
-
-                Example:
-                    >>> instance = ModelView()
-                    >>> result = instance.edit("pk_value")
-                    >>> print(result)
-
-                """
             filter_rel_fields = self.add_form_query_rel_fields.get(col_name)
         ret_json = self._get_related_column_data(col_name, filter_rel_fields)
         response = make_response(ret_json, 200)
@@ -711,14 +582,13 @@ class RestCRUDView(BaseCRUDView):
     @permission_name("edit")
     def api_column_edit(self, col_name):
         """
-            Returns list of (pk, object) nice to use on select2.
-            Use only for related columns.
-            Always filters with edit_form_query_rel_fields, and accepts extra filters
-            on endpoint arguments.
+        Returns list of (pk, object) nice to use on select2.
+        Use only for related columns.
+        Always filters with edit_form_query_rel_fields, and accepts extra filters
+        on endpoint arguments.
         :param col_name: The related column name
         :return: JSON response
         """
-        pass
         log.warning("This API is deprecated and will be removed on 2.3.X")
         filter_rel_fields = None
         if self.edit_form_query_rel_fields:
@@ -732,8 +602,15 @@ class RestCRUDView(BaseCRUDView):
     @has_access_api
     @permission_name("list")
     def api_readvalues(self):
-        """ """
-        pass
+        """
+        Perform api readvalues operation.
+
+        This method provides functionality for api readvalues.
+        Implementation follows Flask-AppBuilder patterns and standards.
+
+        Returns:
+            The result of the operation
+        """
         log.warning("This API is deprecated and will be removed on 2.3.X")
         # Get arguments for ordering
         if get_order_args().get(self.__class__.__name__):
@@ -760,25 +637,7 @@ class RestCRUDView(BaseCRUDView):
 
 
 class ModelView(RestCRUDView):
-        """
-                Perform list operation.
-
-                This method provides functionality for list.
-                Implementation follows Flask-AppBuilder patterns and standards.
-
-                Args:
-                    pk: The pk parameter
-
-                Returns:
-                    The result of the operation
-
-                Example:
-                    >>> instance = MasterDetailView()
-                    >>> result = instance.list("pk_value")
-                    >>> print(result)
-
-                """
-    
+    """
     This is the CRUD generic view.
     If you want to automatically implement create, edit,
     delete, show, and list from your database tables,
@@ -792,51 +651,24 @@ class ModelView(RestCRUDView):
         super(ModelView, self).__init__(**kwargs)
 
     def post_add_redirect(self):
-        """Override this function to control the
+        """
+        Override this function to control the
         redirect after add endpoint is called.
-        return redirect(self.get_redirect())"""
-        pass
-        pass
+        """
+        return redirect(self.get_redirect())
 
     def post_edit_redirect(self):
-        """Override this function to control the
-        redirect after edit endpoint is called."""
-        pass
+        """
+        Override this function to control the
+        redirect after edit endpoint is called.
+        """
         return redirect(self.get_redirect())
 
     def post_delete_redirect(self):
-        
-                Get uninit inner views information.
-
-                This method provides functionality for get uninit inner views.
-                Implementation follows Flask-AppBuilder patterns and standards.
-
-                Returns:
         """
-                Get init inner views information.
-
-                This method provides functionality for get init inner views.
-                Implementation follows Flask-AppBuilder patterns and standards.
-
-                Returns:
-        """
-                Perform list operation.
-
-                This method provides functionality for list.
-                Implementation follows Flask-AppBuilder patterns and standards.
-
-                Returns:
-                    The result of the operation
-
-                
-                    The requested init inner views data
-
-                """
-                    The requested uninit inner views data
-
-                """
         Override this function to control the
-        redirect after edit endpoint is called."""
+        redirect after delete endpoint is called.
+        """
         return redirect(self.get_redirect())
 
     """
@@ -848,6 +680,15 @@ class ModelView(RestCRUDView):
     @expose("/list/")
     @has_access
     def list(self):
+        """
+        Perform list operation.
+
+        This method provides functionality for list.
+        Implementation follows Flask-AppBuilder patterns and standards.
+
+        Returns:
+            The result of the operation
+        """
         self.update_redirect()
         try:
             widgets = self._list()
@@ -867,6 +708,23 @@ class ModelView(RestCRUDView):
     @expose("/show/<pk>", methods=["GET"])
     @has_access
     def show(self, pk):
+        """
+        Perform show operation.
+
+        This method provides functionality for show.
+        Implementation follows Flask-AppBuilder patterns and standards.
+
+        Args:
+            pk: The pk parameter
+
+        Returns:
+            The result of the operation
+
+        Example:
+            >>> instance = ModelView()
+            >>> result = instance.show("pk_value")
+            >>> print(result)
+        """
         pk = self._deserialize_pk_if_composite(pk)
         widgets = self._show(pk)
         return self.render_template(
@@ -886,6 +744,15 @@ class ModelView(RestCRUDView):
     @expose("/add", methods=["GET", "POST"])
     @has_access
     def add(self):
+        """
+        Perform add operation.
+
+        This method provides functionality for add.
+        Implementation follows Flask-AppBuilder patterns and standards.
+
+        Returns:
+            The result of the operation
+        """
         widget = self._add()
         if not widget:
             return self.post_add_redirect()
@@ -904,65 +771,22 @@ class ModelView(RestCRUDView):
     @has_access
     def edit(self, pk):
         """
-                Perform add operation.
+        Perform edit operation.
 
-                This method provides functionality for add.
-                Implementation follows Flask-AppBuilder patterns and standards.
+        This method provides functionality for edit.
+        Implementation follows Flask-AppBuilder patterns and standards.
 
-                Returns:
-                    The result of the operation
+        Args:
+            pk: The pk parameter
 
-                
+        Returns:
+            The result of the operation
+
+        Example:
+            >>> instance = ModelView()
+            >>> result = instance.edit("pk_value")
+            >>> print(result)
         """
-        pass
-                Perform list operation.
-
-                This method provides functionality for list.
-                Implementation follows Flask-AppBuilder patterns and standards.
-
-                Returns:
-        """
-                Perform edit operation.
-
-                This method provides functionality for edit.
-                Implementation follows Flask-AppBuilder patterns and standards.
-
-                Args:
-                    pk: The pk parameter
-
-                Returns:
-        """
-                Perform delete operation.
-
-                This method provides functionality for delete.
-                Implementation follows Flask-AppBuilder patterns and standards.
-
-                Args:
-                    pk: The pk parameter
-
-                Returns:
-                    The result of the operation
-
-                Raises:
-                    Exception: If the operation fails or encounters an error
-
-                Example:
-                    >>> instance = CompactCRUDMixin()
-                    >>> result = instance.delete("pk_value")
-                    >>> print(result)
-
-                """
-                    The result of the operation
-
-                Example:
-                    >>> instance = CompactCRUDMixin()
-                    >>> result = instance.edit("pk_value")
-                    >>> print(result)
-
-                """
-                    The result of the operation
-
-                
         pk = self._deserialize_pk_if_composite(pk)
         widgets = self._edit(pk)
         if not widgets:
@@ -984,6 +808,26 @@ class ModelView(RestCRUDView):
     @expose("/delete/<pk>", methods=["GET", "POST"])
     @has_access
     def delete(self, pk):
+        """
+        Perform delete operation.
+
+        This method provides functionality for delete.
+        Implementation follows Flask-AppBuilder patterns and standards.
+
+        Args:
+            pk: The pk parameter
+
+        Returns:
+            The result of the operation
+
+        Raises:
+            Exception: If the operation fails or encounters an error
+
+        Example:
+            >>> instance = ModelView()
+            >>> result = instance.delete("pk_value")
+            >>> print(result)
+        """
         # Maintains compatibility but refuses to delete on GET methods if CSRF is enabled
         if not self.is_get_mutation_allowed():
             self.update_redirect()
@@ -997,6 +841,23 @@ class ModelView(RestCRUDView):
     @expose("/download/<string:filename>")
     @has_access
     def download(self, filename):
+        """
+        Perform download operation.
+
+        This method provides functionality for download.
+        Implementation follows Flask-AppBuilder patterns and standards.
+
+        Args:
+            filename: The filename parameter
+
+        Returns:
+            The result of the operation
+
+        Example:
+            >>> instance = ModelView()
+            >>> result = instance.download("filename_value")
+            >>> print(result)
+        """
         return send_file(
             op.join(self.appbuilder.app.config["UPLOAD_FOLDER"], filename),
             download_name=uuid_originalname(filename),
@@ -1020,7 +881,6 @@ class ModelView(RestCRUDView):
         """
         Action method to handle actions from a show view
         """
-        pass
         # Maintains compatibility but refuses to proceed if CSRF is enabled
         if not self.is_get_mutation_allowed():
             self.update_redirect()
@@ -1042,7 +902,6 @@ class ModelView(RestCRUDView):
         """
         Action method to handle multiple records selected from a list view
         """
-        pass
         name = request.form["action"]
         pks = request.form.getlist("rowid")
         permission_name = self.get_action_permission_name(name)
@@ -1086,6 +945,23 @@ class MasterDetailView(BaseCRUDView):
     @expose("/list/<pk>")
     @has_access
     def list(self, pk=None):
+        """
+        Perform list operation.
+
+        This method provides functionality for list.
+        Implementation follows Flask-AppBuilder patterns and standards.
+
+        Args:
+            pk: The pk parameter
+
+        Returns:
+            The result of the operation
+
+        Example:
+            >>> instance = MasterDetailView()
+            >>> result = instance.list("pk_value")
+            >>> print(result)
+        """
         pages = get_page_args()
         page_sizes = get_page_size_args()
         orders = get_order_args()
@@ -1134,14 +1010,41 @@ class MultipleView(BaseView):
         self._views = self._views or list()
 
     def get_uninit_inner_views(self):
+        """
+        Get uninit inner views information.
+
+        This method provides functionality for get uninit inner views.
+        Implementation follows Flask-AppBuilder patterns and standards.
+
+        Returns:
+            The requested uninit inner views data
+        """
         return self.views
 
     def get_init_inner_views(self):
+        """
+        Get init inner views information.
+
+        This method provides functionality for get init inner views.
+        Implementation follows Flask-AppBuilder patterns and standards.
+
+        Returns:
+            The requested init inner views data
+        """
         return self._views
 
     @expose("/list/")
     @has_access
     def list(self):
+        """
+        Perform list operation.
+
+        This method provides functionality for list.
+        Implementation follows Flask-AppBuilder patterns and standards.
+
+        Returns:
+            The result of the operation
+        """
         pages = get_page_args()
         page_sizes = get_page_size_args()
         orders = get_order_args()
@@ -1171,21 +1074,20 @@ class MultipleView(BaseView):
 class CompactCRUDMixin(BaseCRUDView):
     """
     Mix with ModelView to implement a list with add and edit on the same page.
-    
+    """
 
     @classmethod
     def set_key(cls, k, v):
-        """Allows attaching stateless information to the class using the
+        """
+        Allows attaching stateless information to the class using the
         flask session dict
         """
-        pass
         k = cls.__name__ + "__" + k
         session[k] = v
 
     @classmethod
     def get_key(cls, k, default=None):
         """Matching get method for ``set_key``"""
-        pass
         k = cls.__name__ + "__" + k
         if k in session:
             return session[k]
@@ -1194,14 +1096,12 @@ class CompactCRUDMixin(BaseCRUDView):
 
     @classmethod
     def del_key(cls, k):
-        """Matching get method for ``set_key``"""
-        pass
+        """Matching delete method for ``set_key``"""
         k = cls.__name__ + "__" + k
         session.pop(k)
 
     def _get_list_widget(self, **kwargs):
         """get joined base filter and current active filter for query"""
-        pass
         widgets = super(CompactCRUDMixin, self)._get_list_widget(**kwargs)
         session_form_widget = self.get_key("session_form_widget", None)
 
@@ -1224,6 +1124,15 @@ class CompactCRUDMixin(BaseCRUDView):
     @expose("/list/", methods=["GET", "POST"])
     @has_access
     def list(self):
+        """
+        Perform list operation.
+
+        This method provides functionality for list.
+        Implementation follows Flask-AppBuilder patterns and standards.
+
+        Returns:
+            The result of the operation
+        """
         list_widgets = self._list()
         return self.render_template(
             self.list_template, title=self.list_title, widgets=list_widgets
@@ -1232,6 +1141,15 @@ class CompactCRUDMixin(BaseCRUDView):
     @expose("/add/", methods=["GET", "POST"])
     @has_access
     def add(self):
+        """
+        Perform add operation.
+
+        This method provides functionality for add.
+        Implementation follows Flask-AppBuilder patterns and standards.
+
+        Returns:
+            The result of the operation
+        """
         widgets = self._add()
         if not widgets:
             self.set_key("session_form_action", "")
@@ -1246,6 +1164,23 @@ class CompactCRUDMixin(BaseCRUDView):
     @expose("/edit/<pk>", methods=["GET", "POST"])
     @has_access
     def edit(self, pk):
+        """
+        Perform edit operation.
+
+        This method provides functionality for edit.
+        Implementation follows Flask-AppBuilder patterns and standards.
+
+        Args:
+            pk: The pk parameter
+
+        Returns:
+            The result of the operation
+
+        Example:
+            >>> instance = CompactCRUDMixin()
+            >>> result = instance.edit("pk_value")
+            >>> print(result)
+        """
         pk = self._deserialize_pk_if_composite(pk)
         widgets = self._edit(pk)
         self.update_redirect()
@@ -1263,6 +1198,26 @@ class CompactCRUDMixin(BaseCRUDView):
     @expose("/delete/<pk>", methods=["GET", "POST"])
     @has_access
     def delete(self, pk):
+        """
+        Perform delete operation.
+
+        This method provides functionality for delete.
+        Implementation follows Flask-AppBuilder patterns and standards.
+
+        Args:
+            pk: The pk parameter
+
+        Returns:
+            The result of the operation
+
+        Raises:
+            Exception: If the operation fails or encounters an error
+
+        Example:
+            >>> instance = CompactCRUDMixin()
+            >>> result = instance.delete("pk_value")
+            >>> print(result)
+        """
         # Maintains compatibility but refuses to delete on GET methods if CSRF is enabled
         if not self.is_get_mutation_allowed():
             self.update_redirect()

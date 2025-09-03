@@ -1,0 +1,530 @@
+{% extends "appbuilder/base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fa fa-history"></i> Alert History</h2>
+        <div class="btn-group">
+            <button class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                <i class="fa fa-filter"></i> Filter
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="?severity=critical">Critical Only</a></li>
+                <li><a class="dropdown-item" href="?severity=high">High & Critical</a></li>
+                <li><a class="dropdown-item" href="?status=active">Active Only</a></li>
+                <li><a class="dropdown-item" href="?timerange=24h">Last 24 Hours</a></li>
+                <li><a class="dropdown-item" href="?timerange=7d">Last 7 Days</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="{{ url_for('AlertHistoryView.list') }}">Clear Filters</a></li>
+            </ul>
+            <a href="{{ url_for('AlertConfigView.index') }}" class="btn btn-secondary">
+                <i class="fa fa-dashboard"></i> Dashboard
+            </a>
+            {% if alert_history %}
+            <button id="exportHistory" class="btn btn-outline-primary">
+                <i class="fa fa-download"></i> Export
+            </button>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-info">
+                <div class="card-body text-center">
+                    <i class="fa fa-bell fa-2x text-info mb-2"></i>
+                    <h4 class="card-title">{{ summary.get('total_alerts', 0) }}</h4>
+                    <p class="card-text small text-muted">Total Alerts</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-danger">
+                <div class="card-body text-center">
+                    <i class="fa fa-exclamation-circle fa-2x text-danger mb-2"></i>
+                    <h4 class="card-title">{{ summary.get('critical_alerts', 0) }}</h4>
+                    <p class="card-text small text-muted">Critical Alerts</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-warning">
+                <div class="card-body text-center">
+                    <i class="fa fa-clock-o fa-2x text-warning mb-2"></i>
+                    <h4 class="card-title">{{ summary.get('active_alerts', 0) }}</h4>
+                    <p class="card-text small text-muted">Active Alerts</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-success">
+                <div class="card-body text-center">
+                    <i class="fa fa-check-circle fa-2x text-success mb-2"></i>
+                    <h4 class="card-title">{{ summary.get('resolved_alerts', 0) }}</h4>
+                    <p class="card-text small text-muted">Resolved Today</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert History Table -->
+    <div class="card">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="fa fa-list"></i> Alert History
+                    {% if current_filters %}
+                    <small class="text-muted">
+                        (Filtered by: {{ current_filters|join(', ') }})
+                    </small>
+                    {% endif %}
+                </h5>
+                
+                <!-- Quick Actions -->
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-primary" onclick="selectAll()">
+                        <i class="fa fa-check-square-o"></i> Select All
+                    </button>
+                    <button class="btn btn-outline-secondary" onclick="bulkAcknowledge()" disabled id="bulkAckBtn">
+                        <i class="fa fa-check"></i> Bulk Acknowledge
+                    </button>
+                    <button class="btn btn-outline-warning" onclick="bulkResolve()" disabled id="bulkResolveBtn">
+                        <i class="fa fa-times-circle"></i> Bulk Resolve
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if alert_history %}
+            <div class="table-responsive">
+                <table class="table table-hover" id="alertHistoryTable">
+                    <thead>
+                        <tr>
+                            <th width="40">
+                                <input type="checkbox" id="selectAllCheck" onclick="toggleSelectAll()">
+                            </th>
+                            <th>Triggered</th>
+                            <th>Rule</th>
+                            <th>Metric</th>
+                            <th>Condition</th>
+                            <th>Severity</th>
+                            <th>Status</th>
+                            <th>Duration</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for alert in alert_history %}
+                        <tr class="
+                            {% if alert.severity == 'critical' %}table-danger
+                            {% elif alert.severity == 'high' %}table-warning
+                            {% elif alert.status == 'resolved' %}table-light
+                            {% endif %}" 
+                            data-alert-id="{{ alert.id }}">
+                            <td>
+                                <input type="checkbox" class="alert-checkbox" value="{{ alert.id }}" onclick="updateBulkActions()">
+                            </td>
+                            <td>
+                                <strong title="{{ alert.triggered_at.strftime('%Y-%m-%d %H:%M:%S') if alert.triggered_at else 'Unknown' }}">
+                                    {{ alert.triggered_at.strftime('%m/%d %H:%M') if alert.triggered_at else 'N/A' }}
+                                </strong>
+                                {% if alert.acknowledged_at %}
+                                <br><small class="text-muted">
+                                    <i class="fa fa-check"></i> {{ alert.acknowledged_at.strftime('%m/%d %H:%M') }}
+                                </small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <strong>{{ alert.rule_name or 'Unknown Rule' }}</strong>
+                                {% if alert.rule_description %}
+                                <br><small class="text-muted">{{ alert.rule_description[:50] }}{% if alert.rule_description|length > 50 %}...{% endif %}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <code>{{ alert.metric_name or 'N/A' }}</code>
+                                {% if alert.metric_value %}
+                                <br><strong class="
+                                    {% if alert.severity == 'critical' %}text-danger
+                                    {% elif alert.severity == 'high' %}text-warning
+                                    {% else %}text-info
+                                    {% endif %}
+                                ">{{ alert.metric_value }}</strong>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge badge-light">
+                                    {{ alert.condition or 'N/A' }} {{ alert.threshold_value or '' }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge 
+                                    {% if alert.severity == 'critical' %}badge-danger
+                                    {% elif alert.severity == 'high' %}badge-warning
+                                    {% elif alert.severity == 'medium' %}badge-info
+                                    {% else %}badge-secondary
+                                    {% endif %}
+                                ">
+                                    {{ alert.severity.upper() if alert.severity else 'UNKNOWN' }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge 
+                                    {% if alert.status == 'active' %}badge-danger
+                                    {% elif alert.status == 'acknowledged' %}badge-warning
+                                    {% elif alert.status == 'resolved' %}badge-success
+                                    {% else %}badge-secondary
+                                    {% endif %}
+                                ">
+                                    {{ alert.status.upper() if alert.status else 'UNKNOWN' }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if alert.resolved_at and alert.triggered_at %}
+                                    {% set duration_seconds = (alert.resolved_at - alert.triggered_at).total_seconds() %}
+                                    {% if duration_seconds < 60 %}
+                                        {{ duration_seconds|int }}s
+                                    {% elif duration_seconds < 3600 %}
+                                        {{ (duration_seconds / 60)|int }}m
+                                    {% else %}
+                                        {{ (duration_seconds / 3600)|round(1) }}h
+                                    {% endif %}
+                                {% elif alert.triggered_at %}
+                                    <span class="text-muted">
+                                        {% set elapsed = (moment.utcnow() - alert.triggered_at).total_seconds() if moment else 0 %}
+                                        {% if elapsed < 60 %}
+                                            {{ elapsed|int }}s
+                                        {% elif elapsed < 3600 %}
+                                            {{ (elapsed / 60)|int }}m
+                                        {% else %}
+                                            {{ (elapsed / 3600)|round(1) }}h
+                                        {% endif %}
+                                    </span>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-info btn-sm" 
+                                            onclick="viewAlertDetails('{{ alert.id }}')" 
+                                            title="View Details">
+                                        <i class="fa fa-eye"></i>
+                                    </button>
+                                    
+                                    {% if alert.status == 'active' %}
+                                    <button class="btn btn-outline-warning btn-sm" 
+                                            onclick="acknowledgeAlert('{{ alert.id }}')" 
+                                            title="Acknowledge">
+                                        <i class="fa fa-check"></i>
+                                    </button>
+                                    <button class="btn btn-outline-success btn-sm" 
+                                            onclick="resolveAlert('{{ alert.id }}')" 
+                                            title="Resolve">
+                                        <i class="fa fa-times-circle"></i>
+                                    </button>
+                                    {% elif alert.status == 'acknowledged' %}
+                                    <button class="btn btn-outline-success btn-sm" 
+                                            onclick="resolveAlert('{{ alert.id }}')" 
+                                            title="Resolve">
+                                        <i class="fa fa-times-circle"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if pagination %}
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <div class="text-muted small">
+                    Showing {{ pagination.start }} - {{ pagination.end }} of {{ pagination.total }} alerts
+                </div>
+                <nav>
+                    <ul class="pagination pagination-sm mb-0">
+                        {% if pagination.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for(request.endpoint, page=pagination.prev_num, **request.args) }}">Previous</a>
+                        </li>
+                        {% endif %}
+                        
+                        {% for page in pagination.iter_pages() %}
+                        {% if page %}
+                            {% if page != pagination.page %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for(request.endpoint, page=page, **request.args) }}">{{ page }}</a>
+                            </li>
+                            {% else %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page }}</span>
+                            </li>
+                            {% endif %}
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                        {% endif %}
+                        {% endfor %}
+                        
+                        {% if pagination.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for(request.endpoint, page=pagination.next_num, **request.args) }}">Next</a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+            
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fa fa-history fa-3x text-muted mb-3"></i>
+                <h5>No Alert History</h5>
+                <p class="text-muted">
+                    {% if current_filters %}
+                    No alerts match your current filters. <a href="{{ url_for('AlertHistoryView.list') }}">Clear filters</a> to see all alerts.
+                    {% else %}
+                    No alerts have been triggered yet.
+                    {% endif %}
+                </p>
+                <a href="{{ url_for('AlertConfigView.rules') }}" class="btn btn-primary">
+                    <i class="fa fa-bell"></i> Configure Alert Rules
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Alert Details Modal -->
+<div class="modal fade" id="alertDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fa fa-info-circle"></i> Alert Details
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="alertDetailsContent">
+                <!-- Alert details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Bulk actions
+    window.selectAll = function() {
+        const checkboxes = document.querySelectorAll('.alert-checkbox');
+        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+        
+        checkboxes.forEach(cb => {
+            cb.checked = !allChecked;
+        });
+        
+        document.getElementById('selectAllCheck').checked = !allChecked;
+        updateBulkActions();
+    };
+    
+    window.toggleSelectAll = function() {
+        const selectAllCheck = document.getElementById('selectAllCheck');
+        const checkboxes = document.querySelectorAll('.alert-checkbox');
+        
+        checkboxes.forEach(cb => {
+            cb.checked = selectAllCheck.checked;
+        });
+        
+        updateBulkActions();
+    };
+    
+    window.updateBulkActions = function() {
+        const checkedBoxes = document.querySelectorAll('.alert-checkbox:checked');
+        const bulkAckBtn = document.getElementById('bulkAckBtn');
+        const bulkResolveBtn = document.getElementById('bulkResolveBtn');
+        
+        if (checkedBoxes.length > 0) {
+            bulkAckBtn.disabled = false;
+            bulkResolveBtn.disabled = false;
+        } else {
+            bulkAckBtn.disabled = true;
+            bulkResolveBtn.disabled = true;
+        }
+    };
+    
+    // Individual alert actions
+    window.viewAlertDetails = function(alertId) {
+        fetch(`/alerts/api/alert/${alertId}`)
+        .then(response => response.json())
+        .then(data => {
+            const content = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Alert Information</h6>
+                        <dl class="row">
+                            <dt class="col-sm-4">Rule:</dt>
+                            <dd class="col-sm-8">${data.rule_name || 'Unknown'}</dd>
+                            <dt class="col-sm-4">Metric:</dt>
+                            <dd class="col-sm-8"><code>${data.metric_name || 'N/A'}</code></dd>
+                            <dt class="col-sm-4">Value:</dt>
+                            <dd class="col-sm-8"><strong>${data.metric_value || 'N/A'}</strong></dd>
+                            <dt class="col-sm-4">Condition:</dt>
+                            <dd class="col-sm-8">${data.condition || 'N/A'} ${data.threshold_value || ''}</dd>
+                            <dt class="col-sm-4">Severity:</dt>
+                            <dd class="col-sm-8"><span class="badge badge-${getSeverityClass(data.severity)}">${data.severity ? data.severity.toUpperCase() : 'UNKNOWN'}</span></dd>
+                        </dl>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Timeline</h6>
+                        <dl class="row">
+                            <dt class="col-sm-4">Triggered:</dt>
+                            <dd class="col-sm-8">${data.triggered_at || 'Unknown'}</dd>
+                            <dt class="col-sm-4">Acknowledged:</dt>
+                            <dd class="col-sm-8">${data.acknowledged_at || 'Not acknowledged'}</dd>
+                            <dt class="col-sm-4">Resolved:</dt>
+                            <dd class="col-sm-8">${data.resolved_at || 'Not resolved'}</dd>
+                            <dt class="col-sm-4">Duration:</dt>
+                            <dd class="col-sm-8">${data.duration || 'Ongoing'}</dd>
+                        </dl>
+                    </div>
+                </div>
+                ${data.description ? `<div class="mt-3"><h6>Description</h6><p>${data.description}</p></div>` : ''}
+                ${data.notifications ? `<div class="mt-3"><h6>Notifications Sent</h6><ul class="small">${data.notifications.map(n => `<li>${n}</li>`).join('')}</ul></div>` : ''}
+            `;
+            
+            document.getElementById('alertDetailsContent').innerHTML = content;
+            new bootstrap.Modal(document.getElementById('alertDetailsModal')).show();
+        })
+        .catch(error => {
+            console.error('Error fetching alert details:', error);
+            alert('Error loading alert details');
+        });
+    };
+    
+    window.acknowledgeAlert = function(alertId) {
+        if (confirm('Acknowledge this alert?')) {
+            updateAlertStatus(alertId, 'acknowledged');
+        }
+    };
+    
+    window.resolveAlert = function(alertId) {
+        if (confirm('Resolve this alert?')) {
+            updateAlertStatus(alertId, 'resolved');
+        }
+    };
+    
+    window.bulkAcknowledge = function() {
+        const checkedBoxes = document.querySelectorAll('.alert-checkbox:checked');
+        if (checkedBoxes.length > 0 && confirm(`Acknowledge ${checkedBoxes.length} alerts?`)) {
+            const alertIds = Array.from(checkedBoxes).map(cb => cb.value);
+            bulkUpdateAlertStatus(alertIds, 'acknowledged');
+        }
+    };
+    
+    window.bulkResolve = function() {
+        const checkedBoxes = document.querySelectorAll('.alert-checkbox:checked');
+        if (checkedBoxes.length > 0 && confirm(`Resolve ${checkedBoxes.length} alerts?`)) {
+            const alertIds = Array.from(checkedBoxes).map(cb => cb.value);
+            bulkUpdateAlertStatus(alertIds, 'resolved');
+        }
+    };
+    
+    function updateAlertStatus(alertId, status) {
+        fetch(`/alerts/api/alert/${alertId}/status`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({status: status})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                location.reload();
+            } else {
+                alert('Error updating alert: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error updating alert');
+        });
+    }
+    
+    function bulkUpdateAlertStatus(alertIds, status) {
+        fetch('/alerts/api/alerts/bulk-update', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                alert_ids: alertIds,
+                status: status
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                location.reload();
+            } else {
+                alert('Error updating alerts: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error updating alerts');
+        });
+    }
+    
+    function getSeverityClass(severity) {
+        switch(severity) {
+            case 'critical': return 'danger';
+            case 'high': return 'warning';
+            case 'medium': return 'info';
+            default: return 'secondary';
+        }
+    }
+    
+    // Export functionality
+    document.getElementById('exportHistory')?.addEventListener('click', function() {
+        window.open('/alerts/export/history?format=csv', '_blank');
+    });
+});
+</script>
+
+<style>
+.badge {
+    font-size: 0.75em;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.btn-group-sm > .btn, .btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+}
+
+.table-light {
+    opacity: 0.7;
+}
+
+.pagination-sm .page-link {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+.fa-2x {
+    font-size: 2em;
+}
+</style>
+{% endblock %}

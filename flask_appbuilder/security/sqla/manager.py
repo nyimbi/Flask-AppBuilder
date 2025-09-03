@@ -28,6 +28,9 @@ from .models import (
     User,
     ViewMenu,
 )
+from ..mfa.manager_mixin import MFASecurityManagerMixin
+from ..mfa.views import MFASetupView, MFAVerificationView
+from ..mfa.auth_views import MFAEnabledAuthDBView
 from ..manager import BaseSecurityManager
 from ... import const as c
 from ...models.sqla import Base
@@ -36,7 +39,7 @@ from ...models.sqla.interface import SQLAInterface
 log = logging.getLogger(__name__)
 
 
-class SecurityManager(BaseSecurityManager):
+class SecurityManager(BaseSecurityManager, MFASecurityManagerMixin):
     """
     Responsible for authentication, registering security views,
     role and permission auto management
@@ -63,6 +66,12 @@ class SecurityManager(BaseSecurityManager):
     permission_view_menu_api = PermissionViewMenuApi
     group_api = GroupApi
 
+    # MFA Views
+    mfa_setup_view = MFASetupView
+    """ Override if you want your own MFA setup view """
+    mfa_verification_view = MFAVerificationView
+    """ Override if you want your own MFA verification view """
+
     def __init__(self, appbuilder):
         """
         SecurityManager contructor
@@ -70,6 +79,11 @@ class SecurityManager(BaseSecurityManager):
             F.A.B AppBuilder main object
         """
         super(SecurityManager, self).__init__(appbuilder)
+        
+        # Override auth views with MFA-enabled versions if MFA is enabled
+        if self.appbuilder.app.config.get('FAB_MFA_ENABLED', False):
+            self.authdbview = MFAEnabledAuthDBView
+        
         user_datamodel = SQLAInterface(self.user_model)
         if self.auth_type == c.AUTH_DB:
             self.userdbmodelview.datamodel = user_datamodel
@@ -98,6 +112,10 @@ class SecurityManager(BaseSecurityManager):
         )
         self.create_db()
 
+        # Initialize MFA if enabled
+        if self.appbuilder.app.config.get('FAB_MFA_ENABLED', False):
+            self._init_mfa()
+
     @property
     def get_session(self):
         return self.appbuilder.get_session
@@ -113,6 +131,11 @@ class SecurityManager(BaseSecurityManager):
             self.appbuilder.add_api(self.permission_view_menu_api)
             self.appbuilder.add_api(self.group_api)
 
+        # Register MFA views if enabled
+        if self.appbuilder.app.config.get('FAB_MFA_ENABLED', False):
+            self.appbuilder.add_view_no_menu(self.mfa_setup_view)
+            self.appbuilder.add_view_no_menu(self.mfa_verification_view)
+
     def create_db(self):
         try:
             engine = self.get_session.get_bind(mapper=None, clause=None)
@@ -122,6 +145,15 @@ class SecurityManager(BaseSecurityManager):
                 log.info(c.LOGMSG_INF_SEC_NO_DB)
                 Base.metadata.create_all(engine)
                 log.info(c.LOGMSG_INF_SEC_ADD_DB)
+            
+            # Create MFA tables if enabled and not exist
+            if self.appbuilder.app.config.get('FAB_MFA_ENABLED', False):
+                mfa_tables = ['ab_user_mfa', 'ab_mfa_backup_codes', 'ab_mfa_verification_attempts', 'ab_mfa_policies']
+                missing_mfa_tables = [table for table in mfa_tables if table not in existing_tables]
+                if missing_mfa_tables:
+                    log.info(f"Creating MFA tables: {', '.join(missing_mfa_tables)}")
+                    Base.metadata.create_all(engine)
+                    
             super(SecurityManager, self).create_db()
         except Exception as e:
             log.error(c.LOGMSG_ERR_SEC_CREATE_DB, e)

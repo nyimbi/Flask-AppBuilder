@@ -1,0 +1,143 @@
+{% extends "appbuilder/base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="card-title mb-0">
+                        <i class="fa fa-exclamation-triangle"></i> Alert System Error
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-danger">
+                        <h5><i class="fa fa-times-circle"></i> Alert Operation Failed</h5>
+                        <p class="mb-0">{{ error_message or "An unknown error occurred in the alert system." }}</p>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <h6>Possible Solutions:</h6>
+                        <ul>
+                            <li>Check that the alert system is properly configured and initialized</li>
+                            <li>Verify that required database tables exist (run migrations)</li>
+                            <li>Ensure alert managers are registered in ADDON_MANAGERS</li>
+                            <li>Check application logs for detailed error information</li>
+                            <li>Verify metric providers are properly registered</li>
+                        </ul>
+                    </div>
+                    
+                    {% if error_message and "not found" in error_message.lower() %}
+                    <div class="alert alert-warning mt-3">
+                        <h6><i class="fa fa-info-circle"></i> Template or Resource Missing</h6>
+                        <p class="mb-0">
+                            This error typically indicates that required templates or static assets 
+                            are missing from your Flask-AppBuilder installation. 
+                        </p>
+                        <p class="mb-0 mt-2">
+                            <strong>Solution:</strong> Ensure all alerting templates are properly installed 
+                            in <code>flask_appbuilder/templates/alerting/</code> directory.
+                        </p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if error_message and ("manager" in error_message.lower() or "not registered" in error_message.lower()) %}
+                    <div class="alert alert-warning mt-3">
+                        <h6><i class="fa fa-cog"></i> Manager Configuration Issue</h6>
+                        <p class="mb-0">
+                            The alerting system manager is not properly registered with Flask-AppBuilder.
+                        </p>
+                        <p class="mb-0 mt-2">
+                            <strong>Solution:</strong> Add <code>'flask_appbuilder.alerting.manager.AlertingManager'</code> 
+                            to your <code>ADDON_MANAGERS</code> configuration.
+                        </p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if error_message and "database" in error_message.lower() %}
+                    <div class="alert alert-warning mt-3">
+                        <h6><i class="fa fa-database"></i> Database Issue</h6>
+                        <p class="mb-0">
+                            There appears to be an issue with database connectivity or schema.
+                        </p>
+                        <p class="mb-0 mt-2">
+                            <strong>Solution:</strong> Run database migrations and ensure the 
+                            alert system database tables are created.
+                        </p>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer">
+                    <a href="{{ url_for('IndexView.index') }}" class="btn btn-primary">
+                        <i class="fa fa-home"></i> Home
+                    </a>
+                    {% if request.referrer %}
+                    <a href="{{ request.referrer }}" class="btn btn-secondary">
+                        <i class="fa fa-arrow-left"></i> Go Back
+                    </a>
+                    {% endif %}
+                    <a href="javascript:location.reload()" class="btn btn-outline-secondary">
+                        <i class="fa fa-refresh"></i> Retry
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Debug Information (only in development) -->
+            {% if config.DEBUG and error_message %}
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fa fa-bug"></i> Debug Information
+                        <small class="text-muted">(Development Mode Only)</small>
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <pre class="bg-light p-3 rounded"><code>{{ error_message }}</code></pre>
+                    
+                    {% if request %}
+                    <h6 class="mt-3">Request Information:</h6>
+                    <ul class="small">
+                        <li><strong>URL:</strong> {{ request.url }}</li>
+                        <li><strong>Method:</strong> {{ request.method }}</li>
+                        <li><strong>User Agent:</strong> {{ request.headers.get('User-Agent', 'Unknown') }}</li>
+                        <li><strong>Remote Address:</strong> {{ request.remote_addr }}</li>
+                    </ul>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.card-border-danger {
+    border-color: #dc3545;
+}
+
+.bg-danger {
+    background-color: #dc3545 !important;
+}
+
+.alert-danger {
+    color: #721c24;
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+}
+
+.alert-warning {
+    color: #856404;
+    background-color: #fff3cd;
+    border-color: #ffeaa7;
+}
+
+pre {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.small {
+    font-size: 0.875em;
+}
+</style>
+{% endblock %}

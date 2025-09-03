@@ -1,0 +1,87 @@
+# Pre-commit hooks for Flask-AppBuilder quality gates
+repos:
+  # Python code formatting and linting
+  - repo: https://github.com/psf/black
+    rev: 23.12.1
+    hooks:
+      - id: black
+        language_version: python3
+        args: [--line-length=100]
+
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        args: [--profile=black, --line-length=100]
+
+  - repo: https://github.com/pycqa/flake8
+    rev: 7.0.0
+    hooks:
+      - id: flake8
+        args: [--max-line-length=100, --ignore=E203,W503,E501]
+
+  # Security checks
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.5
+    hooks:
+      - id: bandit
+        args: [-r, flask_appbuilder, -f, txt]
+        exclude: tests/
+
+  # General code quality
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+        args: [--maxkb=1000]
+      - id: check-merge-conflict
+      - id: debug-statements
+      - id: check-docstring-first
+
+  # Custom Flask-AppBuilder quality checks
+  - repo: local
+    hooks:
+      - id: syntax-validation
+        name: Flask-AppBuilder Syntax Validation
+        entry: python tests/validation/fix_syntax_errors.py flask_appbuilder --analyze-only
+        language: python
+        pass_filenames: false
+        files: \.py$
+        stages: [commit]
+
+      - id: critical-tests
+        name: Run Critical Tests
+        entry: python -m pytest tests/ci/test_integration_workflows.py::TestUserRegistrationWorkflow::test_user_creation_workflow tests/ci/test_integration_workflows.py::TestAuthenticationWorkflow::test_database_authentication_workflow -v --tb=short
+        language: python
+        pass_filenames: false
+        files: \.py$
+        stages: [push]
+
+      - id: documentation-check
+        name: Documentation Coverage Check
+        entry: python -c "
+          import sys; 
+          sys.path.append('tests/ci'); 
+          from test_documentation_validation import DocumentationValidator; 
+          v = DocumentationValidator('flask_appbuilder'); 
+          r = v.analyze_directory(['__pycache__', '.git', 'tests', 'examples']); 
+          c = r['summary']['documentation_coverage_percentage']; 
+          print(f'Doc coverage: {c:.1f}%'); 
+          exit(0 if c >= 60.0 else 1)
+        "
+        language: python
+        pass_filenames: false
+        files: \.py$
+        stages: [push]
+
+      - id: quality-gate-check
+        name: Quality Gate Validation
+        entry: python tests/validation/quality_validation_pipeline.py flask_appbuilder
+        language: python
+        pass_filenames: false
+        files: \.py$
+        stages: [manual]
+        verbose: true

@@ -15,25 +15,17 @@ log = logging.getLogger(__name__)
 
 
 def get_first_last_name(fullname):
+    """
+    Get first and last name from a full name string.
+    
+    Args:
+        fullname: The full name string
+        
+    Returns:
+        Tuple of (first_name, last_name)
+    """
     names = fullname.split()
     if len(names) > 1:
-    """
-            Get first last name information.
-
-            This method provides functionality for get first last name.
-            Implementation follows Flask-AppBuilder patterns and standards.
-
-            Args:
-                fullname: The fullname parameter
-
-            Returns:
-                The requested first last name data
-
-            Example:
-                >>> result = get_first_last_name("fullname_value")
-                >>> print(result)
-
-            """
         return names[0], " ".join(names[1:])
     elif names:
         return names[0], ""
@@ -82,13 +74,12 @@ class BaseRegisterUser(PublicFormView):
     false_error_message = lazy_gettext("Registration not found")
     """ The message shown on an unsuccessful registration """
     form_title = lazy_gettext("Fill out the registration form")
-    """ The form title 
+    """ The form title """
 
     def send_email(self, register_user):
         """
         Method for sending the registration Email to the user
         """
-        pass
         try:
             from flask_mail import Mail, Message
         except Exception:
@@ -119,7 +110,7 @@ class BaseRegisterUser(PublicFormView):
 
     def add_registration(self, username, first_name, last_name, email, password=""):
         """
-            Add a registration request for the user.
+        Add a registration request for the user.
 
         :rtype : RegisterUser
         """
@@ -159,81 +150,9 @@ class BaseRegisterUser(PublicFormView):
             ),
             hashed_password=reg.password,
         ):
-        """
-                Perform add form unique validations operation.
-
-                This method provides functionality for add form unique validations.
-                Implementation follows Flask-AppBuilder patterns and standards.
-
-                Args:
-                    form: The form parameter
-
-                Returns:
-                    The result of the operation
-
-                Example:
-                    >>> instance = BaseRegisterUser()
-                    >>> result = instance.add_form_unique_validations("form_value")
-                    >>> print(result)
-
-                """
             flash(as_unicode(self.error_message), "danger")
             return redirect(self.appbuilder.get_url_for_index)
         else:
-        """
-                Perform form post operation.
-
-                This method provides functionality for form post.
-                Implementation follows Flask-AppBuilder patterns and standards.
-
-                Args:
-                    form: The form parameter
-
-                Returns:
-                    The result of the operation
-
-                Example:
-                    >>> instance = RegisterUserDBView()
-                    >>> result = instance.form_post("form_value")
-                    >>> print(result)
-
-                """
-        
-                Perform form get operation.
-
-                This method provides functionality for form get.
-                Implementation follows Flask-AppBuilder patterns and standards.
-
-                Args:
-        """
-                Perform form oid post operation.
-
-                This method provides functionality for form oid post.
-                Implementation follows Flask-AppBuilder patterns and standards.
-
-                Args:
-                    flag: The flag parameter
-
-                Returns:
-                    The result of the operation
-
-                Example:
-                    >>> instance = RegisterUserOIDView()
-                    >>> result = instance.form_oid_post("flag_value")
-                    >>> print(result)
-
-                """
-                    form: The form parameter
-
-                Returns:
-                    The result of the operation
-
-                Example:
-                    >>> instance = RegisterUserDBView()
-                    >>> result = instance.form_get("form_value")
-                    >>> print(result)
-
-                """
             self.appbuilder.sm.del_register_user(reg)
             return self.render_template(
                 self.activation_template,
@@ -244,6 +163,13 @@ class BaseRegisterUser(PublicFormView):
             )
 
     def add_form_unique_validations(self, form):
+        """
+        Add unique validations to form fields.
+        
+        Args:
+            form: The form to add validations to
+        """
+        pass
         datamodel_user = self.appbuilder.sm.get_user_datamodel
         datamodel_register_user = self.appbuilder.sm.get_register_user_datamodel
         if len(form.username.validators) == 1:
@@ -257,7 +183,7 @@ class BaseRegisterUser(PublicFormView):
 class RegisterUserDBView(BaseRegisterUser):
     """
     View for Registering a new user, auth db mode
-    
+    """
 
     form = RegisterUserDBForm
     """ The WTForm form presented to the user to register himself """
@@ -282,62 +208,7 @@ class RegisterUserDBView(BaseRegisterUser):
                     >>> print(result)
 
                 """
-        
         pass
-                Perform form get operation.
-
-                This method provides functionality for form get.
-                Implementation follows Flask-AppBuilder patterns and standards.
-
-                Args:
-        """
-                Perform form post operation.
-
-                This method provides functionality for form post.
-                Implementation follows Flask-AppBuilder patterns and standards.
-
-                Args:
-                    form: The form parameter
-
-                Returns:
-                    The result of the operation
-
-                Example:
-                    >>> instance = RegisterUserOAuthView()
-                    >>> result = instance.form_post("form_value")
-                    >>> print(result)
-
-                """
-        """
-                Perform form get operation.
-
-                This method provides functionality for form get.
-                Implementation follows Flask-AppBuilder patterns and standards.
-
-                Args:
-                    form: The form parameter
-
-                Returns:
-                    The result of the operation
-
-                Example:
-                    >>> instance = RegisterUserOAuthView()
-                    >>> result = instance.form_get("form_value")
-                    >>> print(result)
-
-                """
-                    form: The form parameter
-
-                Returns:
-                    The result of the operation
-
-                Example:
-                    >>> instance = RegisterUserOIDView()
-                    >>> result = instance.form_get("form_value")
-                    >>> print(result)
-
-                """
-        self.add_form_unique_validations(form)
 
     def form_post(self, form):
         self.add_form_unique_validations(form)
@@ -351,7 +222,7 @@ class RegisterUserDBView(BaseRegisterUser):
 
 
 class RegisterUserOIDView(BaseRegisterUser):
-    
+    """
     View for Registering a new user, auth OID mode
     """
 
@@ -398,6 +269,13 @@ class RegisterUserOIDView(BaseRegisterUser):
         Hackish method to make use of oid.login_handler decorator.
         """
         pass
+        pass
+        pass
+        pass
+        pass
+        pass
+        pass
+        pass
         from flask_openid import OpenIDResponse, SessionWrapper
         from openid.consumer.consumer import CANCEL, Consumer, SUCCESS
 
@@ -421,12 +299,33 @@ class RegisterUserOIDView(BaseRegisterUser):
         this session key will be deleted
         """
         pass
+        pass
+        pass
+        pass
+        pass
+        pass
+        pass
+        pass
         session["oid_resp"] = resp
 
     def form_get(self, form):
+        """
+        Handle GET request for OID registration form.
+        
+        Args:
+            form: The registration form
+        """
         self.add_form_unique_validations(form)
+        pass
 
     def form_post(self, form):
+        """
+        Handle POST request for OID registration form.
+        
+        Args:
+            form: The registration form with submitted data
+        """
+        pass
         self.add_registration(
             username=form.username.data,
             first_name=form.first_name.data,
@@ -443,6 +342,13 @@ class RegisterUserOAuthView(BaseRegisterUser):
     form = RegisterUserOIDForm
 
     def form_get(self, form):
+        """
+        Handle GET request for OAuth registration form.
+        
+        Args:
+            form: The registration form
+        """
+        pass
         self.add_form_unique_validations(form)
         # fills the register form with the collected data from OAuth
         form.username.data = request.args.get("username", "")
@@ -451,6 +357,13 @@ class RegisterUserOAuthView(BaseRegisterUser):
         form.email.data = request.args.get("email", "")
 
     def form_post(self, form):
+        """
+        Handle POST request for OAuth registration form.
+        
+        Args:
+            form: The registration form with submitted data
+        """
+        pass
         log.debug("Adding Registration")
         self.add_registration(
             username=form.username.data,

@@ -105,6 +105,7 @@ class MediaMetadata:
     similarity_hash: Optional[str] = None
     content_description: Optional[str] = None
     processing_status: str = ProcessingStatus.PENDING
+    """
     
     def __post_init__(self):
         if self.created_at is None:
@@ -120,7 +121,7 @@ class ImageProcessor:
         self.error_handler = WizardErrorHandler()
         
     def extract_features(self, image_data: bytes, filename: str) -> Dict[str, Any]:
-        Extract comprehensive features from image data"""
+        """Extract comprehensive features from image data"""
         try:
             features = {
                 'filename': filename,
@@ -233,7 +234,7 @@ class ImageProcessor:
             return hashlib.md5(str(image.size).encode()).hexdigest()[:16]
     
     def _analyze_image_header(self, image_data: bytes) -> Dict[str, Any]:
-        """Analyze image file headers to extract basic information
+        """Analyze image file headers to extract basic information"""
         if len(image_data) < 10:
             return {'format': 'unknown', 'width': 0, 'height': 0}
         
@@ -267,7 +268,7 @@ class ImageProcessor:
         return {'width': 0, 'height': 0}
     
     def _parse_jpeg_header(self, data: bytes) -> Dict[str, Any]:
-        Parse JPEG header for dimensions"""
+        """Parse JPEG header for dimensions"""
         # Simplified JPEG parsing - would need more complex logic for production
         try:
             # Look for SOF (Start of Frame) markers
@@ -283,7 +284,7 @@ class ImageProcessor:
         return {'width': 0, 'height': 0}
     
     def _parse_gif_header(self, data: bytes) -> Dict[str, Any]:
-        """Parse GIF header for dimensions
+        """Parse GIF header for dimensions"""
         try:
             if len(data) >= 10:
                 width = struct.unpack('<H', data[6:8])[0]
@@ -305,7 +306,7 @@ class ImageProcessor:
         return {'width': 0, 'height': 0}
     
     def _create_error_features(self, filename: str, error_msg: str, file_size: int) -> Dict[str, Any]:
-        Create minimal feature set for failed processing"""
+        """Create minimal feature set for failed processing"""
         return {
             'filename': filename,
             'file_size': file_size,
@@ -319,7 +320,7 @@ class ImageProcessor:
 
 
 class AudioProcessor:
-    """Production-ready audio processing with real implementations
+    """Production-ready audio processing with real implementations"""
     
     def __init__(self):
         self.error_handler = WizardErrorHandler()
@@ -428,7 +429,7 @@ class AudioProcessor:
             return {'signal_analysis_error': str(e)}
     
     def _extract_basic_audio_features(self, audio_data: bytes) -> Dict[str, Any]:
-        """Basic feature extraction for non-WAV formats
+        """Basic feature extraction for non-WAV formats"""
         features = {
             'format': 'binary',
             'data_entropy': self._calculate_entropy(audio_data[:1024]),  # Sample first 1KB
@@ -461,7 +462,7 @@ class AudioProcessor:
         return entropy
     
     def _create_error_features(self, filename: str, error_msg: str, file_size: int) -> Dict[str, Any]:
-        Create minimal feature set for failed processing"""
+        """Create minimal feature set for failed processing"""
         return {
             'filename': filename,
             'file_size': file_size,
@@ -518,7 +519,7 @@ class TextProcessor:
         alpha_count = sum(1 for c in text if c.isalpha())
         digit_count = sum(1 for c in text if c.isdigit())
         space_count = sum(1 for c in text if c.isspace())
-        punct_count = sum(1 for c in text if c in '.,!?;:-()[]{}"\''')
+        punct_count = sum(1 for c in text if c in ".,!?;:-()[]{}\"'")
         
         # Word-level statistics
         words = re.findall(r'\b\w+\b', text.lower())
@@ -549,7 +550,7 @@ class TextProcessor:
         }
     
     def _analyze_linguistic_features(self, text: str) -> Dict[str, Any]:
-        """Analyze linguistic characteristics
+        """Analyze linguistic characteristics"""
         # Word frequency analysis
         words = re.findall(r'\b\w+\b', text.lower())
         word_freq = Counter(words)
@@ -647,7 +648,7 @@ class TextProcessor:
         }
     
     def _calculate_readability_metrics(self, text: str) -> Dict[str, Any]:
-        Calculate various readability metrics"""
+        """Calculate various readability metrics"""
         # Basic components for readability formulas
         sentences = re.split(r'[.!?]+', text)
         sentence_count = len([s for s in sentences if s.strip()])
@@ -738,7 +739,6 @@ class MultiModalIntegration:
             graph_name: Name of the graph database to use
             database_config: Database connection configuration
         """
-        pass
         self.graph_name = graph_name
         self.database_config = database_config or {}
         self.error_handler = WizardErrorHandler()
@@ -852,7 +852,7 @@ class MultiModalIntegration:
             return error_metadata
     
     def _detect_media_type(self, file_data: bytes, filename: str) -> str:
-        """Detect media type from file data and filename
+        """Detect media type from file data and filename"""
         if not file_data:
             return MediaType.UNKNOWN
         
@@ -929,7 +929,7 @@ class MultiModalIntegration:
         return MediaType.UNKNOWN
     
     def _extract_generic_features(self, file_data: bytes, filename: str) -> Dict[str, Any]:
-        Extract generic features for unknown file types"""
+        """Extract generic features for unknown file types"""
         features = {
             'filename': filename,
             'file_size': len(file_data),
@@ -953,7 +953,7 @@ class MultiModalIntegration:
         return features
     
     def _calculate_entropy(self, data: bytes) -> float:
-        """Calculate Shannon entropy of data
+        """Calculate Shannon entropy of data"""
         if not data:
             return 0.0
         

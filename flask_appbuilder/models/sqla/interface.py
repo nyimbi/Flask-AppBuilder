@@ -712,6 +712,98 @@ class SQLAInterface(BaseInterface):
 
     def is_property_or_function(self, col_name: str) -> bool:
         return self.is_property(col_name) or self.is_function(col_name)
+    
+    def is_jsonb(self, col_name: str) -> bool:
+        """Check if column is JSONB type (PostgreSQL)."""
+        try:
+            from sqlalchemy.dialects.postgresql import JSONB
+            return isinstance(self.list_columns[col_name].type, JSONB)
+        except (KeyError, ImportError):
+            return False
+    
+    def is_json(self, col_name: str) -> bool:
+        """Check if column is JSON type."""
+        try:
+            from sqlalchemy.dialects.postgresql import JSON as PG_JSON
+            from sqlalchemy.dialects.mysql import JSON as MY_JSON
+            from sqlalchemy import JSON
+            
+            column_type = self.list_columns[col_name].type
+            return isinstance(column_type, (JSON, PG_JSON, MY_JSON))
+        except (KeyError, ImportError):
+            return False
+    
+    def is_array(self, col_name: str) -> bool:
+        """Check if column is an array type (PostgreSQL)."""
+        try:
+            from sqlalchemy.dialects.postgresql import ARRAY
+            return isinstance(self.list_columns[col_name].type, ARRAY)
+        except (KeyError, ImportError):
+            return False
+    
+    def is_spatial(self, col_name: str) -> bool:
+        """Check if column is a spatial/geometric type."""
+        try:
+            from flask_appbuilder.models.postgresql import Geometry, Geography
+            column_type = self.list_columns[col_name].type
+            return isinstance(column_type, (Geometry, Geography))
+        except (KeyError, ImportError):
+            return False
+    
+    def is_vector_embedding(self, col_name: str) -> bool:
+        """Check if column is a vector embedding type (pgvector)."""
+        try:
+            from flask_appbuilder.models.postgresql import Vector
+            return isinstance(self.list_columns[col_name].type, Vector)
+        except (KeyError, ImportError):
+            return False
+    
+    def is_network_address(self, col_name: str) -> bool:
+        """Check if column is a network address type (INET, MACADDR, etc.)."""
+        try:
+            from sqlalchemy.dialects.postgresql import INET, MACADDR, MACADDR8
+            column_type = self.list_columns[col_name].type
+            return isinstance(column_type, (INET, MACADDR, MACADDR8))
+        except (KeyError, ImportError):
+            return False
+    
+    def is_tsvector(self, col_name: str) -> bool:
+        """Check if column is a full-text search vector (TSVECTOR)."""
+        try:
+            from sqlalchemy.dialects.postgresql import TSVECTOR
+            return isinstance(self.list_columns[col_name].type, TSVECTOR)
+        except (KeyError, ImportError):
+            return False
+    
+    def is_hstore(self, col_name: str) -> bool:
+        """Check if column is an HSTORE type (PostgreSQL key-value store)."""
+        try:
+            from sqlalchemy.dialects.postgresql import HSTORE
+            from flask_appbuilder.models.postgresql import HSTORE as FAB_HSTORE
+            column_type = self.list_columns[col_name].type
+            return isinstance(column_type, (HSTORE, FAB_HSTORE))
+        except (KeyError, ImportError):
+            return False
+    
+    def is_ltree(self, col_name: str) -> bool:
+        """Check if column is an LTREE type (PostgreSQL hierarchical data)."""
+        try:
+            from flask_appbuilder.models.postgresql import LTREE
+            return isinstance(self.list_columns[col_name].type, LTREE)
+        except (KeyError, ImportError):
+            return False
+    
+    def is_uuid(self, col_name: str) -> bool:
+        """Check if column is a UUID type."""
+        try:
+            from sqlalchemy.dialects.postgresql import UUID
+            return isinstance(self.list_columns[col_name].type, UUID)
+        except (KeyError, ImportError):
+            return False
+    
+    def is_multimedia(self, col_name: str) -> bool:
+        """Check if column contains multimedia content (images, files, etc.)."""
+        return self.is_image(col_name) or self.is_file(col_name)
 
     def get_max_length(self, col_name: str) -> int:
         try:
@@ -925,27 +1017,120 @@ class SQLAInterface(BaseInterface):
 
     def get_search_columns_list(self) -> List[str]:
         """
-        Returns a list of columns that can be searched/filtered.
+        Returns a list of columns that can be searched/filtered with enhanced type analysis.
         
-        This method filters out columns that shouldn't be searchable (PKs, FKs, 
-        binary data like images/files) while preserving searchable relationships.
+        This method uses the advanced field analyzer to automatically exclude
+        unsupported field types including JSONB, Images, Audio, Multimedia, 
+        Vector embeddings, spatial data, and other complex types.
         
-        Note: Future enhancement could integrate this more tightly with the 
-        filter system to allow dynamic search column configuration per view.
+        The analyzer provides comprehensive detection of:
+        - Binary data (BLOB, BYTEA, etc.)
+        - Multimedia content (Images, Files, Audio)
+        - Complex structures (JSONB, Arrays, HSTORE)
+        - Spatial/geometric data (PostGIS types)
+        - Vector embeddings (pgvector)
+        - Network addresses (INET, MACADDR)
+        - Full-text search vectors (TSVECTOR)
+        - Other specialized types
         """
         ret_lst = []
-        for col_name in self.get_columns_list():
-            if not self.is_relation(col_name):
-                tmp_prop = self.get_property_first_col(col_name).name
-                if (
-                    (not self.is_pk(tmp_prop))
-                    and (not self.is_fk(tmp_prop))
-                    and (not self.is_image(col_name))
-                    and (not self.is_file(col_name))
-                ):
+        
+        try:
+            # Try to use the advanced field analyzer
+            from ..field_analyzer import DEFAULT_ANALYZER, FieldSupportLevel
+            
+            for col_name in self.get_columns_list():
+                if not self.is_relation(col_name):
+                    # Get the actual column object
+                    column = self.get_property_first_col(col_name)
+                    
+                    # Skip primary keys and foreign keys (existing logic)
+                    if self.is_pk(column.name) or self.is_fk(column.name):
+                        continue
+                    
+                    # Use advanced field analyzer to determine support
+                    support_level, reason, metadata = DEFAULT_ANALYZER.analyze_column(column)
+                    
+                    # Include columns that support search operations
+                    if support_level in {
+                        FieldSupportLevel.FULLY_SUPPORTED,
+                        FieldSupportLevel.SEARCHABLE_ONLY,
+                        FieldSupportLevel.LIMITED_SUPPORT  # Include with limited support
+                    }:
+                        ret_lst.append(col_name)
+                    else:
+                        # Log the exclusion for debugging
+                        log.debug(f"Excluding column '{col_name}' from search: {reason.value if reason else 'unsupported'}")
+                        
+                else:
+                    # Always include relationships (existing logic)
                     ret_lst.append(col_name)
-            else:
-                ret_lst.append(col_name)
+        
+        except ImportError:
+            # Fallback to original logic if field analyzer is not available
+            log.warning("Advanced field analyzer not available, using basic exclusion logic")
+            
+            for col_name in self.get_columns_list():
+                if not self.is_relation(col_name):
+                    tmp_prop = self.get_property_first_col(col_name).name
+                    if (
+                        (not self.is_pk(tmp_prop))
+                        and (not self.is_fk(tmp_prop))
+                        and (not self.is_image(col_name))
+                        and (not self.is_file(col_name))
+                    ):
+                        ret_lst.append(col_name)
+                else:
+                    ret_lst.append(col_name)
+        
+        return ret_lst
+    
+    def get_filter_columns_list(self) -> List[str]:
+        """
+        Returns a list of columns that can be filtered with enhanced type analysis.
+        
+        This method uses the advanced field analyzer to determine which columns
+        support filtering operations, excluding complex types that don't work
+        well with standard filter widgets.
+        """
+        ret_lst = []
+        
+        try:
+            # Try to use the advanced field analyzer
+            from ..field_analyzer import DEFAULT_ANALYZER, FieldSupportLevel
+            
+            for col_name in self.get_columns_list():
+                if not self.is_relation(col_name):
+                    # Get the actual column object
+                    column = self.get_property_first_col(col_name)
+                    
+                    # Skip primary keys (but not foreign keys - they can be filtered)
+                    if self.is_pk(column.name):
+                        continue
+                    
+                    # Use advanced field analyzer to determine filter support
+                    support_level, reason, metadata = DEFAULT_ANALYZER.analyze_column(column)
+                    
+                    # Include columns that support filter operations
+                    if support_level in {
+                        FieldSupportLevel.FULLY_SUPPORTED,
+                        FieldSupportLevel.FILTERABLE_ONLY,
+                        FieldSupportLevel.LIMITED_SUPPORT  # Include with limited support
+                    }:
+                        ret_lst.append(col_name)
+                    else:
+                        # Log the exclusion for debugging
+                        log.debug(f"Excluding column '{col_name}' from filters: {reason.value if reason else 'unsupported'}")
+                        
+                else:
+                    # Include relationships for filtering
+                    ret_lst.append(col_name)
+        
+        except ImportError:
+            # Fallback to search columns logic if field analyzer is not available
+            log.warning("Advanced field analyzer not available, using search columns for filter columns")
+            ret_lst = self.get_search_columns_list()
+        
         return ret_lst
 
     def get_order_columns_list(self, list_columns: List[str] = None) -> List[str]:

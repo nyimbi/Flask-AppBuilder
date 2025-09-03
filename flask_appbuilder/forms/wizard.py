@@ -434,7 +434,7 @@ class WizardFormPersistence:
             
             # Create the model class dynamically
             class WizardData(Model):
-                __tablename__ = 'wizard_form_data'
+                __tablename__ = 'ab_wizard_form_data'
                 
                 id = Column(Integer, primary_key=True)
                 wizard_id = Column(String(100), nullable=False, index=True)

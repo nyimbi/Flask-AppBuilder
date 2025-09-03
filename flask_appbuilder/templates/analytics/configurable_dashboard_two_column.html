@@ -1,0 +1,134 @@
+{% extends "appbuilder/base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>{{ dashboard_config.get('title', 'Dashboard') }}</h2>
+        <div class="btn-group">
+            <a href="{{ url_for('DashboardLayoutView.form') }}" class="btn btn-primary btn-sm">
+                <i class="fa fa-cog"></i> Configure
+            </a>
+            <button id="refreshDashboard" class="btn btn-secondary btn-sm">
+                <i class="fa fa-refresh"></i> Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- Two Column Layout -->
+    <div class="row">
+        <!-- Left Column -->
+        <div class="col-lg-6 col-md-12">
+            {% for widget in widgets %}
+            {% if loop.index0 % 2 == 0 %}
+            <div class="card mb-4">
+                {% if widget.show_header %}
+                <div class="card-header">
+                    <h6 class="card-title mb-0">{{ widget.title }}</h6>
+                    {% if widget.subtitle %}
+                    <small class="text-muted">{{ widget.subtitle }}</small>
+                    {% endif %}
+                </div>
+                {% endif %}
+                <div class="card-body">
+                    {{ widget.content|safe }}
+                </div>
+                {% if widget.footer %}
+                <div class="card-footer text-muted small">
+                    {{ widget.footer }}
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+
+        <!-- Right Column -->
+        <div class="col-lg-6 col-md-12">
+            {% for widget in widgets %}
+            {% if loop.index0 % 2 == 1 %}
+            <div class="card mb-4">
+                {% if widget.show_header %}
+                <div class="card-header">
+                    <h6 class="card-title mb-0">{{ widget.title }}</h6>
+                    {% if widget.subtitle %}
+                    <small class="text-muted">{{ widget.subtitle }}</small>
+                    {% endif %}
+                </div>
+                {% endif %}
+                <div class="card-body">
+                    {{ widget.content|safe }}
+                </div>
+                {% if widget.footer %}
+                <div class="card-footer text-muted small">
+                    {{ widget.footer }}
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+    {% if not widgets %}
+    <div class="row">
+        <div class="col-12">
+            <div class="alert alert-info text-center">
+                <h4><i class="fa fa-info-circle"></i> No Widgets Configured</h4>
+                <p>Your dashboard is empty. <a href="{{ url_for('DashboardLayoutView.form') }}">Configure widgets</a> to get started.</p>
+            </div>
+        </div>
+    </div>
+    {% elif widgets|length == 1 %}
+    <!-- Handle single widget gracefully in two-column layout -->
+    <div class="row">
+        <div class="col-lg-8 col-md-10 mx-auto">
+            <div class="alert alert-warning text-center">
+                <h6><i class="fa fa-info-circle"></i> Single Widget in Two-Column Layout</h6>
+                <p>Consider adding more widgets or switching to single-column layout for better presentation.</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Auto-refresh functionality -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const refreshBtn = document.getElementById('refreshDashboard');
+    const autoRefresh = {{ dashboard_config.get('auto_refresh', false)|lower }};
+    const refreshInterval = {{ dashboard_config.get('refresh_interval', 300) * 1000 }};
+    
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', function() {
+            location.reload();
+        });
+    }
+    
+    // Auto-refresh if enabled
+    if (autoRefresh && refreshInterval > 0) {
+        setInterval(function() {
+            location.reload();
+        }, refreshInterval);
+    }
+    
+    // Equalize column heights if needed
+    function equalizeColumnHeights() {
+        const leftCol = document.querySelector('.row .col-lg-6:first-child');
+        const rightCol = document.querySelector('.row .col-lg-6:last-child');
+        
+        if (leftCol && rightCol) {
+            const leftHeight = leftCol.scrollHeight;
+            const rightHeight = rightCol.scrollHeight;
+            
+            if (Math.abs(leftHeight - rightHeight) > 100) {
+                // Significant height difference - could implement balancing logic here
+                console.log('Column height difference detected:', Math.abs(leftHeight - rightHeight));
+            }
+        }
+    }
+    
+    // Check column heights after load
+    setTimeout(equalizeColumnHeights, 1000);
+});
+</script>
+{% endblock %}

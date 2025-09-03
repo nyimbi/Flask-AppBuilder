@@ -1,0 +1,458 @@
+{% extends "appbuilder/base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fa fa-download"></i> Export Data
+                    </h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#exportHelpModal">
+                            <i class="fa fa-question-circle"></i> Help
+                        </button>
+                    </div>
+                </div>
+                
+                <form id="exportForm" method="POST" action="{{ url_for('ExportView.configure') }}">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- Left Column: Basic Configuration -->
+                            <div class="col-md-6">
+                                <h5><i class="fa fa-cog"></i> Basic Configuration</h5>
+                                
+                                <!-- Export Format -->
+                                <div class="form-group mb-3">
+                                    {{ form.export_format.label(class="form-label") }}
+                                    {{ form.export_format(class="form-select", id="exportFormat") }}
+                                    {% if form.export_format.description %}
+                                    <small class="form-text text-muted">{{ form.export_format.description }}</small>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Filename -->
+                                <div class="form-group mb-3">
+                                    {{ form.filename.label(class="form-label") }}
+                                    {{ form.filename(class="form-control", placeholder="Auto-generated if empty") }}
+                                    {% if form.filename.description %}
+                                    <small class="form-text text-muted">{{ form.filename.description }}</small>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Title -->
+                                <div class="form-group mb-3">
+                                    {{ form.title.label(class="form-label") }}
+                                    {{ form.title(class="form-control", placeholder="Export Title") }}
+                                    {% if form.title.description %}
+                                    <small class="form-text text-muted">{{ form.title.description }}</small>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Include Metadata -->
+                                <div class="form-group mb-3">
+                                    <div class="form-check">
+                                        {{ form.include_metadata(class="form-check-input") }}
+                                        {{ form.include_metadata.label(class="form-check-label") }}
+                                    </div>
+                                    {% if form.include_metadata.description %}
+                                    <small class="form-text text-muted">{{ form.include_metadata.description }}</small>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Max Records -->
+                                <div class="form-group mb-3">
+                                    {{ form.max_records.label(class="form-label") }}
+                                    {{ form.max_records(class="form-control", placeholder="All records") }}
+                                    {% if form.max_records.description %}
+                                    <small class="form-text text-muted">{{ form.max_records.description }}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <!-- Right Column: Format-Specific Options -->
+                            <div class="col-md-6">
+                                <h5><i class="fa fa-sliders-h"></i> Format Options</h5>
+                                
+                                <!-- CSV Options -->
+                                <div id="csvOptions" class="format-options" style="display: none;">
+                                    <h6 class="text-muted">CSV Options</h6>
+                                    
+                                    <div class="form-group mb-3">
+                                        {{ form.csv_delimiter.label(class="form-label") }}
+                                        {{ form.csv_delimiter(class="form-select") }}
+                                    </div>
+                                    
+                                    <div class="form-group mb-3">
+                                        {{ form.csv_encoding.label(class="form-label") }}
+                                        {{ form.csv_encoding(class="form-select") }}
+                                    </div>
+                                </div>
+                                
+                                <!-- Excel Options -->
+                                <div id="excelOptions" class="format-options" style="display: none;">
+                                    <h6 class="text-muted">Excel Options</h6>
+                                    
+                                    <div class="form-group mb-3">
+                                        <div class="form-check">
+                                            {{ form.excel_auto_filter(class="form-check-input") }}
+                                            {{ form.excel_auto_filter.label(class="form-check-label") }}
+                                        </div>
+                                        {% if form.excel_auto_filter.description %}
+                                        <small class="form-text text-muted">{{ form.excel_auto_filter.description }}</small>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="form-group mb-3">
+                                        <div class="form-check">
+                                            {{ form.excel_freeze_headers(class="form-check-input") }}
+                                            {{ form.excel_freeze_headers.label(class="form-check-label") }}
+                                        </div>
+                                        {% if form.excel_freeze_headers.description %}
+                                        <small class="form-text text-muted">{{ form.excel_freeze_headers.description }}</small>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="form-group mb-3">
+                                        <div class="form-check">
+                                            {{ form.excel_add_charts(class="form-check-input") }}
+                                            {{ form.excel_add_charts.label(class="form-check-label") }}
+                                        </div>
+                                        {% if form.excel_add_charts.description %}
+                                        <small class="form-text text-muted">{{ form.excel_add_charts.description }}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <!-- PDF Options -->
+                                <div id="pdfOptions" class="format-options" style="display: none;">
+                                    <h6 class="text-muted">PDF Options</h6>
+                                    
+                                    <div class="form-group mb-3">
+                                        {{ form.pdf_page_size.label(class="form-label") }}
+                                        {{ form.pdf_page_size(class="form-select") }}
+                                    </div>
+                                    
+                                    <div class="form-group mb-3">
+                                        {{ form.pdf_table_style.label(class="form-label") }}
+                                        {{ form.pdf_table_style(class="form-select") }}
+                                    </div>
+                                    
+                                    <div class="form-group mb-3">
+                                        <div class="form-check">
+                                            {{ form.pdf_add_charts(class="form-check-input") }}
+                                            {{ form.pdf_add_charts.label(class="form-check-label") }}
+                                        </div>
+                                        {% if form.pdf_add_charts.description %}
+                                        <small class="form-text text-muted">{{ form.pdf_add_charts.description }}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <!-- JSON Options -->
+                                <div id="jsonOptions" class="format-options" style="display: none;">
+                                    <h6 class="text-muted">JSON Options</h6>
+                                    <p class="text-muted">JSON export uses default formatting with optional metadata inclusion.</p>
+                                </div>
+                                
+                                <!-- Advanced Options -->
+                                <div class="form-group mt-4">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h6 class="text-muted mb-0">Advanced Options</h6>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#advancedOptions">
+                                            <i class="fa fa-chevron-down"></i>
+                                        </button>
+                                    </div>
+                                    
+                                    <div class="collapse mt-2" id="advancedOptions">
+                                        {{ form.advanced_options.label(class="form-label") }}
+                                        {{ form.advanced_options(class="form-control", rows="4", placeholder='{"option": "value"}') }}
+                                        {% if form.advanced_options.description %}
+                                        <small class="form-text text-muted">{{ form.advanced_options.description }}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card-footer">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <button type="button" id="previewBtn" class="btn btn-outline-info">
+                                    <i class="fa fa-eye"></i> Preview
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary ms-2" data-bs-toggle="modal" data-bs-target="#formatInfoModal">
+                                    <i class="fa fa-info-circle"></i> Format Info
+                                </button>
+                            </div>
+                            
+                            <div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fa fa-download"></i> Generate Export
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Preview Modal -->
+<div class="modal fade" id="previewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Export Preview</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="previewContent">
+                    <div class="text-center">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Loading preview...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Format Info Modal -->
+<div class="modal fade" id="formatInfoModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Export Format Information</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="accordion" id="formatAccordion">
+                    <!-- CSV Info -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="csvHeading">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#csvInfo">
+                                <i class="fa fa-file-text me-2"></i> CSV Format
+                            </button>
+                        </h2>
+                        <div id="csvInfo" class="accordion-collapse collapse show" data-bs-parent="#formatAccordion">
+                            <div class="accordion-body">
+                                <p><strong>CSV (Comma-Separated Values)</strong> is a simple text format for tabular data.</p>
+                                <ul>
+                                    <li>Human-readable and widely supported</li>
+                                    <li>Small file size</li>
+                                    <li>Easy to import into spreadsheet applications</li>
+                                    <li>Customizable delimiters and encoding</li>
+                                </ul>
+                                <p><strong>Best for:</strong> Simple data exports, spreadsheet import, data processing</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Excel Info -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="excelHeading">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#excelInfo">
+                                <i class="fa fa-file-excel me-2"></i> Excel Format
+                            </button>
+                        </h2>
+                        <div id="excelInfo" class="accordion-collapse collapse" data-bs-parent="#formatAccordion">
+                            <div class="accordion-body">
+                                <p><strong>Excel (.xlsx)</strong> provides rich formatting and advanced features.</p>
+                                <ul>
+                                    <li>Native Excel compatibility</li>
+                                    <li>Formatted cells, fonts, and colors</li>
+                                    <li>Auto-filtering and frozen headers</li>
+                                    <li>Optional charts and visualizations</li>
+                                    <li>Multiple worksheets support</li>
+                                </ul>
+                                <p><strong>Best for:</strong> Business reports, presentations, detailed analysis</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- PDF Info -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="pdfHeading">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#pdfInfo">
+                                <i class="fa fa-file-pdf me-2"></i> PDF Format
+                            </button>
+                        </h2>
+                        <div id="pdfInfo" class="accordion-collapse collapse" data-bs-parent="#formatAccordion">
+                            <div class="accordion-body">
+                                <p><strong>PDF (Portable Document Format)</strong> creates professional-looking reports.</p>
+                                <ul>
+                                    <li>Consistent appearance across devices</li>
+                                    <li>Professional document formatting</li>
+                                    <li>Print-ready output</li>
+                                    <li>Multiple page sizes and orientations</li>
+                                    <li>Optional charts and visualizations</li>
+                                </ul>
+                                <p><strong>Best for:</strong> Official reports, archiving, sharing, printing</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- JSON Info -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="jsonHeading">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#jsonInfo">
+                                <i class="fa fa-code me-2"></i> JSON Format
+                            </button>
+                        </h2>
+                        <div id="jsonInfo" class="accordion-collapse collapse" data-bs-parent="#formatAccordion">
+                            <div class="accordion-body">
+                                <p><strong>JSON (JavaScript Object Notation)</strong> is ideal for programmatic access.</p>
+                                <ul>
+                                    <li>Machine-readable structured data</li>
+                                    <li>Preserves data types and relationships</li>
+                                    <li>Web API and application friendly</li>
+                                    <li>Lightweight and compact</li>
+                                </ul>
+                                <p><strong>Best for:</strong> API integration, data processing, web applications</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Help Modal -->
+<div class="modal fade" id="exportHelpModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Export Help</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <h6>How to use the Export tool:</h6>
+                <ol>
+                    <li><strong>Choose Format:</strong> Select your preferred export format (CSV, Excel, PDF, or JSON)</li>
+                    <li><strong>Configure Options:</strong> Set format-specific options in the right panel</li>
+                    <li><strong>Preview:</strong> Click "Preview" to see a sample of your export</li>
+                    <li><strong>Generate:</strong> Click "Generate Export" to create and download your file</li>
+                </ol>
+                
+                <h6 class="mt-3">Tips:</h6>
+                <ul>
+                    <li>Leave filename empty for auto-generated names with timestamps</li>
+                    <li>Use "Max Records" to limit large exports</li>
+                    <li>Advanced options accept JSON configuration for expert users</li>
+                    <li>Metadata includes export information like timestamp and user</li>
+                </ul>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const exportFormatSelect = document.getElementById('exportFormat');
+    const previewBtn = document.getElementById('previewBtn');
+    
+    // Show/hide format-specific options
+    function toggleFormatOptions() {
+        const selectedFormat = exportFormatSelect.value;
+        
+        // Hide all format options
+        document.querySelectorAll('.format-options').forEach(el => {
+            el.style.display = 'none';
+        });
+        
+        // Show selected format options
+        const targetId = selectedFormat + 'Options';
+        const targetElement = document.getElementById(targetId);
+        if (targetElement) {
+            targetElement.style.display = 'block';
+        }
+    }
+    
+    // Initialize format options display
+    toggleFormatOptions();
+    
+    // Handle format change
+    exportFormatSelect.addEventListener('change', toggleFormatOptions);
+    
+    // Handle preview
+    previewBtn.addEventListener('click', function() {
+        const format = exportFormatSelect.value;
+        const maxRows = document.querySelector('[name="max_records"]').value || 10;
+        
+        // Show preview modal
+        const previewModal = new bootstrap.Modal(document.getElementById('previewModal'));
+        previewModal.show();
+        
+        // Load preview content
+        fetch(`{{ url_for('ExportView.api_preview') }}?format=${format}&max_rows=${maxRows}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    const previewContent = document.getElementById('previewContent');
+                    if (format === 'csv') {
+                        previewContent.innerHTML = `<pre class="bg-light p-3">${data.preview}</pre>`;
+                    } else {
+                        previewContent.innerHTML = `<div class="alert alert-info">${data.preview}</div>`;
+                    }
+                } else {
+                    document.getElementById('previewContent').innerHTML = 
+                        `<div class="alert alert-danger">Error loading preview: ${data.error}</div>`;
+                }
+            })
+            .catch(error => {
+                document.getElementById('previewContent').innerHTML = 
+                    `<div class="alert alert-danger">Error loading preview: ${error.message}</div>`;
+            });
+    });
+    
+    // Auto-generate filename based on format
+    exportFormatSelect.addEventListener('change', function() {
+        const filenameInput = document.querySelector('[name="filename"]');
+        if (!filenameInput.value) {
+            const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '');
+            const format = this.value;
+            filenameInput.placeholder = `export_${timestamp}.${format}`;
+        }
+    });
+});
+</script>
+
+<style>
+.format-options {
+    border-left: 3px solid #007bff;
+    padding-left: 15px;
+    margin-left: 10px;
+}
+
+.accordion-button:not(.collapsed) {
+    background-color: #f8f9fa;
+    color: #0c63e4;
+}
+
+.modal-lg {
+    max-width: 800px;
+}
+
+pre {
+    max-height: 400px;
+    overflow-y: auto;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,33 @@
+#!/usr/bin/env python3
+"""
+Flask-AppBuilder Enhanced Application Creator
+
+Standalone script to create enhanced Flask-AppBuilder applications with all
+advanced features including MFA, Wallet System, Enhanced Widgets, Mixin
+Integration, and Field Analysis.
+
+Usage:
+    ./fab-create-ext-app --name myapp
+    python fab-create-ext-app --name myapp --engine postgresql --no-mfa
+"""
+
+import sys
+import os
+from pathlib import Path
+
+# Add the flask_appbuilder directory to the Python path
+current_dir = Path(__file__).parent.absolute()
+fab_ext_dir = current_dir.parent
+sys.path.insert(0, str(fab_ext_dir))
+
+# Now import the enhanced app generator
+try:
+    from flask_appbuilder.cli.create_enhanced_app import create_enhanced_app
+    
+    if __name__ == "__main__":
+        create_enhanced_app()
+        
+except ImportError as e:
+    print(f"❌ Error importing enhanced app generator: {e}")
+    print("Make sure you're running this script from the fab-ext directory")
+    sys.exit(1)

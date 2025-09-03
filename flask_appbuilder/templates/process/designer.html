@@ -1,0 +1,401 @@
+{% extends "appbuilder/base.html" %}
+
+{% block head_css %}
+  {{ super() }}
+  <link rel="stylesheet" href="{{ url_for('appbuilder.static', filename='css/process-designer.css') }}">
+  <style>
+    .designer-container {
+      height: calc(100vh - 150px);
+      display: flex;
+      background: #f5f5f5;
+    }
+    
+    .designer-sidebar {
+      width: 250px;
+      background: white;
+      border-right: 1px solid #ddd;
+      padding: 15px;
+      overflow-y: auto;
+    }
+    
+    .designer-canvas {
+      flex: 1;
+      position: relative;
+      background: #fafafa;
+      background-image: radial-gradient(circle, #ccc 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+    
+    .designer-properties {
+      width: 300px;
+      background: white;
+      border-left: 1px solid #ddd;
+      padding: 15px;
+      overflow-y: auto;
+    }
+    
+    .node-palette {
+      margin-bottom: 20px;
+    }
+    
+    .node-palette h4 {
+      margin-bottom: 10px;
+      color: #333;
+      font-size: 14px;
+      text-transform: uppercase;
+    }
+    
+    .palette-node {
+      display: block;
+      width: 100%;
+      padding: 8px 12px;
+      margin-bottom: 5px;
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 4px;
+      cursor: grab;
+      transition: all 0.2s;
+    }
+    
+    .palette-node:hover {
+      background: #e9ecef;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .palette-node.dragging {
+      cursor: grabbing;
+      opacity: 0.7;
+    }
+    
+    .canvas-node {
+      position: absolute;
+      min-width: 120px;
+      min-height: 60px;
+      background: white;
+      border: 2px solid #007bff;
+      border-radius: 8px;
+      padding: 10px;
+      cursor: move;
+      user-select: none;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .canvas-node.selected {
+      border-color: #28a745;
+      box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.25);
+    }
+    
+    .canvas-node.task {
+      border-color: #007bff;
+    }
+    
+    .canvas-node.gateway {
+      border-color: #ffc107;
+      border-radius: 50%;
+      width: 80px;
+      height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .canvas-node.event {
+      border-color: #28a745;
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .canvas-node.approval {
+      border-color: #dc3545;
+    }
+    
+    .node-title {
+      font-size: 12px;
+      font-weight: bold;
+      margin-bottom: 4px;
+      text-align: center;
+    }
+    
+    .node-type {
+      font-size: 10px;
+      color: #666;
+      text-align: center;
+    }
+    
+    .connection-point {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      background: #007bff;
+      border-radius: 50%;
+      cursor: crosshair;
+    }
+    
+    .connection-point.input {
+      left: -5px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+    
+    .connection-point.output {
+      right: -5px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+    
+    .connection-line {
+      position: absolute;
+      pointer-events: none;
+      z-index: 1;
+    }
+    
+    .properties-panel h4 {
+      margin-bottom: 15px;
+      color: #333;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 10px;
+    }
+    
+    .form-group {
+      margin-bottom: 15px;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 600;
+      color: #555;
+    }
+    
+    .form-control {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #ced4da;
+      border-radius: 4px;
+    }
+    
+    .btn-toolbar {
+      padding: 15px;
+      background: white;
+      border-bottom: 1px solid #ddd;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    
+    .canvas-svg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+    
+    .canvas-svg path {
+      stroke: #007bff;
+      stroke-width: 2;
+      fill: none;
+      marker-end: url(#arrowhead);
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <h3>Process Designer - {{ definition.name }}</h3>
+    
+    <div class="btn-toolbar">
+      <button type="button" class="btn btn-primary" id="save-process">
+        <i class="fa fa-save"></i> Save Process
+      </button>
+      <button type="button" class="btn btn-success" id="validate-process">
+        <i class="fa fa-check-circle"></i> Validate
+      </button>
+      <button type="button" class="btn btn-info" id="preview-process">
+        <i class="fa fa-eye"></i> Preview
+      </button>
+      <button type="button" class="btn btn-secondary" id="zoom-fit">
+        <i class="fa fa-expand"></i> Fit to Screen
+      </button>
+      <div class="ml-auto">
+        <button type="button" class="btn btn-outline-secondary" id="undo-action">
+          <i class="fa fa-undo"></i>
+        </button>
+        <button type="button" class="btn btn-outline-secondary" id="redo-action">
+          <i class="fa fa-redo"></i>
+        </button>
+      </div>
+    </div>
+    
+    <div class="designer-container">
+      <!-- Node Palette -->
+      <div class="designer-sidebar">
+        <div class="node-palette">
+          <h4><i class="fa fa-tasks"></i> Tasks</h4>
+          <div class="palette-node" data-node-type="task" data-node-subtype="user">
+            <i class="fa fa-user"></i> User Task
+          </div>
+          <div class="palette-node" data-node-type="task" data-node-subtype="service">
+            <i class="fa fa-cogs"></i> Service Task  
+          </div>
+          <div class="palette-node" data-node-type="task" data-node-subtype="script">
+            <i class="fa fa-code"></i> Script Task
+          </div>
+          <div class="palette-node" data-node-type="task" data-node-subtype="manual">
+            <i class="fa fa-hand-paper-o"></i> Manual Task
+          </div>
+        </div>
+        
+        <div class="node-palette">
+          <h4><i class="fa fa-random"></i> Gateways</h4>
+          <div class="palette-node" data-node-type="gateway" data-node-subtype="exclusive">
+            <i class="fa fa-diamond"></i> Exclusive Gateway
+          </div>
+          <div class="palette-node" data-node-type="gateway" data-node-subtype="parallel">
+            <i class="fa fa-plus"></i> Parallel Gateway
+          </div>
+          <div class="palette-node" data-node-type="gateway" data-node-subtype="inclusive">
+            <i class="fa fa-circle-o"></i> Inclusive Gateway
+          </div>
+        </div>
+        
+        <div class="node-palette">
+          <h4><i class="fa fa-play-circle"></i> Events</h4>
+          <div class="palette-node" data-node-type="event" data-node-subtype="start">
+            <i class="fa fa-play"></i> Start Event
+          </div>
+          <div class="palette-node" data-node-type="event" data-node-subtype="end">
+            <i class="fa fa-stop"></i> End Event
+          </div>
+          <div class="palette-node" data-node-type="event" data-node-subtype="timer">
+            <i class="fa fa-clock-o"></i> Timer Event
+          </div>
+          <div class="palette-node" data-node-type="event" data-node-subtype="message">
+            <i class="fa fa-envelope"></i> Message Event
+          </div>
+        </div>
+        
+        <div class="node-palette">
+          <h4><i class="fa fa-check-square"></i> Approvals</h4>
+          <div class="palette-node" data-node-type="approval" data-node-subtype="single">
+            <i class="fa fa-user-circle"></i> Single Approval
+          </div>
+          <div class="palette-node" data-node-type="approval" data-node-subtype="multi">
+            <i class="fa fa-users"></i> Multi Approval
+          </div>
+        </div>
+      </div>
+      
+      <!-- Design Canvas -->
+      <div class="designer-canvas" id="design-canvas">
+        <svg class="canvas-svg" id="canvas-svg">
+          <defs>
+            <marker id="arrowhead" markerWidth="10" markerHeight="7" 
+                    refX="10" refY="3.5" orient="auto">
+              <polygon points="0 0, 10 3.5, 0 7" fill="#007bff" />
+            </marker>
+          </defs>
+        </svg>
+      </div>
+      
+      <!-- Properties Panel -->
+      <div class="designer-properties" id="properties-panel">
+        <h4><i class="fa fa-cog"></i> Properties</h4>
+        <div id="node-properties">
+          <p class="text-muted">Select a node to edit its properties</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Process Variable Modal -->
+<div class="modal fade" id="variableModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Process Variables</h5>
+        <button type="button" class="close" data-dismiss="modal">
+          <span>&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div id="variables-editor">
+          <div class="row mb-2">
+            <div class="col-4"><strong>Name</strong></div>
+            <div class="col-3"><strong>Type</strong></div>
+            <div class="col-4"><strong>Default</strong></div>
+            <div class="col-1"></div>
+          </div>
+          <div id="variables-list"></div>
+          <button type="button" class="btn btn-sm btn-outline-primary" id="add-variable">
+            <i class="fa fa-plus"></i> Add Variable
+          </button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="save-variables">Save Variables</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block tail_js %}
+  {{ super() }}
+  <script src="{{ url_for('appbuilder.static', filename='js/process-designer.js') }}"></script>
+  <script>
+    $(document).ready(function() {
+      // Initialize process designer
+      var processGraph = {{ process_graph|safe }};
+      var definitionId = {{ definition.id }};
+      
+      var designer = new ProcessDesigner('design-canvas', {
+        definitionId: definitionId,
+        initialGraph: processGraph,
+        saveUrl: '{{ url_for("ProcessApi.put", pk=definition.id) }}',
+        validateUrl: '/api/v1/process/validate/' + definitionId
+      });
+      
+      designer.initialize();
+      
+      // Save process handler
+      $('#save-process').click(function() {
+        designer.saveProcess();
+      });
+      
+      // Validate process handler  
+      $('#validate-process').click(function() {
+        designer.validateProcess();
+      });
+      
+      // Preview process handler
+      $('#preview-process').click(function() {
+        designer.showPreview();
+      });
+      
+      // Zoom fit handler
+      $('#zoom-fit').click(function() {
+        designer.zoomToFit();
+      });
+      
+      // Undo/Redo handlers
+      $('#undo-action').click(function() {
+        designer.undo();
+      });
+      
+      $('#redo-action').click(function() {
+        designer.redo();
+      });
+    });
+  </script>
+{% endblock %}

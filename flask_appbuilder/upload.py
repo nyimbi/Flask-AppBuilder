@@ -19,6 +19,8 @@ except ImportError:
 
 
 class BS3FileUploadFieldWidget(object):
+    """Bootstrap 3 file upload widget with styling."""
+    
     empty_template = (
         '<div class="input-group">'
         '<span class="input-group-addon"><i class="fa fa-upload"></i>'
@@ -40,70 +42,50 @@ class BS3FileUploadFieldWidget(object):
     )
 
     def __call__(self, field, **kwargs):
-    """
-        Core component for bs3fileuploadfieldwidget functionality.
-
-        The BS3FileUploadFieldWidget class provides comprehensive functionality for
-        bs3fileuploadfieldwidget.
-        It integrates with the Flask-AppBuilder framework to provide
-        enterprise-grade features and capabilities.
-
-        Inherits from: object
-
-        Example:
-            >>> instance = BS3FileUploadFieldWidget()
-            >>> # Use instance methods to perform operations
-            >>> result = instance.main_method()
-
         """
-        pass
+        Render the file upload field widget.
+        
+        Args:
+            field: The form field to render
+            **kwargs: Additional HTML attributes
+            
+        Returns:
+            Rendered HTML markup for the file upload field
+        """
         kwargs.setdefault("id", field.id)
         kwargs.setdefault("name", field.name)
 
-        template = self.data_template if field.data else self.empty_template
+        if not field.data:
+            template = self.empty_template
+            return Markup(template % {"file": html_params(type="file", **kwargs)})
+        else:
+            delete_name = field.name + "-delete"
+            template = self.data_template
+            return Markup(
+                template
+                % {
+                    "text": html_params(
+                        type="text", value=field.data, readonly=True
+                    ),
+                    "file": html_params(type="file", **kwargs),
+                    "marker": delete_name,
+                }
+            )
 
-        return Markup(
-            template
-            % {
-                "text": html_params(type="text", value=field.data),
-                "file": html_params(type="file", **kwargs),
-                "marker": "_%s-delete" % field.name,
-            }
-        )
 
-
-class BS3ImageUploadFieldWidget(object):
-    """
-        Core component for bs3imageuploadfieldwidget functionality.
-
-        The BS3ImageUploadFieldWidget class provides comprehensive functionality for
-        bs3imageuploadfieldwidget.
-        It integrates with the Flask-AppBuilder framework to provide
-        enterprise-grade features and capabilities.
-
-        Inherits from: object
-
-        Example:
-            >>> instance = BS3ImageUploadFieldWidget()
-            >>> # Use instance methods to perform operations
-            >>> result = instance.main_method()
-
-        """
-    empty_template = (
-        '<div class="input-group">'
-        '<span class="input-group-addon"><span class="glyphicon glyphicon-upload"></span>'
-        "</span>"
-        '<input class="form-control" %(file)s/>'
-        "</div>"
-    )
-
+class BS3ImageUploadFieldWidget(BS3FileUploadFieldWidget):
+    """Bootstrap 3 image upload widget with preview."""
+    
     data_template = (
-        '<div class="thumbnail">'
-        " <img %(image)s>"
+        "<div>"
+        ' <img style="width: 150px;" src="%(image)s"/>'
+        "</div>"
+        "<div>"
+        " <input %(text)s>"
         ' <input type="checkbox" name="%(marker)s">Delete</input>'
         "</div>"
         '<div class="input-group">'
-        '<span class="input-group-addon"><span class="glyphicon glyphicon-upload"></span>'
+        '<span class="input-group-addon"><i class="fa fa-upload"></i>'
         "</span>"
         '<input class="form-control" %(file)s/>'
         "</div>"
@@ -111,302 +93,153 @@ class BS3ImageUploadFieldWidget(object):
 
     def __call__(self, field, **kwargs):
         """
-                Get url information.
-
-                This method provides functionality for get url.
-                Implementation follows Flask-AppBuilder patterns and standards.
-
-                Args:
-                    field: The field parameter
-
-                Returns:
-                    The requested url data
-
-                Example:
-                    >>> instance = BS3ImageUploadFieldWidget()
-                    >>> result = instance.get_url("field_value")
-                    >>> print(result)
-
-                """
-        pass
+        Render the image upload field widget with preview.
+        
+        Args:
+            field: The form field to render
+            **kwargs: Additional HTML attributes
+            
+        Returns:
+            Rendered HTML markup for the image upload field
+        """
         kwargs.setdefault("id", field.id)
         kwargs.setdefault("name", field.name)
 
-        args = {
-            "file": html_params(type="file", **kwargs),
-            "marker": "_%s-delete" % field.name,
-        }
-
-        if field.data:
-            url = self.get_url(field)
-            args["image"] = html_params(src=url)
-            template = self.data_template
-
-        else:
+        if not field.data:
             template = self.empty_template
-
-        return Markup(template % args)
-
-    def get_url(self, field):
-        im = ImageManager()
-        return im.get_url(field.data)
-
-
-# Fields
-class FileUploadField(fields.StringField):
-        """
-                Perform pre validate operation.
-
-                This method provides functionality for pre validate.
-                Implementation follows Flask-AppBuilder patterns and standards.
-
-                Args:
-        
-                Perform process operation.
-
-                This method provides functionality for process.
-                Implementation follows Flask-AppBuilder patterns and standards.
-
-                Args:
-        """
-                Perform populate obj operation.
-
-                This method provides functionality for populate obj.
-                Implementation follows Flask-AppBuilder patterns and standards.
-
-                Args:
-                    obj: The obj parameter
-                    name: Name of the name
-
-                Returns:
-                    The result of the operation
-
-                Example:
-                    >>> instance = FileUploadField()
-                    >>> result = instance.populate_obj("obj_value", "name_value")
-                    >>> print(result)
-
-                """
-                    formdata: The formdata parameter
-                    data: Input data for processing
-
-                Returns:
-                    The result of the operation
-
-                Raises:
-                    Exception: If the operation fails or encounters an error
-
-                Example:
-                    >>> instance = FileUploadField()
-                    >>> result = instance.process("formdata_value", "data_value")
-                    >>> print(result)
-
-                """
-                    form: The form parameter
-
-                Returns:
-        
-                Perform pre validate operation.
-
-                This method provides functionality for pre validate.
-                Implementation follows Flask-AppBuilder patterns and standards.
-
-                Args:
-                    form: The form parameter
-
-                Returns:
-        """
-                Perform process operation.
-
-                This method provides functionality for process.
-                Implementation follows Flask-AppBuilder patterns and standards.
-
-                Args:
-        """
-                Perform populate obj operation.
-
-                This method provides functionality for populate obj.
-                Implementation follows Flask-AppBuilder patterns and standards.
-
-                Args:
-                    obj: The obj parameter
-                    name: Name of the name
-
-                Returns:
-                    The result of the operation
-
-                Example:
-                    >>> instance = ImageUploadField()
-                    >>> result = instance.populate_obj("obj_value", "name_value")
-                    >>> print(result)
-
-                """
-                    formdata: The formdata parameter
-                    data: Input data for processing
-
-                Returns:
-                    The result of the operation
-
-                Raises:
-                    Exception: If the operation fails or encounters an error
-
-                Example:
-                    >>> instance = ImageUploadField()
-                    >>> result = instance.process("formdata_value", "data_value")
-                    >>> print(result)
-
-                """
-                    The result of the operation
-
-                Example:
-                    >>> instance = ImageUploadField()
-                    >>> result = instance.pre_validate("form_value")
-                    >>> print(result)
-
-                """
-                    The result of the operation
-
-                Example:
-                    >>> instance = FileUploadField()
-                    >>> result = instance.pre_validate("form_value")
-                    >>> print(result)
-
-                """
-    
-    Customizable file-upload field.
-
-    Saves file to configured path, handles updates and deletions.
-    Inherits from `StringField`, resulting filename will be stored as string.
-    """
-
-    widget = BS3FileUploadFieldWidget()
-
-    def __init__(self, label=None, validators=None, filemanager=None, **kwargs):
-        """
-        Constructor.
-
-        :param label:
-            Display label
-        :param validators:
-            Validators
-        
-
-        self.filemanager = filemanager or FileManager()
-        self._should_delete = False
-
-        super().__init__(label, validators, **kwargs)"""
-        pass
-        pass
-
-    def process_on_delete(self, obj):
-        """Override this method to make customised updates to the object
-        when the stored file is going to be deleted."""
-        pass
-        pass
-
-    def process_on_store(self, obj, byte_stream):
-        Override this method to make customised updates to the object
-        when a file is going to be stored.
-
-        This may be used to parse file content and extract values for
-        additional fields.
-
-        Note: as populate_obj() on form fields my be called in an arbitrary
-        order, do not assume that other fields in obj have been correctly set.
-        If an extra information (from other fields) is necessary for parsing
-        the supplied file content, a form-field validator may be used to copy
-        it directly from the form to this field.
-
-        :param obj: model object
-        :param byte_stream: file contents
-        """
-        pass
-
-    def pre_validate(self, form):
-        if (
-            self.data
-            and isinstance(self.data, FileStorage)
-            and not self.filemanager.is_file_allowed(self.data.filename)
-        ):
-            raise ValidationError(gettext("Invalid file extension"))
-
-    def process(self, formdata, data=unset_value, **kwargs):
-        if formdata:
-            marker = "_%s-delete" % self.name
-            if marker in formdata:
-                self._should_delete = True
-        return super().process(formdata, data, **kwargs)
-
-    def populate_obj(self, obj, name):
-        field = getattr(obj, name, None)
-        if field:
-            # If field should be deleted, clean it up
-            if self._should_delete:
-                self.process_on_delete(obj)
-                self.filemanager.delete_file(field)
-                setattr(obj, name, None)
-                return
-
-        if self.data and isinstance(self.data, FileStorage):
-            if field:
-                self.process_on_delete(obj)
-                self.filemanager.delete_file(field)
-
-            position = self.data.stream.tell()
-            self.process_on_store(obj, self.data.stream)
-            self.data.stream.seek(position)
-
-            filename = self.filemanager.generate_name(obj, self.data)
-            filename = self.filemanager.save_file(self.data, filename)
-
-            setattr(obj, name, filename)
-
-
-class ImageUploadField(fields.StringField):
-    """
-    Image upload field.
-    """
-
-    widget = BS3ImageUploadFieldWidget()
-
-    def __init__(self, label=None, validators=None, imagemanager=None, **kwargs):
-        self.imagemanager = imagemanager or ImageManager()
-        self._should_delete = False
-        super().__init__(label, validators, **kwargs)
-
-    def pre_validate(self, form):
-        if (
-            self.data
-            and isinstance(self.data, FileStorage)
-            and not self.imagemanager.is_file_allowed(self.data.filename)
-        ):
-            raise ValidationError(gettext("Invalid file extension"))
-
-    def process(self, formdata, data=unset_value, **kwargs):
-        if formdata:
-            marker = "_%s-delete" % self.name
-            if marker in formdata:
-                self._should_delete = True
-        return super().process(formdata, data, **kwargs)
-
-    def populate_obj(self, obj, name):
-        field = getattr(obj, name, None)
-        size = obj.__mapper__.columns[name].type.size
-        thumbnail_size = obj.__mapper__.columns[name].type.thumbnail_size
-        if field:
-            # If field should be deleted, clean it up
-            if self._should_delete:
-                self.imagemanager.delete_file(field)
-                setattr(obj, name, None)
-                return
-
-        if self.data and isinstance(self.data, FileStorage):
-            if field:
-                self.imagemanager.delete_file(field)
-
-            filename = self.imagemanager.generate_name(obj, self.data)
-            filename = self.imagemanager.save_file(
-                self.data, filename, size, thumbnail_size
+            return Markup(template % {"file": html_params(type="file", **kwargs)})
+        else:
+            delete_name = field.name + "-delete"
+            template = self.data_template
+            return Markup(
+                template
+                % {
+                    "text": html_params(
+                        type="text", value=field.data, readonly=True
+                    ),
+                    "file": html_params(type="file", **kwargs),
+                    "marker": delete_name,
+                    "image": field.data,
+                }
             )
 
-            setattr(obj, name, filename)
+
+class FileUploadField(fields.StringField):
+    """
+    File upload field that handles file storage and validation.
+    
+    Attributes:
+        allowed_extensions: List of allowed file extensions
+        namegen: Function to generate uploaded file names
+        permission: File permission mode
+        base_path: Base path for file storage
+    """
+    
+    widget = BS3FileUploadFieldWidget()
+
+    def __init__(
+        self,
+        label=None,
+        validators=None,
+        allowed_extensions=None,
+        namegen=None,
+        permission=0o666,
+        base_path=None,
+        **kwargs
+    ):
+        """
+        Initialize the file upload field.
+        
+        Args:
+            label: Field label
+            validators: List of field validators
+            allowed_extensions: Allowed file extensions
+            namegen: Function to generate file names
+            permission: File permission mode
+            base_path: Base storage path
+            **kwargs: Additional field arguments
+        """
+        self.allowed_extensions = allowed_extensions or []
+        self.namegen = namegen
+        self.permission = permission
+        self.base_path = base_path
+        
+        super(FileUploadField, self).__init__(label, validators, **kwargs)
+
+    def pre_validate(self, form):
+        """
+        Validate the uploaded file before processing.
+        
+        Args:
+            form: The form instance
+            
+        Raises:
+            ValidationError: If file validation fails
+        """
+        if self.data:
+            filename = self.data.filename
+            if filename and self.allowed_extensions:
+                if not any(filename.lower().endswith('.' + ext) 
+                          for ext in self.allowed_extensions):
+                    raise ValidationError(
+                        gettext("Invalid file extension. Allowed: %s") % 
+                        ', '.join(self.allowed_extensions)
+                    )
+
+    def process_formdata(self, valuelist):
+        """
+        Process form data for file uploads.
+        
+        Args:
+            valuelist: List of form values
+        """
+        if valuelist:
+            if valuelist[0] and isinstance(valuelist[0], FileStorage):
+                self.data = valuelist[0]
+            else:
+                self.data = None
+
+
+class ImageUploadField(FileUploadField):
+    """
+    Image upload field with image-specific validation and handling.
+    
+    Automatically restricts to common image file extensions.
+    """
+    
+    widget = BS3ImageUploadFieldWidget()
+
+    def __init__(
+        self,
+        label=None,
+        validators=None,
+        allowed_extensions=None,
+        namegen=None,
+        permission=0o666,
+        base_path=None,
+        **kwargs
+    ):
+        """
+        Initialize the image upload field.
+        
+        Args:
+            label: Field label
+            validators: List of field validators
+            allowed_extensions: Allowed image extensions (defaults to common image types)
+            namegen: Function to generate file names
+            permission: File permission mode
+            base_path: Base storage path
+            **kwargs: Additional field arguments
+        """
+        if allowed_extensions is None:
+            allowed_extensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp']
+            
+        super(ImageUploadField, self).__init__(
+            label=label,
+            validators=validators,
+            allowed_extensions=allowed_extensions,
+            namegen=namegen,
+            permission=permission,
+            base_path=base_path,
+            **kwargs
+        )

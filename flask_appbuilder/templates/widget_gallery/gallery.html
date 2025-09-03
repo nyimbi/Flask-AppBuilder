@@ -1,0 +1,636 @@
+{% extends "appbuilder/base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fa fa-th-large"></i> {{ title }}
+                    </h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-info btn-sm" onclick="showUsageGuide()">
+                            <i class="fa fa-question-circle"></i> Usage Guide
+                        </button>
+                        <button type="button" class="btn btn-primary btn-sm" onclick="exportWidgets()">
+                            <i class="fa fa-download"></i> Export Documentation
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    <div class="widget-gallery">
+                        <!-- Search and Filter Bar -->
+                        <div class="gallery-controls mb-4">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="widget-search" 
+                                               placeholder="Search widgets...">
+                                        <div class="input-group-append">
+                                            <button class="btn btn-outline-secondary" type="button">
+                                                <i class="fa fa-search"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <select class="form-control" id="category-filter">
+                                        <option value="">All Categories</option>
+                                        {% for category_id, category_info in widget_categories.items() %}
+                                        <option value="{{ category_id }}">{{ category_info.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Widget Categories -->
+                        {% for category_id, category_info in widget_categories.items() %}
+                        <div class="widget-category" data-category="{{ category_id }}">
+                            <div class="category-header">
+                                <h4>
+                                    <i class="fa fa-folder-open"></i> {{ category_info.name }}
+                                    <span class="badge badge-secondary">{{ category_info.widgets|length }}</span>
+                                </h4>
+                                <p class="text-muted">{{ category_info.description }}</p>
+                            </div>
+                            
+                            <div class="widget-grid">
+                                {% for widget_name, widget_info in category_info.widgets.items() %}
+                                <div class="widget-card" data-widget-name="{{ widget_name }}">
+                                    <div class="widget-preview">
+                                        <div class="preview-placeholder">
+                                            <i class="fa fa-puzzle-piece fa-2x text-primary"></i>
+                                            <div class="widget-status">
+                                                <span class="badge badge-success">Ready</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="widget-info">
+                                        <h5>{{ widget_name }}</h5>
+                                        <p class="widget-description">{{ widget_info.description }}</p>
+                                        
+                                        <!-- Feature Tags -->
+                                        <div class="feature-tags mb-2">
+                                            {% set features = widget_info.get('features', []) %}
+                                            {% if not features %}
+                                                {% if 'Modern' in widget_name %}
+                                                    <span class="badge badge-info">Modern UI</span>
+                                                {% endif %}
+                                                {% if 'JSON' in widget_name %}
+                                                    <span class="badge badge-warning">Data Editor</span>
+                                                {% endif %}
+                                                {% if 'Form' in widget_name %}
+                                                    <span class="badge badge-primary">Form Builder</span>
+                                                {% endif %}
+                                                {% if 'Validation' in widget_name %}
+                                                    <span class="badge badge-success">Validation</span>
+                                                {% endif %}
+                                            {% else %}
+                                                {% for feature in features %}
+                                                <span class="badge badge-secondary">{{ feature }}</span>
+                                                {% endfor %}
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <div class="widget-actions">
+                                            <a href="{{ url_for('WidgetGalleryView.widget_detail', 
+                                                               category=category_id, 
+                                                               widget_name=widget_name) }}" 
+                                               class="btn btn-primary btn-sm">
+                                                <i class="fa fa-eye"></i> View Details
+                                            </a>
+                                            
+                                            <button type="button" class="btn btn-secondary btn-sm"
+                                                    onclick="showQuickExample('{{ category_id }}', '{{ widget_name }}')">
+                                                <i class="fa fa-code"></i> Quick Example
+                                            </button>
+                                            
+                                            <div class="btn-group" role="group">
+                                                <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle"
+                                                        data-toggle="dropdown" aria-expanded="false">
+                                                    <i class="fa fa-copy"></i>
+                                                </button>
+                                                <div class="dropdown-menu">
+                                                    <a class="dropdown-item" href="#" 
+                                                       onclick="copyExample('{{ category_id }}', '{{ widget_name }}', 'basic')">
+                                                        Basic Usage
+                                                    </a>
+                                                    <a class="dropdown-item" href="#" 
+                                                       onclick="copyExample('{{ category_id }}', '{{ widget_name }}', 'form')">
+                                                        Form Integration
+                                                    </a>
+                                                    <a class="dropdown-item" href="#" 
+                                                       onclick="copyExample('{{ category_id }}', '{{ widget_name }}', 'view')">
+                                                        View Usage
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Example Modal -->
+<div class="modal fade" id="quickExampleModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fa fa-code"></i> Quick Example - <span id="modal-widget-name"></span>
+                </h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <ul class="nav nav-tabs" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link active" data-toggle="tab" href="#basic-tab">Basic Usage</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-toggle="tab" href="#form-tab">Form Integration</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-toggle="tab" href="#view-tab">ModelView Usage</a>
+                    </li>
+                </ul>
+                <div class="tab-content mt-3">
+                    <div class="tab-pane active" id="basic-tab">
+                        <pre><code id="basic-code">Loading...</code></pre>
+                    </div>
+                    <div class="tab-pane" id="form-tab">
+                        <pre><code id="form-code">Loading...</code></pre>
+                    </div>
+                    <div class="tab-pane" id="view-tab">
+                        <pre><code id="view-code">Loading...</code></pre>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="copyCurrentExample()">
+                    <i class="fa fa-copy"></i> Copy Code
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Usage Guide Modal -->
+<div class="modal fade" id="usageGuideModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fa fa-question-circle"></i> Widget Usage Guide
+                </h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="nav flex-column nav-pills" role="tablist">
+                            <a class="nav-link active" data-toggle="pill" href="#getting-started">Getting Started</a>
+                            <a class="nav-link" data-toggle="pill" href="#basic-usage">Basic Usage</a>
+                            <a class="nav-link" data-toggle="pill" href="#form-integration">Form Integration</a>
+                            <a class="nav-link" data-toggle="pill" href="#view-integration">View Integration</a>
+                            <a class="nav-link" data-toggle="pill" href="#customization">Customization</a>
+                            <a class="nav-link" data-toggle="pill" href="#troubleshooting">Troubleshooting</a>
+                        </div>
+                    </div>
+                    <div class="col-md-9">
+                        <div class="tab-content">
+                            <div class="tab-pane fade show active" id="getting-started">
+                                <h6>Getting Started</h6>
+                                <p>Welcome to the Flask-AppBuilder Enhanced Widget Library!</p>
+                                <p>This library provides modern, feature-rich widgets to enhance your Flask-AppBuilder applications.</p>
+                                
+                                <h6>Installation</h6>
+                                <pre><code># Widgets are included with this Flask-AppBuilder installation
+from flask_appbuilder.widgets import ModernTextWidget, JSONEditorWidget</code></pre>
+                                
+                                <h6>Widget Categories</h6>
+                                <ul>
+                                    <li><strong>Modern UI:</strong> Enhanced versions of standard widgets</li>
+                                    <li><strong>Advanced Forms:</strong> Complex form building and validation</li>
+                                    <li><strong>Specialized Data:</strong> Widgets for JSON, arrays, and complex data</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="tab-pane fade" id="basic-usage">
+                                <h6>Basic Widget Usage</h6>
+                                <p>Use widgets in your WTForms forms:</p>
+                                <pre><code>from flask_appbuilder.widgets import ModernTextWidget
+from wtforms import StringField, Form
+
+class MyForm(Form):
+    name = StringField('Name', widget=ModernTextWidget(
+        icon_prefix='fa-user',
+        show_counter=True,
+        max_length=100
+    ))</code></pre>
+                            </div>
+                            
+                            <div class="tab-pane fade" id="form-integration">
+                                <h6>Form Integration</h6>
+                                <p>Integrate widgets with Flask-AppBuilder forms:</p>
+                                <pre><code>from flask_appbuilder.forms import DynamicForm
+
+class MyModelForm(DynamicForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Apply widgets to specific fields
+        if 'description' in self._fields:
+            self._fields['description'].widget = ModernTextAreaWidget(
+                rich_text=True,
+                markdown_preview=True
+            )</code></pre>
+                            </div>
+                            
+                            <div class="tab-pane fade" id="view-integration">
+                                <h6>ModelView Integration</h6>
+                                <p>Use widgets in ModelView classes:</p>
+                                <pre><code>from flask_appbuilder.views import ModelView
+
+class MyModelView(ModelView):
+    datamodel = SQLAInterface(MyModel)
+    
+    add_form_widget = {
+        'json_data': JSONEditorWidget(show_tree_view=True),
+        'tags': TagInputWidget(max_tags=10)
+    }
+    
+    edit_form_widget = {
+        'json_data': JSONEditorWidget(show_tree_view=True),
+        'tags': TagInputWidget(max_tags=10)
+    }</code></pre>
+                            </div>
+                            
+                            <div class="tab-pane fade" id="customization">
+                                <h6>Widget Customization</h6>
+                                <p>All widgets support extensive customization:</p>
+                                <pre><code># Example: Customizing ModernTextWidget
+widget = ModernTextWidget(
+    icon_prefix='fa-envelope',      # Add icon
+    icon_suffix='fa-check',         # Suffix icon
+    show_counter=True,              # Character counter
+    max_length=255,                 # Max length
+    autocomplete_source='/api/suggestions',  # Autocomplete
+    floating_label=True             # Floating label style
+)</code></pre>
+                            </div>
+                            
+                            <div class="tab-pane fade" id="troubleshooting">
+                                <h6>Common Issues</h6>
+                                <dl>
+                                    <dt>Widget not displaying correctly</dt>
+                                    <dd>Ensure Bootstrap CSS/JS are loaded in your template</dd>
+                                    
+                                    <dt>JavaScript errors</dt>
+                                    <dd>Check browser console for specific errors. Some widgets require modern browsers.</dd>
+                                    
+                                    <dt>Form validation issues</dt>
+                                    <dd>Make sure field names match your model attributes</dd>
+                                    
+                                    <dt>Performance issues</dt>
+                                    <dd>Large datasets should use pagination or lazy loading options</dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.widget-gallery {
+    padding: 1rem 0;
+}
+
+.gallery-controls {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+}
+
+.widget-category {
+    margin-bottom: 3rem;
+}
+
+.category-header {
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.category-header h4 {
+    color: #495057;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.widget-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 2rem;
+}
+
+.widget-card {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    background: white;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.widget-card:hover {
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    transform: translateY(-3px);
+    border-color: #0d6efd;
+}
+
+.widget-preview {
+    height: 120px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-bottom: 1px solid #e9ecef;
+    position: relative;
+}
+
+.preview-placeholder {
+    text-align: center;
+}
+
+.widget-status {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+}
+
+.widget-info {
+    padding: 1.5rem;
+}
+
+.widget-info h5 {
+    margin-bottom: 0.75rem;
+    color: #495057;
+    font-weight: 600;
+}
+
+.widget-description {
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+    color: #6c757d;
+    line-height: 1.4;
+}
+
+.feature-tags {
+    margin-bottom: 1rem;
+}
+
+.feature-tags .badge {
+    margin-right: 0.25rem;
+    margin-bottom: 0.25rem;
+}
+
+.widget-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.widget-actions .btn {
+    flex: 1;
+}
+
+.widget-actions .btn-group {
+    flex: 0;
+}
+
+/* Modal Code Styling */
+pre code {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    padding: 1rem;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    max-height: 400px;
+    overflow-y: auto;
+    display: block;
+}
+
+/* Search and Filter */
+.widget-category.hidden {
+    display: none;
+}
+
+.widget-card.hidden {
+    display: none;
+}
+</style>
+
+<script>
+let currentExampleCategory = '';
+let currentExampleWidget = '';
+let currentExampleData = {};
+
+// Search and Filter Functionality
+document.getElementById('widget-search').addEventListener('input', function() {
+    const searchTerm = this.value.toLowerCase();
+    filterWidgets(searchTerm, document.getElementById('category-filter').value);
+});
+
+document.getElementById('category-filter').addEventListener('change', function() {
+    const categoryFilter = this.value;
+    filterWidgets(document.getElementById('widget-search').value.toLowerCase(), categoryFilter);
+});
+
+function filterWidgets(searchTerm, categoryFilter) {
+    const categories = document.querySelectorAll('.widget-category');
+    
+    categories.forEach(category => {
+        const categoryId = category.dataset.category;
+        const widgets = category.querySelectorAll('.widget-card');
+        let categoryHasVisibleWidgets = false;
+        
+        // Category filter
+        if (categoryFilter && categoryFilter !== categoryId) {
+            category.classList.add('hidden');
+            return;
+        } else {
+            category.classList.remove('hidden');
+        }
+        
+        // Search filter
+        widgets.forEach(widget => {
+            const widgetName = widget.dataset.widgetName.toLowerCase();
+            const description = widget.querySelector('.widget-description').textContent.toLowerCase();
+            
+            if (searchTerm === '' || widgetName.includes(searchTerm) || description.includes(searchTerm)) {
+                widget.classList.remove('hidden');
+                categoryHasVisibleWidgets = true;
+            } else {
+                widget.classList.add('hidden');
+            }
+        });
+        
+        // Hide category if no visible widgets
+        if (categoryFilter === '' && !categoryHasVisibleWidgets) {
+            category.classList.add('hidden');
+        }
+    });
+}
+
+function copyExample(category, widgetName, usageType) {
+    fetch('{{ url_for("WidgetGalleryView.generate_code") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            category: category,
+            widget_name: widgetName,
+            usage_type: usageType
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const exampleKey = `${usageType}_usage`;
+            const code = data.code_examples[exampleKey] || 'No example available';
+            navigator.clipboard.writeText(code);
+            showToast(`${usageType} example copied to clipboard!`, 'success');
+        } else {
+            showToast('Failed to generate code example', 'error');
+        }
+    });
+}
+
+function showQuickExample(category, widgetName) {
+    currentExampleCategory = category;
+    currentExampleWidget = widgetName;
+    
+    document.getElementById('modal-widget-name').textContent = widgetName;
+    
+    // Load all example types
+    ['basic', 'form', 'view'].forEach(type => {
+        loadExampleCode(category, widgetName, type);
+    });
+    
+    $('#quickExampleModal').modal('show');
+}
+
+function loadExampleCode(category, widgetName, type) {
+    fetch('{{ url_for("WidgetGalleryView.generate_code") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            category: category,
+            widget_name: widgetName,
+            usage_type: type
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            currentExampleData[type] = data.code_examples;
+            const exampleKey = `${type}_usage`;
+            const code = data.code_examples[exampleKey] || 'No example available';
+            document.getElementById(`${type}-code`).textContent = code;
+        } else {
+            document.getElementById(`${type}-code`).textContent = `Error: ${data.error}`;
+        }
+    });
+}
+
+function copyCurrentExample() {
+    const activeTab = document.querySelector('#quickExampleModal .nav-link.active').getAttribute('href').replace('#', '').replace('-tab', '');
+    const code = document.getElementById(`${activeTab}-code`).textContent;
+    
+    navigator.clipboard.writeText(code);
+    showToast('Code example copied to clipboard!', 'success');
+}
+
+function exportWidgets() {
+    window.open('{{ url_for("WidgetGalleryView.export_widgets") }}', '_blank');
+}
+
+function showUsageGuide() {
+    $('#usageGuideModal').modal('show');
+}
+
+function showToast(message, type) {
+    // Create toast notification
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible`;
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        min-width: 300px;
+        animation: slideInRight 0.3s ease;
+    `;
+    
+    toast.innerHTML = `
+        <i class="fa fa-${type === 'success' ? 'check' : 'exclamation-triangle'}"></i>
+        ${message}
+        <button type="button" class="close" onclick="this.parentElement.remove()">
+            <span>&times;</span>
+        </button>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (toast.parentElement) {
+            toast.remove();
+        }
+    }, 5000);
+}
+
+// Add slide-in animation
+const style = document.createElement('style');
+style.textContent = `
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}

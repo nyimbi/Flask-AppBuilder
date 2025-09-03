@@ -1,0 +1,483 @@
+{% extends "appbuilder/baselayout.html" %}
+
+{% block head_css %}
+{{ super() }}
+<style>
+.metric-card {
+    border-left: 4px solid;
+    transition: transform 0.2s ease;
+}
+
+.metric-card:hover {
+    transform: translateY(-5px);
+}
+
+.metric-card.primary {
+    border-left-color: #007bff;
+}
+
+.metric-card.success {
+    border-left-color: #28a745;
+}
+
+.metric-card.warning {
+    border-left-color: #ffc107;
+}
+
+.metric-card.danger {
+    border-left-color: #dc3545;
+}
+
+.metric-value {
+    font-size: 2rem;
+    font-weight: bold;
+    margin: 10px 0;
+}
+
+.usage-bar {
+    height: 8px;
+    background: #e9ecef;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.usage-bar-fill {
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+.usage-bar-fill.low {
+    background: #28a745;
+}
+
+.usage-bar-fill.medium {
+    background: #ffc107;
+}
+
+.usage-bar-fill.high {
+    background: #fd7e14;
+}
+
+.usage-bar-fill.critical {
+    background: #dc3545;
+}
+
+.tenant-info-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.quick-actions {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.recent-activity {
+    max-height: 400px;
+    overflow-y: auto;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fa fa-tachometer-alt"></i> Tenant Dashboard
+        </h1>
+        <div>
+            <span class="badge badge-{{ 'success' if tenant.is_active else 'warning' }} badge-lg">
+                {{ tenant.status.title() }}
+            </span>
+        </div>
+    </div>
+
+    <!-- Tenant Info Card -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card tenant-info-card">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h4 class="mb-1">{{ tenant.name }}</h4>
+                            <p class="mb-0">
+                                <strong>Subdomain:</strong> {{ tenant.slug }}.{{ request.host.split('.', 1)[-1] if '.' in request.host else 'yourdomain.com' }}<br>
+                                {% if tenant.custom_domain %}
+                                <strong>Custom Domain:</strong> {{ tenant.custom_domain }}<br>
+                                {% endif %}
+                                <strong>Plan:</strong> {{ tenant.plan_id.title() }}<br>
+                                <strong>Created:</strong> {{ tenant.created_on.strftime('%B %d, %Y') }}
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-right">
+                            {% if tenant.branding_config and tenant.branding_config.get('logo_url') %}
+                                <img src="{{ tenant.branding_config.logo_url }}" alt="Logo" style="max-height: 60px; max-width: 150px;">
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Usage Metrics -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2 metric-card primary">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Active Users
+                            </div>
+                            <div class="metric-value text-gray-800">{{ tenant.user_count }}</div>
+                            <div class="text-xs text-gray-600">
+                                of {{ usage_stats.max_users if usage_stats.max_users != -1 else '∞' }} limit
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fa fa-users fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                    {% if usage_stats.max_users != -1 %}
+                    <div class="usage-bar mt-2">
+                        <div class="usage-bar-fill {{ 'critical' if (tenant.user_count / usage_stats.max_users * 100) > 90 else 'high' if (tenant.user_count / usage_stats.max_users * 100) > 75 else 'medium' if (tenant.user_count / usage_stats.max_users * 100) > 50 else 'low' }}" 
+                             style="width: {{ (tenant.user_count / usage_stats.max_users * 100) | round }}%"></div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2 metric-card success">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                API Calls This Month
+                            </div>
+                            <div class="metric-value text-gray-800">
+                                {{ "{:,}".format(usage_stats.current_usage.get('api_calls', 0) | int) }}
+                            </div>
+                            <div class="text-xs text-gray-600">
+                                of {{ "{:,}".format(usage_stats.limits.get('api_calls_per_month', 0)) if usage_stats.limits.get('api_calls_per_month', -1) != -1 else '∞' }} limit
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fa fa-exchange-alt fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                    {% if usage_stats.limits.get('api_calls_per_month', -1) != -1 %}
+                    {% set api_usage_pct = (usage_stats.current_usage.get('api_calls', 0) / usage_stats.limits.get('api_calls_per_month', 1) * 100) %}
+                    <div class="usage-bar mt-2">
+                        <div class="usage-bar-fill {{ 'critical' if api_usage_pct > 90 else 'high' if api_usage_pct > 75 else 'medium' if api_usage_pct > 50 else 'low' }}" 
+                             style="width: {{ api_usage_pct | round }}%"></div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2 metric-card warning">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Storage Used
+                            </div>
+                            <div class="metric-value text-gray-800">
+                                {{ "%.2f"|format(usage_stats.current_usage.get('storage_gb', 0)) }} GB
+                            </div>
+                            <div class="text-xs text-gray-600">
+                                of {{ usage_stats.limits.get('storage_gb', 0) if usage_stats.limits.get('storage_gb', -1) != -1 else '∞' }} GB limit
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fa fa-database fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                    {% if usage_stats.limits.get('storage_gb', -1) != -1 %}
+                    {% set storage_usage_pct = (usage_stats.current_usage.get('storage_gb', 0) / usage_stats.limits.get('storage_gb', 1) * 100) %}
+                    <div class="usage-bar mt-2">
+                        <div class="usage-bar-fill {{ 'critical' if storage_usage_pct > 90 else 'high' if storage_usage_pct > 75 else 'medium' if storage_usage_pct > 50 else 'low' }}" 
+                             style="width: {{ storage_usage_pct | round }}%"></div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2 metric-card info">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Subscription Status
+                            </div>
+                            <div class="metric-value text-gray-800" style="font-size: 1.2rem;">
+                                {% if subscription %}
+                                    {{ subscription.status.title() }}
+                                {% else %}
+                                    Free Plan
+                                {% endif %}
+                            </div>
+                            <div class="text-xs text-gray-600">
+                                {% if subscription %}
+                                    Next billing: {{ subscription.current_period_end.strftime('%m/%d/%Y') if subscription.current_period_end else 'N/A' }}
+                                {% else %}
+                                    No subscription
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fa fa-credit-card fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Quick Actions -->
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Quick Actions</h6>
+                </div>
+                <div class="card-body quick-actions">
+                    <div class="list-group list-group-flush">
+                        <a href="{{ url_for('TenantAdminView.manage_users') }}" class="list-group-item list-group-item-action">
+                            <i class="fa fa-users text-primary"></i> Manage Users
+                            <small class="text-muted d-block">Add, edit, or remove team members</small>
+                        </a>
+                        <a href="{{ url_for('TenantAdminView.settings') }}" class="list-group-item list-group-item-action">
+                            <i class="fa fa-cog text-info"></i> Tenant Settings
+                            <small class="text-muted d-block">Update branding and preferences</small>
+                        </a>
+                        <a href="{{ url_for('TenantAdminView.billing_portal') }}" class="list-group-item list-group-item-action">
+                            <i class="fa fa-credit-card text-success"></i> Billing & Usage
+                            <small class="text-muted d-block">View invoices and usage details</small>
+                        </a>
+                        {% if tenant.plan_id == 'free' %}
+                        <a href="#" class="list-group-item list-group-item-action" data-toggle="modal" data-target="#upgradeModal">
+                            <i class="fa fa-arrow-up text-warning"></i> Upgrade Plan
+                            <small class="text-muted d-block">Unlock premium features</small>
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="col-lg-8 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Recent Team Activity</h6>
+                </div>
+                <div class="card-body recent-activity">
+                    {% if recent_users %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>Role</th>
+                                    <th>Joined</th>
+                                    <th>Last Login</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for tenant_user in recent_users %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-circle bg-primary text-white mr-2" style="width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px;">
+                                                {{ tenant_user.user.first_name[0] }}{{ tenant_user.user.last_name[0] }}
+                                            </div>
+                                            <div>
+                                                <div class="font-weight-bold">{{ tenant_user.user.first_name }} {{ tenant_user.user.last_name }}</div>
+                                                <small class="text-muted">{{ tenant_user.user.email }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-{{ 'success' if tenant_user.role_within_tenant == 'admin' else 'primary' }}">
+                                            {{ tenant_user.role_within_tenant.title() }}
+                                        </span>
+                                    </td>
+                                    <td>{{ tenant_user.joined_at.strftime('%m/%d/%Y') if tenant_user.joined_at else 'N/A' }}</td>
+                                    <td>
+                                        {% if tenant_user.last_login_at %}
+                                            {{ tenant_user.last_login_at.strftime('%m/%d/%Y') }}
+                                        {% else %}
+                                            <span class="text-muted">Never</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-{{ 'success' if tenant_user.is_active else 'secondary' }}">
+                                            {{ 'Active' if tenant_user.is_active else 'Inactive' }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fa fa-users fa-3x text-gray-300 mb-3"></i>
+                        <p>No team members yet.</p>
+                        <a href="{{ url_for('TenantAdminView.manage_users') }}" class="btn btn-primary">
+                            <i class="fa fa-plus"></i> Invite Users
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feature Status Cards -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Feature Access</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% set features = tenant.get_feature_flags() %}
+                        <div class="col-md-3 mb-3">
+                            <div class="d-flex align-items-center">
+                                <i class="fa fa-{{ 'check text-success' if features.get('analytics_dashboard') else 'times text-muted' }} mr-2"></i>
+                                <span class="{{ 'text-dark' if features.get('analytics_dashboard') else 'text-muted' }}">Analytics Dashboard</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="d-flex align-items-center">
+                                <i class="fa fa-{{ 'check text-success' if features.get('advanced_export') else 'times text-muted' }} mr-2"></i>
+                                <span class="{{ 'text-dark' if features.get('advanced_export') else 'text-muted' }}">Advanced Export</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="d-flex align-items-center">
+                                <i class="fa fa-{{ 'check text-success' if features.get('alerting') else 'times text-muted' }} mr-2"></i>
+                                <span class="{{ 'text-dark' if features.get('alerting') else 'text-muted' }}">Alerting System</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="d-flex align-items-center">
+                                <i class="fa fa-{{ 'check text-success' if features.get('custom_branding') else 'times text-muted' }} mr-2"></i>
+                                <span class="{{ 'text-dark' if features.get('custom_branding') else 'text-muted' }}">Custom Branding</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="d-flex align-items-center">
+                                <i class="fa fa-{{ 'check text-success' if features.get('api_access') else 'times text-muted' }} mr-2"></i>
+                                <span class="{{ 'text-dark' if features.get('api_access') else 'text-muted' }}">API Access</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Upgrade Modal (for free plan users) -->
+{% if tenant.plan_id == 'free' %}
+<div class="modal fade" id="upgradeModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Upgrade Your Plan</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="lead">Unlock powerful features to grow your business</p>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card border-primary">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0">Starter Plan</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="text-center">
+                                    <div class="h2 mb-3">$29<small>/month</small></div>
+                                </div>
+                                <ul class="list-unstyled">
+                                    <li><i class="fa fa-check text-success"></i> 10 Users</li>
+                                    <li><i class="fa fa-check text-success"></i> 10,000 Records</li>
+                                    <li><i class="fa fa-check text-success"></i> Advanced Export</li>
+                                    <li><i class="fa fa-check text-success"></i> Analytics Dashboard</li>
+                                    <li><i class="fa fa-check text-success"></i> API Access</li>
+                                </ul>
+                                <a href="#" class="btn btn-primary btn-block">Start Free Trial</a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="card border-success">
+                            <div class="card-header bg-success text-white">
+                                <h5 class="mb-0">Professional Plan</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="text-center">
+                                    <div class="h2 mb-3">$99<small>/month</small></div>
+                                </div>
+                                <ul class="list-unstyled">
+                                    <li><i class="fa fa-check text-success"></i> 50 Users</li>
+                                    <li><i class="fa fa-check text-success"></i> 100,000 Records</li>
+                                    <li><i class="fa fa-check text-success"></i> Custom Branding</li>
+                                    <li><i class="fa fa-check text-success"></i> Priority Support</li>
+                                    <li><i class="fa fa-check text-success"></i> Advanced Features</li>
+                                </ul>
+                                <a href="#" class="btn btn-success btn-block">Start Free Trial</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Maybe Later</button>
+                <a href="{{ url_for('TenantAdminView.billing_portal') }}" class="btn btn-primary">View All Plans</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block tail_js %}
+{{ super() }}
+<script>
+$(document).ready(function() {
+    // Auto-refresh usage data every 5 minutes
+    setInterval(function() {
+        location.reload();
+    }, 300000);
+    
+    // Tooltip initialization
+    $('[data-toggle="tooltip"]').tooltip();
+    
+    // Usage bar animations
+    $('.usage-bar-fill').each(function() {
+        var $this = $(this);
+        var width = $this.css('width');
+        $this.css('width', '0').animate({width: width}, 1000);
+    });
+});
+</script>
+{% endblock %}

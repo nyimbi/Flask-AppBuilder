@@ -1,0 +1,212 @@
+{% extends "appbuilder/general/widgets/form.html" %}
+{% import 'appbuilder/general/lib.html' as lib %}
+
+{# Collaborative Form Widget Template #}
+{# Extends the standard Flask-AppBuilder form widget with real-time collaboration features #}
+
+{% block css %}
+{{ super() }}
+<link rel="stylesheet" href="{{ url_for('appbuilder.static', filename='appbuilder/css/collaboration.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="collaboration-form-container" 
+     data-collaboration-enabled="{{ collaboration_enabled|default(false)|tojson }}"
+     data-session-id="{{ collaboration_session_id or '' }}"
+     data-model-name="{{ collaboration_model or '' }}"
+     data-record-id="{{ collaboration_record_id or '' }}"
+     data-websocket-url="{{ collaboration_websocket_url or '/collaboration' }}"
+     data-user-info="{{ collaboration_user_info|tojson }}">
+     
+    {# Collaboration toolbar #}
+    {% if collaboration_enabled %}
+    <div class="collaboration-toolbar" id="collaboration-toolbar">
+        <div class="collaboration-status-indicator" id="status-indicator"></div>
+        <span class="collaboration-status-text" id="status-text">Initializing...</span>
+        <span class="collaboration-participant-count" id="participant-count">0 participants</span>
+    </div>
+    
+    {# Presence indicators #}
+    <div class="collaboration-presence" id="presence-container">
+        <span class="collaboration-presence-count" id="presence-count">0 active</span>
+    </div>
+    {% endif %}
+    
+    {# Enhanced form with collaboration features #}
+    <div class="form-container {% if collaboration_enabled %}collaboration-enabled{% endif %}">
+        {{ super() }}
+    </div>
+    
+    {# Collaboration-specific modals and overlays #}
+    {% if collaboration_enabled %}
+    {# Conflict resolution modal container #}
+    <div id="collaboration-conflict-modal-container"></div>
+    
+    {# Comments sidebar #}
+    <div class="collaboration-comments" id="comments-sidebar" style="display: none;">
+        <div class="collaboration-comments-header">
+            <span>Comments & Discussion</span>
+            <button class="close-comments" onclick="toggleComments()">&times;</button>
+        </div>
+        <div class="collaboration-comments-body" id="comments-body">
+            <!-- Comments will be dynamically loaded here -->
+        </div>
+        <div class="collaboration-comment-input">
+            <textarea placeholder="Add a comment..." id="comment-input"></textarea>
+            <button onclick="postComment()" id="post-comment-btn">Post</button>
+        </div>
+    </div>
+    
+    {# Notifications container #}
+    <div id="collaboration-notifications"></div>
+    {% endif %}
+</div>
+
+{# Field enhancement for collaboration #}
+{% if collaboration_enabled and collaboration_fields %}
+<script type="text/javascript">
+document.addEventListener('DOMContentLoaded', function() {
+    // Add collaboration classes to specified fields
+    const collaborationFields = {{ collaboration_fields|tojson }};
+    collaborationFields.forEach(function(fieldName) {
+        const field = document.querySelector('[name="' + fieldName + '"]');
+        if (field) {
+            field.classList.add('collaboration-field');
+            
+            // Add field wrapper if not present
+            if (!field.parentElement.classList.contains('collaboration-field-wrapper')) {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'collaboration-field-wrapper';
+                field.parentNode.insertBefore(wrapper, field);
+                wrapper.appendChild(field);
+            }
+        }
+    });
+    
+    // Add collaboration toggle button to form actions
+    const formActions = document.querySelector('.form-actions, .panel-footer');
+    if (formActions) {
+        const toggleBtn = document.createElement('button');
+        toggleBtn.type = 'button';
+        toggleBtn.className = 'btn btn-info collaboration-toggle';
+        toggleBtn.innerHTML = '<i class="fa fa-users"></i> Toggle Collaboration';
+        toggleBtn.onclick = function() {
+            const container = document.querySelector('.collaboration-form-container');
+            container.classList.toggle('collaboration-active');
+            
+            if (window.collaborationManager) {
+                window.collaborationManager.toggleCollaboration();
+            }
+        };
+        
+        // Insert before submit button
+        const submitBtn = formActions.querySelector('[type="submit"]');
+        if (submitBtn) {
+            formActions.insertBefore(toggleBtn, submitBtn);
+        } else {
+            formActions.appendChild(toggleBtn);
+        }
+    }
+    
+    // Add comments toggle button
+    const commentsBtn = document.createElement('button');
+    commentsBtn.type = 'button';
+    commentsBtn.className = 'btn btn-default collaboration-comments-toggle';
+    commentsBtn.innerHTML = '<i class="fa fa-comments"></i> Comments';
+    commentsBtn.onclick = toggleComments;
+    
+    if (formActions) {
+        formActions.appendChild(commentsBtn);
+    }
+});
+
+function toggleComments() {
+    const sidebar = document.getElementById('comments-sidebar');
+    const isVisible = sidebar.style.display !== 'none';
+    sidebar.style.display = isVisible ? 'none' : 'block';
+    
+    if (!isVisible && window.collaborationManager) {
+        window.collaborationManager.loadComments();
+    }
+}
+
+function postComment() {
+    const input = document.getElementById('comment-input');
+    const text = input.value.trim();
+    
+    if (text && window.collaborationManager) {
+        window.collaborationManager.postComment(text);
+        input.value = '';
+    }
+}
+</script>
+{% endif %}
+{% endblock %}
+
+{% block javascript %}
+{{ super() }}
+
+{% if collaboration_enabled %}
+<script src="{{ url_for('appbuilder.static', filename='appbuilder/js/collaboration/collaboration-manager.js') }}"></script>
+<script src="{{ url_for('appbuilder.static', filename='appbuilder/js/collaboration/presence-manager.js') }}"></script>
+<script src="{{ url_for('appbuilder.static', filename='appbuilder/js/collaboration/conflict-resolver.js') }}"></script>
+
+<script type="text/javascript">
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize collaboration if enabled
+    const container = document.querySelector('.collaboration-form-container');
+    const config = {
+        sessionId: container.dataset.sessionId,
+        modelName: container.dataset.modelName,
+        recordId: container.dataset.recordId,
+        websocketUrl: container.dataset.websocketUrl,
+        userInfo: JSON.parse(container.dataset.userInfo || '{}'),
+        fields: {{ collaboration_fields|tojson }},
+        permissions: {{ collaboration_permissions|tojson }}
+    };
+    
+    if (config.sessionId && window.CollaborationManager) {
+        window.collaborationManager = new CollaborationManager(config);
+        
+        // Handle form submission with collaboration
+        const form = document.querySelector('form');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                if (window.collaborationManager.hasUnresolvedConflicts()) {
+                    e.preventDefault();
+                    alert('Please resolve all conflicts before submitting the form.');
+                    return false;
+                }
+                
+                // Notify collaboration system about form submission
+                window.collaborationManager.handleFormSubmit();
+            });
+        }
+        
+        console.log('Collaboration initialized for session:', config.sessionId);
+    } else {
+        console.log('Collaboration not initialized - missing session ID or manager');
+    }
+});
+
+// Global functions for template integration
+window.collaborationUtils = {
+    showNotification: function(message, type) {
+        if (window.collaborationManager) {
+            window.collaborationManager.showNotification(message, type);
+        }
+    },
+    
+    getCurrentParticipants: function() {
+        return window.collaborationManager ? 
+            window.collaborationManager.presenceManager.getCurrentParticipants() : [];
+    },
+    
+    getConflictCount: function() {
+        return window.collaborationManager ? 
+            window.collaborationManager.conflictResolver.getActiveConflicts().length : 0;
+    }
+};
+</script>
+{% endif %}
+{% endblock %}

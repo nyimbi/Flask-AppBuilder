@@ -1,31 +1,24 @@
 class ActionItem(object):
-    def __init__(self, name, text, confirmation, icon, multiple, single, func):
     """
-        Core component for actionitem functionality.
-
-        The ActionItem class provides comprehensive functionality for
-        actionitem.
-        It integrates with the Flask-AppBuilder framework to provide
-        enterprise-grade features and capabilities.
-
-        Inherits from: object
-
-        Attributes:
-            name: Name or title of this ActionItem instance
-            text: Configuration parameter for text
-            confirmation: Configuration parameter for confirmation
-            icon: Configuration parameter for icon
-            multiple: Configuration parameter for multiple
-            single: Configuration parameter for single
-            func: Configuration parameter for func
-
-        Example:
-            >>> instance = ActionItem(required_param)
-            >>> # Use instance methods to perform operations
-            >>> result = instance.main_method()
-
+    Represents an action that can be performed on model records.
+    
+    Actions are used to provide custom functionality in list views,
+    allowing users to perform bulk operations or single record operations.
+    """
+    
+    def __init__(self, name, text, confirmation=None, icon=None, multiple=True, single=True, func=None):
         """
-        pass
+        Initialize an action item.
+        
+        Args:
+            name: Unique name for the action
+            text: Display text for the action button
+            confirmation: Optional confirmation message to show before executing
+            icon: Optional icon CSS class for the action button
+            multiple: Whether action can be performed on multiple records
+            single: Whether action can be performed on a single record
+            func: Function to execute when action is triggered
+        """
         self.name = name
         self.text = text or name
         self.confirmation = confirmation
@@ -35,53 +28,47 @@ class ActionItem(object):
         self.func = func
 
     def __repr__(self):
+        """String representation of the action item."""
         return "Action name:%s; text:%s; confirmation:%s; func:%s;" % (
             self.name,
             self.text,
             self.confirmation,
-            self.func.__name__,
+            self.func.__name__ if self.func else None,
         )
 
 
 def action(name, text, confirmation=None, icon=None, multiple=True, single=True):
     """
-            Perform wrap operation.
-
-            This method provides functionality for wrap.
-            Implementation follows Flask-AppBuilder patterns and standards.
-
-            Args:
-                f: The f parameter
-
-            Returns:
-                The result of the operation
-
-            Example:
-                >>> result = wrap("f_value")
-                >>> print(result)
-
-            """
+    Decorator to define an action on a model view.
     
-        pass
-    Use this decorator to expose actions
-
-    :param name:
-        Action name
-    :param text:
-        Action text.
-    :param confirmation:
-        Confirmation text. If not provided, action will be executed
-        unconditionally.
-    :param icon:
-        Font Awesome icon name
-    :param multiple:
-        If true will display action on list view
-    :param single:
-        If true will display action on show view
+    Args:
+        name: Unique name for the action
+        text: Display text for the action button
+        confirmation: Optional confirmation message
+        icon: Optional icon CSS class
+        multiple: Whether action supports multiple records
+        single: Whether action supports single records
+        
+    Returns:
+        Decorated function that becomes an action
+        
+    Example:
+        @action("approve", "Approve Records", "Are you sure?")
+        def approve_records(self, items):
+            for item in items:
+                item.status = "approved"
+            return "Records approved successfully"
     """
-
     def wrap(f):
-        f._action = (name, text, confirmation, icon, multiple, single)
+        if not hasattr(f, "_action"):
+            f._action = ActionItem(
+                name=name,
+                text=text,
+                confirmation=confirmation,
+                icon=icon,
+                multiple=multiple,
+                single=single,
+                func=f
+            )
         return f
-
     return wrap

@@ -78,9 +78,19 @@ class PasswordComplexityValidator:
 
 def default_password_complexity(password: str) -> None:
     """
-    FAB's default password complexity validator, set FAB_PASSWORD_COMPLEXITY_ENABLED
-    to True to enable it
+    Enhanced FAB password complexity validator with security improvements.
+    Set FAB_PASSWORD_COMPLEXITY_ENABLED to True to enable it.
     """
+    if not password:
+        raise PasswordComplexityValidationError(gettext("Password is required"))
+    
+    # Prevent extremely long passwords (DoS protection)
+    if len(password) > 128:
+        raise PasswordComplexityValidationError(
+            gettext("Password must be less than 128 characters long")
+        )
+    
+    # Check original complexity requirements
     match = re.search(password_complexity_regex, password)
     if not match:
         raise PasswordComplexityValidationError(
@@ -90,3 +100,16 @@ def default_password_complexity(password: str) -> None:
                 " a minimal length of 10."
             )
         )
+    
+    # Additional security checks for weak patterns
+    weak_patterns = [
+        (r'(.)\1{3,}', gettext("Password cannot contain 4 or more repeated characters")),
+        (r'(012|123|234|345|456|567|678|789|890|abc|bcd|cde|def)', 
+         gettext("Password cannot contain sequential patterns")),
+        (r'(password|admin|login|qwerty|123456|password123)', 
+         gettext("Password cannot contain common weak patterns")),
+    ]
+    
+    for pattern, message in weak_patterns:
+        if re.search(pattern, password, re.IGNORECASE):
+            raise PasswordComplexityValidationError(message)

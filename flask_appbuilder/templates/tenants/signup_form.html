@@ -1,0 +1,752 @@
+{% extends "appbuilder/baselayout.html" %}
+
+{% block head_css %}
+{{ super() }}
+<style>
+.signup-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 40px 20px;
+}
+
+.step-indicator {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 40px;
+}
+
+.step-indicator .step {
+    display: flex;
+    align-items: center;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.step-indicator .step.active {
+    color: #007bff;
+}
+
+.step-indicator .step.completed {
+    color: #28a745;
+}
+
+.step-indicator .step-number {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: #e9ecef;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 10px;
+}
+
+.step-indicator .step.active .step-number {
+    background: #007bff;
+    color: white;
+}
+
+.step-indicator .step.completed .step-number {
+    background: #28a745;
+    color: white;
+}
+
+.step-connector {
+    width: 60px;
+    height: 2px;
+    background: #e9ecef;
+    margin: 0 15px;
+}
+
+.step-connector.active {
+    background: #007bff;
+}
+
+.plan-summary {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 30px;
+    border: 2px solid #e9ecef;
+}
+
+.plan-summary.premium {
+    border-color: #007bff;
+    background: linear-gradient(135deg, #f8f9ff 0%, #e6f3ff 100%);
+}
+
+.form-section {
+    background: white;
+    border-radius: 8px;
+    padding: 30px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.payment-section {
+    border: 2px solid #007bff;
+    background: #f8f9ff;
+}
+
+.subdomain-preview {
+    background: #e9ecef;
+    padding: 10px 15px;
+    border-radius: 4px;
+    font-family: monospace;
+    margin-top: 10px;
+}
+
+.subdomain-preview.available {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.subdomain-preview.unavailable {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+#card-element {
+    padding: 15px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    background: white;
+}
+
+#card-errors {
+    color: #dc3545;
+    margin-top: 10px;
+}
+
+.loading-spinner {
+    display: none;
+}
+
+.loading-spinner.show {
+    display: inline-block;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="signup-container">
+    <!-- Progress Steps -->
+    <div class="step-indicator">
+        <div class="step active" id="step1-indicator">
+            <div class="step-number">1</div>
+            <span>Company Info</span>
+        </div>
+        <div class="step-connector"></div>
+        <div class="step" id="step2-indicator">
+            <div class="step-number">2</div>
+            <span>Admin Account</span>
+        </div>
+        <div class="step-connector"></div>
+        <div class="step" id="step3-indicator">
+            <div class="step-number">3</div>
+            <span>Payment</span>
+        </div>
+        <div class="step-connector"></div>
+        <div class="step" id="step4-indicator">
+            <div class="step-number">4</div>
+            <span>Verification</span>
+        </div>
+    </div>
+
+    <!-- Selected Plan Summary -->
+    <div class="plan-summary {% if request.args.get('plan_id') != 'free' %}premium{% endif %}">
+        <h4>Selected Plan: <span id="selected-plan">
+            {% set plan_id = request.args.get('plan_id', 'free') %}
+            {% if plan_id == 'free' %}Free Plan
+            {% elif plan_id == 'starter' %}Starter Plan ($29/month)
+            {% elif plan_id == 'professional' %}Professional Plan ($99/month) 
+            {% elif plan_id == 'enterprise' %}Enterprise Plan ($299/month)
+            {% endif %}
+        </span></h4>
+        <p class="mb-0">
+            {% if plan_id == 'free' %}
+                Start with basic features at no cost. Perfect for testing and small projects.
+            {% else %}
+                Includes all premium features with a 14-day free trial. Cancel anytime.
+            {% endif %}
+        </p>
+    </div>
+
+    <form id="signup-form" method="post">
+        <!-- Step 1: Company Information -->
+        <div class="form-section" id="step1">
+            <h4><i class="fa fa-building"></i> Company Information</h4>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="company_name">Company Name *</label>
+                        <input type="text" class="form-control" id="company_name" name="company_name" required>
+                        <small class="form-text text-muted">Your organization or company name</small>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="slug">Subdomain *</label>
+                        <input type="text" class="form-control" id="slug" name="slug" required pattern="[a-z0-9-]+" 
+                               placeholder="yourcompany">
+                        <div id="subdomain-preview" class="subdomain-preview">
+                            <span id="preview-text">yourcompany.{{ request.host.split('.', 1)[-1] if '.' in request.host else 'yourdomain.com' }}</span>
+                            <div id="availability-status"></div>
+                        </div>
+                        <small class="form-text text-muted">Choose your unique subdomain (lowercase letters, numbers, and hyphens only)</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="description">Description (Optional)</label>
+                <textarea class="form-control" id="description" name="description" rows="3" 
+                         placeholder="Brief description of your company or use case"></textarea>
+            </div>
+
+            <div class="text-right">
+                <button type="button" class="btn btn-primary" onclick="nextStep(2)">
+                    Next <i class="fa fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 2: Admin Account -->
+        <div class="form-section" id="step2" style="display: none;">
+            <h4><i class="fa fa-user-cog"></i> Administrator Account</h4>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="first_name">First Name *</label>
+                        <input type="text" class="form-control" id="first_name" name="first_name" required>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="last_name">Last Name *</label>
+                        <input type="text" class="form-control" id="last_name" name="last_name" required>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email Address *</label>
+                <input type="email" class="form-control" id="email" name="email" required>
+                <small class="form-text text-muted">This will be your login email and primary contact</small>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="password">Password *</label>
+                        <input type="password" class="form-control" id="password" name="password" required minlength="8">
+                        <small class="form-text text-muted">Minimum 8 characters</small>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="password_confirm">Confirm Password *</label>
+                        <input type="password" class="form-control" id="password_confirm" name="password_confirm" required>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-6">
+                    <button type="button" class="btn btn-secondary" onclick="prevStep(1)">
+                        <i class="fa fa-arrow-left"></i> Back
+                    </button>
+                </div>
+                <div class="col-6 text-right">
+                    {% if request.args.get('plan_id', 'free') == 'free' %}
+                        <button type="button" class="btn btn-primary" onclick="nextStep(4)">
+                            Skip Payment <i class="fa fa-arrow-right"></i>
+                        </button>
+                    {% else %}
+                        <button type="button" class="btn btn-primary" onclick="nextStep(3)">
+                            Next <i class="fa fa-arrow-right"></i>
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 3: Payment Information (only for paid plans) -->
+        {% if request.args.get('plan_id', 'free') != 'free' %}
+        <div class="form-section payment-section" id="step3" style="display: none;">
+            <h4><i class="fa fa-credit-card"></i> Payment Information</h4>
+            
+            <div class="alert alert-info">
+                <i class="fa fa-info-circle"></i>
+                <strong>14-day free trial:</strong> You won't be charged until your trial ends. Cancel anytime during the trial period.
+            </div>
+
+            <div class="form-group">
+                <label>Credit Card Information</label>
+                <div id="card-element">
+                    <!-- Stripe Elements will create form elements here -->
+                </div>
+                <div id="card-errors" role="alert"></div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="billing_name">Billing Name</label>
+                        <input type="text" class="form-control" id="billing_name" name="billing_name">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="billing_email">Billing Email (Optional)</label>
+                        <input type="email" class="form-control" id="billing_email" name="billing_email">
+                        <small class="form-text text-muted">If different from admin email</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-6">
+                    <button type="button" class="btn btn-secondary" onclick="prevStep(2)">
+                        <i class="fa fa-arrow-left"></i> Back
+                    </button>
+                </div>
+                <div class="col-6 text-right">
+                    <button type="button" class="btn btn-primary" onclick="nextStep(4)">
+                        Next <i class="fa fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Step 4: Review and Submit -->
+        <div class="form-section" id="step4" style="display: none;">
+            <h4><i class="fa fa-check-circle"></i> Review and Submit</h4>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Company Information</h6>
+                    <p>
+                        <strong>Company:</strong> <span id="review-company"></span><br>
+                        <strong>Subdomain:</strong> <span id="review-subdomain"></span><br>
+                        <strong>Plan:</strong> <span id="review-plan"></span>
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <h6>Administrator</h6>
+                    <p>
+                        <strong>Name:</strong> <span id="review-admin-name"></span><br>
+                        <strong>Email:</strong> <span id="review-admin-email"></span>
+                    </p>
+                </div>
+            </div>
+
+            <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="terms_accept" name="terms_accept" required>
+                <label class="form-check-label" for="terms_accept">
+                    I agree to the <a href="#" target="_blank">Terms of Service</a> and 
+                    <a href="#" target="_blank">Privacy Policy</a>
+                </label>
+            </div>
+
+            <div class="form-check mb-4">
+                <input class="form-check-input" type="checkbox" id="marketing_emails" name="marketing_emails">
+                <label class="form-check-label" for="marketing_emails">
+                    I would like to receive product updates and marketing emails
+                </label>
+            </div>
+
+            <div class="row">
+                <div class="col-6">
+                    {% if request.args.get('plan_id', 'free') == 'free' %}
+                        <button type="button" class="btn btn-secondary" onclick="prevStep(2)">
+                            <i class="fa fa-arrow-left"></i> Back
+                        </button>
+                    {% else %}
+                        <button type="button" class="btn btn-secondary" onclick="prevStep(3)">
+                            <i class="fa fa-arrow-left"></i> Back
+                        </button>
+                    {% endif %}
+                </div>
+                <div class="col-6 text-right">
+                    <button type="submit" class="btn btn-success btn-lg" id="submit-btn">
+                        <span class="loading-spinner spinner-border spinner-border-sm" role="status"></span>
+                        {% if request.args.get('plan_id', 'free') == 'free' %}
+                            Create Free Account
+                        {% else %}
+                            Start Free Trial
+                        {% endif %}
+                        <i class="fa fa-rocket"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hidden fields -->
+        <input type="hidden" name="plan_id" value="{{ request.args.get('plan_id', 'free') }}">
+        <input type="hidden" name="payment_method_id" id="payment_method_id">
+    </form>
+</div>
+{% endblock %}
+
+{% block tail_js %}
+{{ super() }}
+
+<!-- Stripe.js for payment processing -->
+{% if request.args.get('plan_id', 'free') != 'free' %}
+<script src="https://js.stripe.com/v3/"></script>
+{% endif %}
+
+<script>
+let currentStep = 1;
+let stripe, card, cardElement;
+
+// Initialize Stripe for paid plans
+{% if request.args.get('plan_id', 'free') != 'free' %}
+$(document).ready(function() {
+    // Initialize Stripe (replace with your publishable key)
+    stripe = Stripe('{{ config.get("STRIPE_PUBLISHABLE_KEY", "pk_test_...") }}');
+    const elements = stripe.elements();
+    
+    // Create card element
+    cardElement = elements.create('card');
+    cardElement.mount('#card-element');
+    
+    // Handle real-time validation errors from the card Element
+    cardElement.addEventListener('change', function(event) {
+        const displayError = document.getElementById('card-errors');
+        if (event.error) {
+            displayError.textContent = event.error.message;
+        } else {
+            displayError.textContent = '';
+        }
+    });
+});
+{% endif %}
+
+function nextStep(step) {
+    // Validate current step
+    if (!validateStep(currentStep)) {
+        return;
+    }
+    
+    // Hide current step
+    $(`#step${currentStep}`).hide();
+    $(`#step${currentStep}-indicator`).removeClass('active').addClass('completed');
+    
+    // Show next step
+    currentStep = step;
+    $(`#step${currentStep}`).show();
+    $(`#step${currentStep}-indicator`).addClass('active');
+    
+    // Update progress connectors
+    updateProgressConnectors();
+    
+    // Update review information if on review step
+    if (step === 4) {
+        updateReviewInformation();
+    }
+}
+
+function prevStep(step) {
+    // Hide current step
+    $(`#step${currentStep}`).hide();
+    $(`#step${currentStep}-indicator`).removeClass('active');
+    
+    // Show previous step
+    currentStep = step;
+    $(`#step${currentStep}`).show();
+    $(`#step${currentStep}-indicator`).addClass('active').removeClass('completed');
+    
+    // Update progress connectors
+    updateProgressConnectors();
+}
+
+function validateStep(step) {
+    let isValid = true;
+    
+    switch(step) {
+        case 1:
+            // Validate company information
+            const companyName = $('#company_name').val().trim();
+            const slug = $('#slug').val().trim();
+            
+            if (!companyName) {
+                showError('Company name is required');
+                $('#company_name').focus();
+                isValid = false;
+            }
+            
+            if (!slug) {
+                showError('Subdomain is required');
+                $('#slug').focus();
+                isValid = false;
+            } else if (!/^[a-z0-9-]+$/.test(slug)) {
+                showError('Subdomain can only contain lowercase letters, numbers, and hyphens');
+                $('#slug').focus();
+                isValid = false;
+            }
+            break;
+            
+        case 2:
+            // Validate admin account
+            const firstName = $('#first_name').val().trim();
+            const lastName = $('#last_name').val().trim();
+            const email = $('#email').val().trim();
+            const password = $('#password').val();
+            const passwordConfirm = $('#password_confirm').val();
+            
+            if (!firstName || !lastName || !email || !password) {
+                showError('All fields are required');
+                isValid = false;
+            }
+            
+            if (password.length < 8) {
+                showError('Password must be at least 8 characters long');
+                $('#password').focus();
+                isValid = false;
+            }
+            
+            if (password !== passwordConfirm) {
+                showError('Passwords do not match');
+                $('#password_confirm').focus();
+                isValid = false;
+            }
+            
+            if (!isValidEmail(email)) {
+                showError('Please enter a valid email address');
+                $('#email').focus();
+                isValid = false;
+            }
+            break;
+            
+        case 3:
+            // Validate payment information (only for paid plans)
+            {% if request.args.get('plan_id', 'free') != 'free' %}
+            // Payment validation will be done during form submission
+            {% endif %}
+            break;
+            
+        case 4:
+            // Validate terms acceptance
+            if (!$('#terms_accept').is(':checked')) {
+                showError('You must accept the Terms of Service and Privacy Policy');
+                isValid = false;
+            }
+            break;
+    }
+    
+    return isValid;
+}
+
+function updateProgressConnectors() {
+    // Update step connectors based on progress
+    $('.step-connector').each(function(index) {
+        if (index < currentStep - 1) {
+            $(this).addClass('active');
+        } else {
+            $(this).removeClass('active');
+        }
+    });
+}
+
+function updateReviewInformation() {
+    $('#review-company').text($('#company_name').val());
+    $('#review-subdomain').text($('#slug').val() + '.{{ request.host.split(".", 1)[-1] if "." in request.host else "yourdomain.com" }}');
+    $('#review-plan').text($('#selected-plan').text());
+    $('#review-admin-name').text($('#first_name').val() + ' ' + $('#last_name').val());
+    $('#review-admin-email').text($('#email').val());
+}
+
+function showError(message) {
+    // Create and show bootstrap alert
+    const alertHtml = `
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fa fa-exclamation-triangle"></i> ${message}
+            <button type="button" class="close" data-dismiss="alert">
+                <span>&times;</span>
+            </button>
+        </div>
+    `;
+    
+    // Remove existing alerts
+    $('.alert').remove();
+    
+    // Add alert to current step
+    $(`#step${currentStep}`).prepend(alertHtml);
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(function() {
+        $('.alert').fadeOut();
+    }, 5000);
+}
+
+function showSuccess(message) {
+    const alertHtml = `
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fa fa-check-circle"></i> ${message}
+            <button type="button" class="close" data-dismiss="alert">
+                <span>&times;</span>
+            </button>
+        </div>
+    `;
+    
+    $('.alert').remove();
+    $(`#step${currentStep}`).prepend(alertHtml);
+}
+
+function isValidEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+}
+
+// Subdomain availability checking
+let availabilityTimeout;
+$('#slug').on('input', function() {
+    const slug = $(this).val().toLowerCase();
+    const preview = $('#subdomain-preview');
+    const previewText = $('#preview-text');
+    const status = $('#availability-status');
+    
+    if (slug) {
+        previewText.text(slug + '.{{ request.host.split(".", 1)[-1] if "." in request.host else "yourdomain.com" }}');
+        
+        // Debounce availability check
+        clearTimeout(availabilityTimeout);
+        availabilityTimeout = setTimeout(function() {
+            checkSubdomainAvailability(slug);
+        }, 500);
+    } else {
+        previewText.text('yourcompany.{{ request.host.split(".", 1)[-1] if "." in request.host else "yourdomain.com" }}');
+        preview.removeClass('available unavailable');
+        status.text('');
+    }
+});
+
+function checkSubdomainAvailability(slug) {
+    const preview = $('#subdomain-preview');
+    const status = $('#availability-status');
+    
+    status.html('<i class="fa fa-spinner fa-spin"></i> Checking availability...');
+    
+    // Simulate availability check (in real implementation, make AJAX call)
+    setTimeout(function() {
+        // Mock availability (in real app, this would be an API call)
+        const isAvailable = !['admin', 'api', 'www', 'mail', 'ftp'].includes(slug);
+        
+        if (isAvailable) {
+            preview.removeClass('unavailable').addClass('available');
+            status.html('<i class="fa fa-check text-success"></i> Available');
+        } else {
+            preview.removeClass('available').addClass('unavailable');
+            status.html('<i class="fa fa-times text-danger"></i> Not available');
+        }
+    }, 1000);
+}
+
+// Form submission
+$('#signup-form').on('submit', async function(e) {
+    e.preventDefault();
+    
+    // Final validation
+    if (!validateStep(4)) {
+        return;
+    }
+    
+    const submitBtn = $('#submit-btn');
+    const spinner = submitBtn.find('.loading-spinner');
+    
+    submitBtn.prop('disabled', true);
+    spinner.addClass('show');
+    
+    try {
+        let paymentMethodId = null;
+        
+        // Handle payment for paid plans
+        {% if request.args.get('plan_id', 'free') != 'free' %}
+        if (stripe && cardElement) {
+            const {token, error} = await stripe.createToken(cardElement);
+            
+            if (error) {
+                showError(error.message);
+                submitBtn.prop('disabled', false);
+                spinner.removeClass('show');
+                return;
+            }
+            
+            paymentMethodId = token.id;
+            $('#payment_method_id').val(paymentMethodId);
+        }
+        {% endif %}
+        
+        // Submit form data
+        const formData = {
+            company_name: $('#company_name').val(),
+            slug: $('#slug').val(),
+            description: $('#description').val(),
+            first_name: $('#first_name').val(),
+            last_name: $('#last_name').val(),
+            email: $('#email').val(),
+            password: $('#password').val(),
+            plan_id: $('input[name="plan_id"]').val(),
+            billing_name: $('#billing_name').val(),
+            billing_email: $('#billing_email').val(),
+            payment_method_id: paymentMethodId,
+            terms_accept: $('#terms_accept').is(':checked'),
+            marketing_emails: $('#marketing_emails').is(':checked')
+        };
+        
+        $.ajax({
+            url: '{{ url_for("TenantOnboardingView.signup") }}',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(formData),
+            success: function(response) {
+                if (response.success) {
+                    showSuccess(response.message);
+                    // Redirect to verification page or show success message
+                    setTimeout(function() {
+                        window.location.href = '{{ url_for("TenantOnboardingView.index") }}';
+                    }, 3000);
+                } else {
+                    showError(response.message || 'Signup failed');
+                }
+            },
+            error: function(xhr) {
+                const response = xhr.responseJSON;
+                if (response && response.errors) {
+                    // Show field-specific errors
+                    for (const [field, message] of Object.entries(response.errors)) {
+                        showError(`${field}: ${message}`);
+                    }
+                } else {
+                    showError('Signup failed. Please try again.');
+                }
+            },
+            complete: function() {
+                submitBtn.prop('disabled', false);
+                spinner.removeClass('show');
+            }
+        });
+        
+    } catch (error) {
+        showError('An unexpected error occurred. Please try again.');
+        submitBtn.prop('disabled', false);
+        spinner.removeClass('show');
+    }
+});
+
+// Auto-fill billing name from admin name
+$('#first_name, #last_name').on('change', function() {
+    const billingName = $('#billing_name');
+    if (!billingName.val()) {
+        billingName.val($('#first_name').val() + ' ' + $('#last_name').val());
+    }
+});
+</script>
+{% endblock %}
