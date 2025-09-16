@@ -116,6 +116,7 @@ class ProcessDefinition(TenantAwareMixin, AuditMixin, Model):
     child_versions = relationship("ProcessDefinition", remote_side=[id])
     templates = relationship("ProcessTemplate", back_populates="definition")
     triggers = relationship("SmartTrigger", back_populates="process_definition")
+    pools = relationship("ProcessPool", back_populates="definition", cascade="all, delete-orphan")
     
     @hybrid_property
     def node_count(self):
@@ -263,6 +264,16 @@ class ProcessInstance(TenantAwareMixin, AuditMixin, Model):
     child_instances = relationship("ProcessInstance", remote_side=[id])
     metrics = relationship("ProcessMetric", back_populates="instance", cascade="all, delete-orphan")
     
+    @hybrid_property 
+    def definition_id(self):
+        """Compatibility alias for process_definition_id."""
+        return self.process_definition_id
+
+    @definition_id.setter
+    def definition_id(self, value):
+        """Compatibility setter for process_definition_id."""
+        self.process_definition_id = value
+    
     @hybrid_property
     def duration(self):
         """Calculate process duration."""
@@ -373,6 +384,7 @@ class ProcessStep(TenantAwareMixin, AuditMixin, Model):
     # External references
     external_task_id = Column(String(100))  # Reference to external system task
     celery_task_id = Column(String(100))  # Celery task ID for async execution
+    subprocess_execution_id = Column(Integer, ForeignKey('ab_subprocess_executions.id'))  # Reference to subprocess execution
     
     # Relationships
     instance = relationship("ProcessInstance", back_populates="steps")
@@ -506,7 +518,8 @@ class ApprovalRequest(TenantAwareMixin, AuditMixin, Model):
     id = Column(Integer, primary_key=True)
     process_instance_id = Column(Integer, ForeignKey('ab_process_instances.id'), nullable=False)
     process_step_id = Column(Integer, ForeignKey('ab_process_steps.id'))
-    
+    chain_id = Column(Integer, ForeignKey('ab_approval_chain.id'))  # For views.py compatibility
+
     # Approval metadata
     title = Column(String(200), nullable=False)
     description = Column(Text)
@@ -541,6 +554,7 @@ class ApprovalRequest(TenantAwareMixin, AuditMixin, Model):
     # Relationships
     process_instance = relationship("ProcessInstance", back_populates="approvals")
     step = relationship("ProcessStep")
+    chain = relationship("ApprovalChain", back_populates="requests")  # For views.py compatibility
     
     @hybrid_property
     def is_overdue(self):
@@ -827,3 +841,412 @@ class ProcessMetric(TenantAwareMixin, AuditMixin, Model):
     
     def __repr__(self):
         return f'<ProcessMetric {self.metric_type} = {self.value} ({self.metric_date})>'
+
+
+class ProcessPool(TenantAwareMixin, AuditMixin, Model):
+    """
+    Process Pool model for BPMN pools.
+    
+    Represents organizational units or systems that participate in 
+    business processes with clear boundaries and responsibilities.
+    """
+    
+    __tablename__ = 'ab_process_pools'
+    __table_args__ = (
+        Index('ix_pool_tenant_name', 'tenant_id', 'name'),
+        Index('ix_pool_definition', 'process_definition_id'),
+        UniqueConstraint('tenant_id', 'process_definition_id', 'name', name='uq_tenant_pool_name'),
+    )
+    
+    id = Column(Integer, primary_key=True)
+    process_definition_id = Column(Integer, ForeignKey('ab_process_definitions.id'), nullable=False)
+    
+    # Pool metadata
+    name = Column(String(100), nullable=False)
+    description = Column(Text)
+    pool_type = Column(String(20), default='participant', nullable=False)  # participant, blackbox, collapsed
+    
+    # Visual properties
+    x_position = Column(Integer, default=0)
+    y_position = Column(Integer, default=0) 
+    width = Column(Integer, default=400)
+    height = Column(Integer, default=200)
+    color = Column(String(7), default='#e1f5fe')  # Background color
+    
+    # Configuration
+    is_executable = Column(Boolean, default=True)
+    external_system = Column(String(100))  # Reference to external system
+    system_config = Column(JSONB, default=lambda: {})
+    organization = Column(String(200), index=True)  # Organization/department name
+    configuration = Column(JSONB, default=lambda: {})  # Pool configuration settings
+    is_active = Column(Boolean, default=True, nullable=False, index=True)  # Active status
+    
+    # Relationships
+    definition = relationship("ProcessDefinition", back_populates="pools")
+    lanes = relationship("ProcessLane", back_populates="pool", cascade="all, delete-orphan")
+    
+    @validates('pool_type')
+    def validate_pool_type(self, key, pool_type):
+        """Validate pool type."""
+        valid_types = ['participant', 'blackbox', 'collapsed']
+        if pool_type not in valid_types:
+            raise ValueError(f"Invalid pool type: {pool_type}. Must be one of: {valid_types}")
+        return pool_type
+    
+    def get_lane_by_name(self, name: str) -> Optional['ProcessLane']:
+        """Get lane by name within this pool."""
+        return next((lane for lane in self.lanes if lane.name == name), None)
+    
+    def __repr__(self):
+        return f'<ProcessPool {self.name} ({self.pool_type})>'
+
+
+class ProcessLane(TenantAwareMixin, AuditMixin, Model):
+    """
+    Process Lane model for BPMN lanes.
+    
+    Represents roles, departments, or systems within a pool with
+    specific responsibilities and access controls.
+    """
+    
+    __tablename__ = 'ab_process_lanes'
+    __table_args__ = (
+        Index('ix_lane_tenant_pool', 'tenant_id', 'pool_id'),
+        Index('ix_lane_role', 'assigned_role'),
+        UniqueConstraint('pool_id', 'name', name='uq_pool_lane_name'),
+    )
+    
+    id = Column(Integer, primary_key=True)
+    pool_id = Column(Integer, ForeignKey('ab_process_pools.id'), nullable=False)
+    
+    # Lane metadata
+    name = Column(String(100), nullable=False)
+    description = Column(Text)
+    lane_order = Column(Integer, default=0)  # Display order within pool
+    
+    # Visual properties
+    y_position = Column(Integer, default=0)  # Y offset within pool
+    height = Column(Integer, default=150)
+    color = Column(String(7), default='#f5f5f5')  # Background color
+    
+    # Role assignment
+    assigned_role = Column(String(100))  # FAB role name
+    assigned_user_ids = Column(JSONB, default=lambda: [])  # Specific user assignments
+    department = Column(String(100))  # Department/organization unit
+    
+    # Configuration
+    auto_assign = Column(Boolean, default=False)  # Auto-assign tasks to lane users
+    workload_balancing = Column(String(20), default='round_robin')  # round_robin, least_loaded, random
+    escalation_config = Column(JSONB, default=lambda: {})
+    lane_type = Column(String(20), default='user', nullable=False, index=True)  # user, system, automated
+    configuration = Column(JSONB, default=lambda: {})  # Lane-specific configuration
+    is_active = Column(Boolean, default=True, nullable=False, index=True)  # Active status
+    
+    # Relationships
+    pool = relationship("ProcessPool", back_populates="lanes")
+    
+    @validates('workload_balancing')
+    def validate_workload_balancing(self, key, balancing):
+        """Validate workload balancing strategy."""
+        valid_strategies = ['round_robin', 'least_loaded', 'random', 'priority_based']
+        if balancing not in valid_strategies:
+            raise ValueError(f"Invalid workload balancing: {balancing}")
+        return balancing
+    
+    def get_assigned_users(self) -> List[int]:
+        """Get list of user IDs assigned to this lane."""
+        user_ids = []
+        
+        # Add specifically assigned users
+        user_ids.extend(self.assigned_user_ids or [])
+        
+        # Add users from assigned role
+        if self.assigned_role:
+            try:
+                from flask import current_app
+                sm = current_app.appbuilder.sm
+                role = sm.find_role(self.assigned_role)
+                if role:
+                    role_user_ids = [user.id for user in role.user if user.is_active]
+                    user_ids.extend(role_user_ids)
+            except Exception:
+                pass
+        
+        return list(set(user_ids))  # Remove duplicates
+    
+    def can_user_execute(self, user_id: int) -> bool:
+        """Check if user can execute tasks in this lane."""
+        return user_id in self.get_assigned_users()
+    
+    def __repr__(self):
+        return f'<ProcessLane {self.name} (Pool: {self.pool_id})>'
+
+
+class SubprocessDefinition(TenantAwareMixin, AuditMixin, Model):
+    """
+    Subprocess definition model.
+    
+    Defines reusable subprocess components that can be embedded
+    or called from main processes.
+    """
+    
+    __tablename__ = 'ab_subprocess_definitions'
+    __table_args__ = (
+        Index('ix_subprocess_tenant_name', 'tenant_id', 'name'),
+        Index('ix_subprocess_type', 'subprocess_type'),
+        Index('ix_subprocess_parent', 'parent_process_id'),
+        UniqueConstraint('tenant_id', 'name', 'version', name='uq_tenant_subprocess_version'),
+    )
+    
+    id = Column(Integer, primary_key=True)
+    parent_process_id = Column(Integer, ForeignKey('ab_process_definitions.id'))
+    
+    # Basic information
+    name = Column(String(100), nullable=False)
+    description = Column(Text)
+    version = Column(Integer, default=1, nullable=False)
+    subprocess_type = Column(String(20), default='embedded', nullable=False)  # embedded, call_activity, event
+    
+    # Subprocess structure
+    process_graph = Column(JSONB, nullable=False, default=lambda: {'nodes': [], 'edges': []})
+    
+    # Interface definition
+    input_parameters = Column(JSONB, default=lambda: [])  # Expected input parameters
+    output_parameters = Column(JSONB, default=lambda: [])  # Output parameters
+    interface_schema = Column(JSONB, default=lambda: {})  # JSON schema for validation
+    
+    # Execution configuration  
+    is_async = Column(Boolean, default=False)  # Execute asynchronously
+    timeout_minutes = Column(Integer, default=60)
+    max_instances = Column(Integer, default=1)  # Max concurrent instances
+    retry_policy = Column(JSONB, default=lambda: {'max_retries': 3, 'retry_delay': 60})
+    
+    # Event subprocess configuration (if applicable)
+    event_triggers = Column(JSONB, default=lambda: [])  # Event triggers for event subprocesses
+    interrupting = Column(Boolean, default=True)  # Whether event subprocess interrupts parent
+    is_active = Column(Boolean, default=True, nullable=False, index=True)  # Active status
+    definition_version = Column(String(50), default='1.0', nullable=False)  # Definition version string
+    
+    # Relationships
+    parent_process = relationship("ProcessDefinition")
+    executions = relationship("SubprocessExecution", back_populates="definition", cascade="all, delete-orphan")
+    
+    @validates('subprocess_type')
+    def validate_subprocess_type(self, key, subprocess_type):
+        """Validate subprocess type."""
+        valid_types = ['embedded', 'call_activity', 'event']
+        if subprocess_type not in valid_types:
+            raise ValueError(f"Invalid subprocess type: {subprocess_type}")
+        return subprocess_type
+    
+    def validate_parameters(self, input_data: Dict[str, Any]) -> bool:
+        """Validate input parameters against schema."""
+        if not self.interface_schema:
+            return True
+        
+        try:
+            import jsonschema
+            jsonschema.validate(input_data, self.interface_schema.get('input', {}))
+            return True
+        except Exception:
+            return False
+    
+    def get_node_by_id(self, node_id: str) -> Optional[Dict[str, Any]]:
+        """Get node by ID from subprocess graph."""
+        nodes = self.process_graph.get('nodes', [])
+        return next((node for node in nodes if node.get('id') == node_id), None)
+    
+    def __repr__(self):
+        return f'<SubprocessDefinition {self.name} v{self.version} ({self.subprocess_type})>'
+
+
+class SubprocessExecution(TenantAwareMixin, AuditMixin, Model):
+    """
+    Subprocess execution model.
+    
+    Tracks individual executions of subprocesses with their
+    state, data, and relationship to parent process instances.
+    """
+    
+    __tablename__ = 'ab_subprocess_executions'
+    __table_args__ = (
+        Index('ix_subprocess_exec_tenant', 'tenant_id'),
+        Index('ix_subprocess_exec_parent', 'parent_instance_id'),
+        Index('ix_subprocess_exec_status', 'status'),
+        Index('ix_subprocess_exec_definition', 'subprocess_definition_id'),
+    )
+    
+    id = Column(Integer, primary_key=True)
+    subprocess_definition_id = Column(Integer, ForeignKey('ab_subprocess_definitions.id'), nullable=False)
+    parent_instance_id = Column(Integer, ForeignKey('ab_process_instances.id'), nullable=False)
+    parent_step_id = Column(Integer, ForeignKey('ab_process_steps.id'))
+    
+    # Execution state
+    status = Column(String(20), default=ProcessInstanceStatus.RUNNING.value, nullable=False)
+    current_node_id = Column(String(100))
+    
+    # Data
+    input_data = Column(JSONB, default=lambda: {})
+    output_data = Column(JSONB, default=lambda: {})
+    context_variables = Column(JSONB, default=lambda: {})
+    
+    # Timing
+    started_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    completed_at = Column(DateTime)
+    timeout_at = Column(DateTime)
+    
+    # Error handling
+    error_message = Column(Text)
+    error_details = Column(JSONB, default=lambda: {})
+    retry_count = Column(Integer, default=0)
+    
+    # Subprocess execution details
+    subprocess_type = Column(String(20), default='embedded', nullable=False, index=True)  # embedded, call_activity, event
+    called_instance_id = Column(Integer, ForeignKey('ab_process_instances.id'))  # Reference to called process instance
+    event_configuration = Column(JSONB, default=lambda: {})  # Event subprocess configuration
+    event_data = Column(JSONB, default=lambda: {})  # Event data when triggered
+    
+    # Relationships
+    definition = relationship("SubprocessDefinition", back_populates="executions")
+    parent_instance = relationship("ProcessInstance", foreign_keys=[parent_instance_id])
+    parent_step = relationship("ProcessStep", foreign_keys=[parent_step_id])
+    called_instance = relationship("ProcessInstance", foreign_keys=[called_instance_id])
+    steps = relationship("ProcessStep", foreign_keys='ProcessStep.subprocess_execution_id', cascade="all, delete-orphan")
+    
+    @validates('status')
+    def validate_status(self, key, status):
+        """Validate execution status."""
+        valid_statuses = [s.value for s in ProcessInstanceStatus]
+        if status not in valid_statuses:
+            raise ValueError(f"Invalid status: {status}")
+        return status
+    
+    def is_completed(self) -> bool:
+        """Check if subprocess execution is completed."""
+        return self.status in [
+            ProcessInstanceStatus.COMPLETED.value,
+            ProcessInstanceStatus.FAILED.value,
+            ProcessInstanceStatus.CANCELLED.value
+        ]
+    
+    def is_timeout(self) -> bool:
+        """Check if subprocess execution has timed out."""
+        if not self.timeout_at:
+            return False
+        return datetime.utcnow() > self.timeout_at
+    
+    def mark_completed(self, output_data: Dict[str, Any] = None):
+        """Mark subprocess execution as completed."""
+        self.status = ProcessInstanceStatus.COMPLETED.value
+        self.completed_at = datetime.utcnow()
+        if output_data:
+            self.output_data.update(output_data)
+    
+    def mark_failed(self, error_message: str, error_details: Dict[str, Any] = None):
+        """Mark subprocess execution as failed."""
+        self.status = ProcessInstanceStatus.FAILED.value
+        self.completed_at = datetime.utcnow()
+        self.error_message = error_message
+        if error_details:
+            self.error_details.update(error_details)
+    
+    def __repr__(self):
+        return f'<SubprocessExecution {self.id} ({self.status})>'
+
+
+class ApprovalChain(TenantAwareMixin, AuditMixin, Model):
+    """
+    Approval chain for a specific process step.
+
+    Manages sequential or parallel approval workflows with
+    configurable approvers and escalation rules.
+    """
+    __tablename__ = 'ab_approval_chain'
+    __table_args__ = (
+        Index('ix_approval_chain_tenant_status', 'tenant_id', 'status'),
+        Index('ix_approval_chain_step', 'step_id'),
+        Index('ix_approval_chain_priority', 'priority'),
+    )
+
+    id = Column(Integer, primary_key=True)
+    chain_type = Column(String(50))  # sequential, parallel, voting
+    status = Column(String(20), default='pending')
+    priority = Column(String(20), default='normal')
+    approvers = Column(JSONB)  # JSON list of approver configurations
+    configuration = Column(JSONB)  # JSON chain configuration
+    due_date = Column(DateTime)
+    completed_at = Column(DateTime)
+
+    # Foreign keys
+    step_id = Column(Integer, ForeignKey('ab_process_steps.id'), nullable=False)
+
+    # Relationships
+    step = relationship("ProcessStep")
+    requests = relationship("ApprovalRequest", back_populates="chain", lazy='dynamic')
+
+    def get_approvers(self):
+        """Get parsed approvers list."""
+        if not self.approvers:
+            return []
+        try:
+            return self.approvers if isinstance(self.approvers, list) else []
+        except (TypeError, ValueError):
+            return []
+
+    def get_configuration(self):
+        """Get parsed configuration."""
+        if not self.configuration:
+            return {}
+        try:
+            return self.configuration if isinstance(self.configuration, dict) else {}
+        except (TypeError, ValueError):
+            return {}
+
+    def __repr__(self):
+        return f'<ApprovalChain {self.id} ({self.chain_type}) - {self.status}>'
+
+
+class ApprovalRule(TenantAwareMixin, AuditMixin, Model):
+    """
+    Configurable rules for approval routing and requirements.
+
+    Defines conditions and logic for determining approval
+    requirements based on process context and data.
+    """
+    __tablename__ = 'ab_approval_rule'
+    __table_args__ = (
+        Index('ix_approval_rule_tenant_name', 'tenant_id', 'name'),
+        Index('ix_approval_rule_priority', 'priority'),
+        Index('ix_approval_rule_active', 'is_active'),
+        UniqueConstraint('tenant_id', 'name', name='uq_tenant_approval_rule_name'),
+    )
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(200), nullable=False)
+    description = Column(Text)
+    priority = Column(Integer, default=100)
+    configuration = Column(JSONB)  # JSON rule configuration
+    is_active = Column(Boolean, default=True)
+
+    def get_configuration(self):
+        """Get parsed configuration."""
+        if not self.configuration:
+            return {}
+        try:
+            return self.configuration if isinstance(self.configuration, dict) else {}
+        except (TypeError, ValueError):
+            return {}
+
+    def set_configuration(self, config):
+        """Set configuration as dict."""
+        self.configuration = config if config else {}
+
+    @validates('priority')
+    def validate_priority(self, key, priority):
+        """Validate priority value."""
+        if not isinstance(priority, int) or priority < 0:
+            raise ValueError("Priority must be a non-negative integer")
+        return priority
+
+    def __repr__(self):
+        return f'<ApprovalRule {self.name} (Priority: {self.priority}) - {"Active" if self.is_active else "Inactive"}>'

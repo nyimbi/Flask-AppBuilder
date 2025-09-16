@@ -7,16 +7,37 @@ the mixins used, providing optimal UI components for enhanced functionality.
 
 import logging
 from typing import Dict, List, Any, Optional, Type, Union
-from flask_appbuilder.widgets import (
-    ModernTextWidget, ModernTextAreaWidget, JSONEditorWidget, 
-    ArrayEditorWidget, TagInputWidget, DateTimeRangeWidget,
-    ColorPickerWidget, FileUploadWidget, ValidationWidget
-)
-from flask_appbuilder.fieldwidgets import (
-    Select2Widget, Select2ManyWidget, DatePickerWidget, DateTimePickerWidget
-)
 
 log = logging.getLogger(__name__)
+
+# Import only available Flask-AppBuilder widgets
+try:
+    from flask_appbuilder.widgets import (
+        FormWidget, ListWidget, ShowWidget, SearchWidget
+    )
+    from flask_appbuilder.fieldwidgets import (
+        Select2Widget, Select2ManyWidget, DatePickerWidget, DateTimePickerWidget
+    )
+    # Additional widgets that may be available
+    try:
+        from flask_appbuilder.widgets import (
+            GroupFormListWidget, ListMasterWidget
+        )
+    except ImportError:
+        GroupFormListWidget = FormWidget  # Fallback
+        ListMasterWidget = ListWidget      # Fallback
+        
+except ImportError as e:
+    log.warning(f"Some Flask-AppBuilder widgets not available: {e}")
+    # Define fallback widgets
+    FormWidget = None
+    ListWidget = None
+    ShowWidget = None
+    SearchWidget = None
+    Select2Widget = None
+    Select2ManyWidget = None
+    DatePickerWidget = None
+    DateTimePickerWidget = None
 
 
 class MixinWidgetMapping:
@@ -25,252 +46,121 @@ class MixinWidgetMapping:
     based on model mixins and field characteristics.
     """
     
-    # Widget mappings for different mixin types
+    # Widget mappings for different mixin types (using available widgets)
     MIXIN_WIDGET_MAP = {
         'MetadataMixin': {
-            'metadata': JSONEditorWidget(show_tree_view=True, auto_format=True),
-            'metadata_json': JSONEditorWidget(show_tree_view=True, auto_format=True)
+            'metadata': FormWidget,  # Use basic form widget for JSON fields
+            'metadata_json': FormWidget
         },
         
         'SearchableMixin': {
-            'search_vector': ModernTextAreaWidget(readonly=True, show_stats=False),
-            'searchable_content': ModernTextAreaWidget(
-                auto_resize=True,
-                show_stats=True,
-                full_screen=True
-            )
+            'search_vector': FormWidget,      # Use basic form widget
+            'searchable_content': FormWidget  # Use basic form widget
         },
         
         'InternationalizationMixin': {
-            'translatable_fields': ArrayEditorWidget(
-                item_type='text',
-                sortable=False,
-                max_items=20
-            )
+            'translatable_fields': FormWidget  # Use basic form widget
         },
         
         'WorkflowMixin': {
-            'current_state': Select2Widget(),
-            'workflow_data': JSONEditorWidget(show_tree_view=True),
-            'state_history': ArrayEditorWidget(
-                item_type='text',
-                sortable=False,
-                readonly=True
-            )
+            'current_state': Select2Widget() if Select2Widget else FormWidget,
+            'workflow_data': FormWidget,  # Use basic form widget for JSON
+            'state_history': FormWidget   # Use basic form widget
         },
         
         'ApprovalWorkflowMixin': {
-            'approval_status': Select2Widget(),
-            'approval_history': ArrayEditorWidget(
-                item_type='text',
-                readonly=True,
-                sortable=False
-            )
+            'approval_status': Select2Widget() if Select2Widget else FormWidget,
+            'approval_history': FormWidget  # Use basic form widget
         },
         
-        'DocMixin': {
-            'doc': FileUploadWidget(
-                allowed_types=['application/pdf', 'image/*', 'text/*'],
-                show_preview=True,
-                max_file_size=50*1024*1024  # 50MB
-            ),
-            'doc_binary': FileUploadWidget(
-                show_preview=False,
-                max_file_size=100*1024*1024  # 100MB
-            ),
-            'keywords': TagInputWidget(
-                max_tags=20,
-                tag_colors=True,
-                allow_duplicates=False
-            ),
-            'doc_text': ModernTextAreaWidget(
-                auto_resize=True,
-                show_stats=True,
-                full_screen=True
-            ),
-            'doc_context': ModernTextAreaWidget(
-                auto_resize=True,
-                markdown_preview=True
-            )
+        'DocumentMixin': {
+            'document_path': FormWidget,      # Use basic form widget for file paths
+            'document_content': FormWidget,   # Use basic form widget for content
+            'keywords': FormWidget,           # Use basic form widget for keywords
+            'document_text': FormWidget,      # Use basic form widget for text
+            'document_context': FormWidget    # Use basic form widget
         },
         
         'CommentableMixin': {
-            'comment_text': ModernTextAreaWidget(
-                rich_text=True,
-                auto_resize=True,
-                show_stats=True
-            )
+            'comment_text': FormWidget  # Use basic form widget
         },
         
         'SchedulingMixin': {
-            'start_time': DateTimeRangeWidget(
-                include_time=True,
-                predefined_ranges=True
-            ),
-            'end_time': DateTimeRangeWidget(
-                include_time=True,
-                predefined_ranges=True
-            ),
-            'recurrence_pattern': JSONEditorWidget(
-                show_tree_view=False,
-                auto_format=True
-            )
+            'start_time': DateTimePickerWidget() if DateTimePickerWidget else FormWidget,
+            'end_time': DateTimePickerWidget() if DateTimePickerWidget else FormWidget,
+            'recurrence_pattern': FormWidget  # Use basic form widget for JSON
         },
         
         'GeoLocationMixin': {
-            'coordinates': ModernTextWidget(
-                icon_prefix='fa-map-marker',
-                validation_rules=[
-                    {'type': 'pattern', 'options': {'pattern': r'^-?\d+\.?\d*,-?\d+\.?\d*$'}}
-                ]
-            )
+            'latitude': FormWidget,   # Use basic form widget for coordinates
+            'longitude': FormWidget,  # Use basic form widget for coordinates
+            'address': FormWidget     # Use basic form widget for address
         },
         
         'CurrencyMixin': {
-            'amount': ModernTextWidget(
-                icon_prefix='fa-dollar',
-                validation_rules=[
-                    {'type': 'number'},
-                    {'type': 'minValue', 'options': {'min': 0}}
-                ]
-            ),
-            'currency': Select2Widget()
+            'amount': FormWidget,     # Use basic form widget for amount
+            'currency': Select2Widget() if Select2Widget else FormWidget
         },
         
         'ProjectMixin': {
-            'project_data': JSONEditorWidget(show_tree_view=True),
-            'project_tags': TagInputWidget(
-                max_tags=15,
-                tag_colors=True
-            ),
-            'milestones': ArrayEditorWidget(
-                item_type='text',
-                sortable=True
-            )
+            'project_data': FormWidget,  # Use basic form widget for JSON
+            'project_tags': FormWidget,  # Use basic form widget for tags
+            'milestones': FormWidget     # Use basic form widget for arrays
         },
         
         'VersioningMixin': {
-            'version_data': JSONEditorWidget(
-                readonly=True,
-                show_tree_view=True
-            )
+            'version_data': FormWidget,  # Use basic form widget for JSON
+            'version_number': FormWidget
         },
         
         'EncryptionMixin': {
-            'encrypted_fields': ArrayEditorWidget(
-                readonly=True,
-                item_type='text'
-            )
+            'encrypted_fields': FormWidget  # Use basic form widget
         },
         
         'SlugMixin': {
-            'slug': ModernTextWidget(
-                icon_prefix='fa-link',
-                readonly=True,
-                show_counter=True
-            )
+            'slug': FormWidget  # Use basic form widget
         },
         
         'TreeMixin': {
-            'parent_id': Select2Widget(),
-            'tree_path': ModernTextWidget(
-                readonly=True,
-                icon_prefix='fa-sitemap'
-            )
+            'parent_id': Select2Widget() if Select2Widget else FormWidget,
+            'tree_path': FormWidget  # Use basic form widget
         }
     }
     
-    # Field type to widget mappings
+    # Field type to widget mappings (using valid widgets)
     FIELD_TYPE_WIDGET_MAP = {
         'String': {
-            'default': ModernTextWidget(),
-            'email': ModernTextWidget(
-                icon_prefix='fa-envelope',
-                validation_rules=[{'type': 'email'}]
-            ),
-            'url': ModernTextWidget(
-                icon_prefix='fa-link',
-                validation_rules=[{'type': 'url'}]
-            ),
-            'password': ModernTextWidget(
-                icon_suffix='fa-eye',
-                validation_rules=[
-                    {'type': 'strongPassword'}
-                ]
-            ),
-            'color': ColorPickerWidget(
-                show_palette=True,
-                show_history=True
-            ),
-            'tags': TagInputWidget(
-                max_tags=10,
-                tag_colors=True
-            )
+            'default': FormWidget,     # Use basic form widget
+            'email': FormWidget,       # Use basic form widget
+            'url': FormWidget,         # Use basic form widget  
+            'password': FormWidget,    # Use basic form widget
+            'color': FormWidget,       # Use basic form widget
+            'tags': FormWidget         # Use basic form widget
         },
         
         'Text': {
-            'default': ModernTextAreaWidget(
-                auto_resize=True,
-                show_stats=True
-            ),
-            'rich_text': ModernTextAreaWidget(
-                rich_text=True,
-                markdown_preview=True,
-                auto_resize=True
-            ),
-            'code': ModernTextAreaWidget(
-                syntax_highlighting='python',
-                show_stats=True,
-                full_screen=True
-            ),
-            'json': JSONEditorWidget(
-                show_tree_view=True,
-                enable_search=True
-            )
+            'default': FormWidget,     # Use basic form widget
+            'rich_text': FormWidget,   # Use basic form widget
+            'code': FormWidget,        # Use basic form widget
+            'json': FormWidget         # Use basic form widget
         },
         
         'Integer': {
-            'default': ModernTextWidget(
-                validation_rules=[{'type': 'number'}]
-            ),
-            'percentage': ModernTextWidget(
-                icon_suffix='fa-percent',
-                validation_rules=[
-                    {'type': 'number'},
-                    {'type': 'minValue', 'options': {'min': 0}},
-                    {'type': 'maxValue', 'options': {'max': 100}}
-                ]
-            ),
-            'rating': ModernTextWidget(
-                validation_rules=[
-                    {'type': 'number'},
-                    {'type': 'minValue', 'options': {'min': 1}},
-                    {'type': 'maxValue', 'options': {'max': 5}}
-                ]
-            )
+            'default': FormWidget
         },
         
         'DateTime': {
-            'default': DateTimePickerWidget(),
-            'range': DateTimeRangeWidget(
-                include_time=True,
-                predefined_ranges=True
-            ),
-            'date_only': DatePickerWidget(),
-            'business_hours': DateTimeRangeWidget(
-                include_time=True,
-                business_hours_only=True
-            )
+            'default': DateTimePickerWidget() if DateTimePickerWidget else FormWidget,
+            'date_only': DatePickerWidget() if DatePickerWidget else FormWidget
         },
         
         'Boolean': {
-            'default': Select2Widget(),
-            'switch': ModernTextWidget()  # Would be implemented as toggle switch
+            'default': Select2Widget() if Select2Widget else FormWidget
         },
         
         'Enum': {
-            'default': Select2Widget(),
-            'multiple': Select2ManyWidget()
+            'default': Select2Widget() if Select2Widget else FormWidget,
+            'multiple': Select2ManyWidget() if Select2ManyWidget else FormWidget
         }
     }
     
@@ -375,27 +265,27 @@ class MixinWidgetMapping:
         """Get widget based on naming conventions."""
         field_lower = field_name.lower()
         
-        # Common naming patterns
+        # Common naming patterns - using available widgets only
         if field_lower.endswith('_json') or field_lower.endswith('_data'):
-            return JSONEditorWidget(show_tree_view=True)
+            return FormWidget  # Use basic form widget for JSON fields
         
         elif field_lower.endswith('_tags') or field_lower.endswith('_keywords'):
-            return TagInputWidget(max_tags=15, tag_colors=True)
+            return FormWidget  # Use basic form widget for tags
         
         elif field_lower.endswith('_array') or field_lower.endswith('_list'):
-            return ArrayEditorWidget(item_type='text', sortable=True)
+            return FormWidget  # Use basic form widget for arrays
         
         elif field_lower.endswith('_file') or field_lower.endswith('_upload'):
-            return FileUploadWidget(show_preview=True)
+            return FormWidget  # Use basic form widget for file uploads
         
         elif field_lower.endswith('_color') or field_lower.endswith('_colour'):
-            return ColorPickerWidget(show_palette=True)
+            return FormWidget  # Use basic form widget for colors
         
         elif field_lower.endswith('_range') or ('from' in field_lower and 'to' in field_lower):
-            return DateTimeRangeWidget(include_time=True)
+            return DateTimePickerWidget() if DateTimePickerWidget else FormWidget
         
         elif field_lower.endswith('_long') or field_lower.endswith('_text') or field_lower.endswith('_description'):
-            return ModernTextAreaWidget(auto_resize=True, show_stats=True)
+            return FormWidget  # Use basic form widget for long text
         
         return None
     
@@ -488,19 +378,9 @@ class MixinWidgetMapping:
                 if hasattr(column.type, 'scale') and column.type.scale:
                     validation_rules.append({'type': 'number'})
                 
-                # Create enhanced widget with validation
-                if validation_rules and hasattr(widget, '__class__'):
-                    if isinstance(widget, (ModernTextWidget, ModernTextAreaWidget)):
-                        # Create new widget instance with validation
-                        widget_class = widget.__class__
-                        widget_kwargs = getattr(widget, '_init_kwargs', {})
-                        widget_kwargs['validation_rules'] = validation_rules
-                        enhanced_widget = widget_class(**widget_kwargs)
-                        enhanced_mappings[field_name] = enhanced_widget
-                    else:
-                        enhanced_mappings[field_name] = widget
-                else:
-                    enhanced_mappings[field_name] = widget
+                # For now, just use the widget as-is since we're using basic Flask-AppBuilder widgets
+                # Advanced validation would require custom widget implementations
+                enhanced_mappings[field_name] = widget
         
         except Exception as e:
             log.warning(f"Failed to apply validation rules: {e}")

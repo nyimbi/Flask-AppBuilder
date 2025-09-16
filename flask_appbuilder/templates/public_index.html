@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Flask-AppBuilder Enhanced - Advanced web application framework with media capture, GPS, and dynamic menu system">
+    <meta name="keywords" content="flask, appbuilder, media capture, GPS, camera, audio recording, web framework">
+    <meta name="author" content="Flask-AppBuilder Enhanced Team">
+    
+    <title>{{ title }} - Flask-AppBuilder Enhanced</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link href="{{ url_for('static', filename='appbuilder/css/menu-renderer.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='appbuilder/css/media-fields.css') }}" rel="stylesheet">
+    
+    <!-- Leaflet CSS for maps -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --hero-overlay: linear-gradient(135deg, rgba(102, 126, 234, 0.9) 0%, rgba(118, 75, 162, 0.9) 100%);
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }
+        
+        .hero-section {
+            background: var(--hero-overlay), url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 100" preserveAspectRatio="none"><polygon fill="%23ffffff" points="1000,100 1000,0 0,0 0,100"/></svg>');
+            background-size: cover;
+            color: white;
+            padding: 100px 0;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .hero-content {
+            position: relative;
+            z-index: 2;
+        }
+        
+        .hero-title {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .hero-subtitle {
+            font-size: 1.3rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+        
+        .feature-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: none;
+            height: 100%;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+        
+        .feature-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: white;
+            margin-bottom: 20px;
+            background: var(--primary-gradient);
+        }
+        
+        .feature-icon.success { background: var(--success-gradient); }
+        .feature-icon.danger { background: var(--secondary-gradient); }
+        .feature-icon.warning { background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); }
+        .feature-icon.info { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); }
+        .feature-icon.secondary { background: linear-gradient(135deg, #d299c2 0%, #fef9d7 100%); }
+        
+        .demo-section {
+            padding: 80px 0;
+            background: #f8f9fa;
+        }
+        
+        .demo-container {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            margin-bottom: 40px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+        
+        .stats-section {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 60px 0;
+        }
+        
+        .stat-item {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .stat-number {
+            font-size: 3rem;
+            font-weight: 700;
+            display: block;
+            line-height: 1;
+        }
+        
+        .stat-label {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-top: 10px;
+        }
+        
+        .menu-demo-container {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 2px solid #dee2e6;
+        }
+        
+        .menu-demo-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #495057;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .cta-section {
+            background: var(--secondary-gradient);
+            color: white;
+            padding: 80px 0;
+            text-align: center;
+        }
+        
+        .btn-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn-gradient:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            color: white;
+        }
+        
+        .nav-tabs .nav-link {
+            border-radius: 10px 10px 0 0;
+            border: 2px solid transparent;
+            font-weight: 600;
+        }
+        
+        .nav-tabs .nav-link.active {
+            background: var(--primary-gradient);
+            color: white;
+            border-color: transparent;
+        }
+        
+        .demo-media-container {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin-top: 20px;
+        }
+        
+        .floating-demo-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 1000;
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            font-size: 1.5rem;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .floating-demo-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+            color: white;
+        }
+        
+        @media (max-width: 768px) {
+            .hero-title { font-size: 2.5rem; }
+            .hero-subtitle { font-size: 1.1rem; }
+            .feature-card { padding: 20px; }
+            .demo-container { padding: 20px; }
+            .stat-number { font-size: 2.5rem; }
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255,255,255,0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .loading-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 hero-content">
+                    <h1 class="hero-title">Flask-AppBuilder Enhanced</h1>
+                    <p class="hero-subtitle">
+                        Revolutionary web application framework with advanced media capture, 
+                        GPS integration, and dynamic menu systems. Built for the modern web.
+                    </p>
+                    <div class="mt-4">
+                        <a href="#demos" class="btn-gradient me-3">
+                            <i class="fas fa-play me-2"></i>Explore Demos
+                        </a>
+                        <a href="#features" class="btn btn-outline-light btn-lg">
+                            <i class="fas fa-info-circle me-2"></i>Learn More
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Overview -->
+    <section id="features" class="py-5">
+        <div class="container">
+            <div class="row mb-5">
+                <div class="col-lg-8 mx-auto text-center">
+                    <h2 class="display-4 mb-3">Powerful Features</h2>
+                    <p class="lead text-muted">
+                        Everything you need to build modern, interactive web applications
+                    </p>
+                </div>
+            </div>
+            
+            <div class="row">
+                {% for feature in features %}
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="feature-card">
+                        <div class="feature-icon {{ feature.color }}">
+                            <i class="fas {{ feature.icon }}"></i>
+                        </div>
+                        <h4>{{ feature.title }}</h4>
+                        <p class="text-muted">{{ feature.description }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+    <!-- Statistics Section -->
+    <section class="stats-section">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-3 col-md-6">
+                    <div class="stat-item">
+                        <span class="stat-number">{{ app_stats.total_features }}</span>
+                        <div class="stat-label">Advanced Features</div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <div class="stat-item">
+                        <span class="stat-number">{{ app_stats.menu_renderers }}</span>
+                        <div class="stat-label">Menu Renderers</div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <div class="stat-item">
+                        <span class="stat-number">{{ app_stats.media_field_types }}</span>
+                        <div class="stat-label">Media Field Types</div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <div class="stat-item">
+                        <span class="stat-number">99.99%</span>
+                        <div class="stat-label">Uptime</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Interactive Demos -->
+    <section id="demos" class="demo-section">
+        <div class="container">
+            <div class="row mb-5">
+                <div class="col-lg-8 mx-auto text-center">
+                    <h2 class="display-4 mb-3">Interactive Demos</h2>
+                    <p class="lead text-muted">
+                        Experience the power of Flask-AppBuilder Enhanced with live demonstrations
+                    </p>
+                </div>
+            </div>
+
+            <!-- Menu System Demos -->
+            <div class="demo-container">
+                <h3 class="mb-4">
+                    <i class="fas fa-bars text-primary me-2"></i>
+                    Dynamic Menu System
+                </h3>
+                <p class="text-muted mb-4">
+                    Explore our advanced menu rendering system with 9 different styles and themes.
+                </p>
+                
+                <ul class="nav nav-tabs" id="menuTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="navbar-tab" data-bs-toggle="tab" data-bs-target="#navbar" type="button" role="tab">
+                            <i class="fas fa-bars me-2"></i>Navbar
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="tree-tab" data-bs-toggle="tab" data-bs-target="#tree" type="button" role="tab">
+                            <i class="fas fa-sitemap me-2"></i>Tree
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="sidebar-tab" data-bs-toggle="tab" data-bs-target="#sidebar" type="button" role="tab">
+                            <i class="fas fa-columns me-2"></i>Sidebar
+                        </button>
+                    </li>
+                </ul>
+                
+                <div class="tab-content" id="menuTabContent">
+                    <div class="tab-pane fade show active" id="navbar" role="tabpanel">
+                        <div class="menu-demo-container">
+                            <div class="menu-demo-title">
+                                <i class="fas fa-bars"></i>
+                                Traditional Navbar Menu
+                            </div>
+                            {{ navbar_demo|safe }}
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="tree" role="tabpanel">
+                        <div class="menu-demo-container">
+                            <div class="menu-demo-title">
+                                <i class="fas fa-sitemap"></i>
+                                Collapsible Tree Menu
+                            </div>
+                            {{ tree_demo|safe }}
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="sidebar" role="tabpanel">
+                        <div class="menu-demo-container">
+                            <div class="menu-demo-title">
+                                <i class="fas fa-columns"></i>
+                                Compact Sidebar Menu
+                            </div>
+                            {{ sidebar_demo|safe }}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-4">
+                    <a href="{{ url_for('PublicIndexView.menus_demo') }}" class="btn btn-primary">
+                        <i class="fas fa-external-link-alt me-2"></i>View All Menu Types
+                    </a>
+                </div>
+            </div>
+
+            <!-- Media Capabilities Demos -->
+            <div class="demo-container">
+                <h3 class="mb-4">
+                    <i class="fas fa-camera text-success me-2"></i>
+                    Media Capture & Processing
+                </h3>
+                <p class="text-muted mb-4">
+                    Advanced media handling with camera capture, audio recording, GPS, and gallery management.
+                </p>
+                
+                <div class="row">
+                    <div class="col-lg-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <i class="fas fa-camera text-primary me-2"></i>
+                                    Camera Capture
+                                </h5>
+                                <p class="card-text">Live camera preview with photo/video capture, grid overlay, and quality controls.</p>
+                                <ul class="list-unstyled">
+                                    <li><i class="fas fa-check text-success me-2"></i>Live preview</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Photo & video capture</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Grid overlay</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Quality controls</li>
+                                </ul>
+                                <a href="{{ url_for('PublicIndexView.camera_demo') }}" class="btn btn-primary">
+                                    <i class="fas fa-play me-2"></i>Try Camera Demo
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <i class="fas fa-microphone text-info me-2"></i>
+                                    Audio Recording
+                                </h5>
+                                <p class="card-text">Professional audio recording with waveform visualization and multiple formats.</p>
+                                <ul class="list-unstyled">
+                                    <li><i class="fas fa-check text-success me-2"></i>Waveform visualization</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Multiple formats</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Quality controls</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Real-time effects</li>
+                                </ul>
+                                <a href="{{ url_for('PublicIndexView.audio_demo') }}" class="btn btn-info">
+                                    <i class="fas fa-play me-2"></i>Try Audio Demo
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <i class="fas fa-map-marker-alt text-warning me-2"></i>
+                                    GPS & Mapping
+                                </h5>
+                                <p class="card-text">Interactive maps with location tracking, geocoding, and address search.</p>
+                                <ul class="list-unstyled">
+                                    <li><i class="fas fa-check text-success me-2"></i>Interactive maps</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Location tracking</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Geocoding</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Address search</li>
+                                </ul>
+                                <a href="{{ url_for('PublicIndexView.gps_demo') }}" class="btn btn-warning">
+                                    <i class="fas fa-play me-2"></i>Try GPS Demo
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <i class="fas fa-images text-danger me-2"></i>
+                                    Media Gallery
+                                </h5>
+                                <p class="card-text">Drag-and-drop media upload with thumbnail preview and gallery management.</p>
+                                <ul class="list-unstyled">
+                                    <li><i class="fas fa-check text-success me-2"></i>Drag & drop upload</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Thumbnail preview</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Gallery management</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Multiple formats</li>
+                                </ul>
+                                <a href="{{ url_for('PublicIndexView.gallery_demo') }}" class="btn btn-danger">
+                                    <i class="fas fa-play me-2"></i>Try Gallery Demo
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Performance Metrics -->
+            <div class="demo-container">
+                <h3 class="mb-4">
+                    <i class="fas fa-tachometer-alt text-info me-2"></i>
+                    Performance Metrics
+                </h3>
+                
+                <div class="row">
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="text-center p-3 bg-light rounded">
+                            <h4 class="text-primary">{{ app_stats.performance_metrics.page_load_time }}</h4>
+                            <small class="text-muted">Page Load Time</small>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="text-center p-3 bg-light rounded">
+                            <h4 class="text-success">{{ app_stats.performance_metrics.media_capture_latency }}</h4>
+                            <small class="text-muted">Media Capture Latency</small>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="text-center p-3 bg-light rounded">
+                            <h4 class="text-warning">{{ app_stats.performance_metrics.concurrent_users }}</h4>
+                            <small class="text-muted">Concurrent Users</small>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="text-center p-3 bg-light rounded">
+                            <h4 class="text-info">{{ app_stats.performance_metrics.uptime }}</h4>
+                            <small class="text-muted">System Uptime</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Call to Action -->
+    <section class="cta-section">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 mx-auto">
+                    <h2 class="display-4 mb-3">Ready to Build Something Amazing?</h2>
+                    <p class="lead mb-4">
+                        Start creating powerful web applications with Flask-AppBuilder Enhanced today.
+                    </p>
+                    <a href="#get-started" class="btn-gradient me-3">
+                        <i class="fas fa-rocket me-2"></i>Get Started
+                    </a>
+                    <a href="#documentation" class="btn btn-outline-light btn-lg">
+                        <i class="fas fa-book me-2"></i>Documentation
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Floating Demo Button -->
+    <button class="floating-demo-btn" onclick="toggleDemoMode()" title="Toggle Demo Mode">
+        <i class="fas fa-play"></i>
+    </button>
+
+    <!-- Footer -->
+    <footer class="py-5 bg-dark text-light">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-4 mb-4">
+                    <h5>Flask-AppBuilder Enhanced</h5>
+                    <p class="text-muted">
+                        Advanced web application framework with cutting-edge media capabilities.
+                    </p>
+                </div>
+                <div class="col-lg-2 mb-4">
+                    <h6>Features</h6>
+                    <ul class="list-unstyled">
+                        <li><a href="#" class="text-muted">Camera Capture</a></li>
+                        <li><a href="#" class="text-muted">Audio Recording</a></li>
+                        <li><a href="#" class="text-muted">GPS Integration</a></li>
+                        <li><a href="#" class="text-muted">Menu System</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-2 mb-4">
+                    <h6>Demos</h6>
+                    <ul class="list-unstyled">
+                        <li><a href="{{ url_for('PublicIndexView.camera_demo') }}" class="text-muted">Camera Demo</a></li>
+                        <li><a href="{{ url_for('PublicIndexView.audio_demo') }}" class="text-muted">Audio Demo</a></li>
+                        <li><a href="{{ url_for('PublicIndexView.gps_demo') }}" class="text-muted">GPS Demo</a></li>
+                        <li><a href="{{ url_for('PublicIndexView.gallery_demo') }}" class="text-muted">Gallery Demo</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-2 mb-4">
+                    <h6>Resources</h6>
+                    <ul class="list-unstyled">
+                        <li><a href="#" class="text-muted">Documentation</a></li>
+                        <li><a href="#" class="text-muted">API Reference</a></li>
+                        <li><a href="#" class="text-muted">Examples</a></li>
+                        <li><a href="#" class="text-muted">Support</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-2 mb-4">
+                    <h6>Connect</h6>
+                    <ul class="list-unstyled">
+                        <li><a href="#" class="text-muted">GitHub</a></li>
+                        <li><a href="#" class="text-muted">Discord</a></li>
+                        <li><a href="#" class="text-muted">Twitter</a></li>
+                        <li><a href="#" class="text-muted">Blog</a></li>
+                    </ul>
+                </div>
+            </div>
+            <hr class="my-4">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <p class="mb-0 text-muted">&copy; 2025 Flask-AppBuilder Enhanced. All rights reserved.</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <span class="badge bg-primary">v4.8.0-enhanced</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="{{ url_for('static', filename='appbuilder/js/media-fields.js') }}"></script>
+    
+    <script>
+        // Page initialization
+        $(document).ready(function() {
+            // Hide loading overlay
+            $('#loadingOverlay').removeClass('show');
+            
+            // Smooth scrolling for anchor links
+            $('a[href^="#"]').on('click', function(event) {
+                var target = $(this.getAttribute('href'));
+                if( target.length ) {
+                    event.preventDefault();
+                    $('html, body').stop().animate({
+                        scrollTop: target.offset().top - 70
+                    }, 1000);
+                }
+            });
+            
+            // Initialize demos
+            initializeDemos();
+            
+            // Performance monitoring
+            trackPagePerformance();
+        });
+        
+        // Demo mode toggle
+        function toggleDemoMode() {
+            const button = $('.floating-demo-btn');
+            const icon = button.find('i');
+            
+            if (icon.hasClass('fa-play')) {
+                icon.removeClass('fa-play').addClass('fa-pause');
+                startDemoMode();
+            } else {
+                icon.removeClass('fa-pause').addClass('fa-play');
+                stopDemoMode();
+            }
+        }
+        
+        function startDemoMode() {
+            console.log('Demo mode started');
+            // Auto-cycle through tabs
+            let currentTab = 0;
+            const tabs = $('#menuTabs .nav-link');
+            
+            window.demoInterval = setInterval(() => {
+                currentTab = (currentTab + 1) % tabs.length;
+                $(tabs[currentTab]).tab('show');
+            }, 3000);
+        }
+        
+        function stopDemoMode() {
+            console.log('Demo mode stopped');
+            if (window.demoInterval) {
+                clearInterval(window.demoInterval);
+                window.demoInterval = null;
+            }
+        }
+        
+        function initializeDemos() {
+            // Add interactive elements to demo sections
+            $('.demo-container').each(function() {
+                $(this).on('mouseenter', function() {
+                    $(this).addClass('shadow-lg');
+                }).on('mouseleave', function() {
+                    $(this).removeClass('shadow-lg');
+                });
+            });
+            
+            // Initialize media field demos (simplified)
+            $('.fab-camera-field, .fab-audio-field, .fab-gps-field, .fab-media-gallery-field').each(function() {
+                console.log('Initializing media field demo:', this.className);
+            });
+        }
+        
+        function trackPagePerformance() {
+            // Track page load performance
+            window.addEventListener('load', function() {
+                const perfData = window.performance.timing;
+                const pageLoadTime = perfData.loadEventEnd - perfData.navigationStart;
+                
+                console.log('Page load time:', pageLoadTime + 'ms');
+                
+                // Send analytics (simplified)
+                if (pageLoadTime > 3000) {
+                    console.warn('Slow page load detected');
+                }
+            });
+        }
+        
+        // Intersection Observer for animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+        
+        const observer = new IntersectionObserver(function(entries) {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('animate__fadeInUp');
+                }
+            });
+        }, observerOptions);
+        
+        // Observe feature cards
+        document.querySelectorAll('.feature-card').forEach(card => {
+            observer.observe(card);
+        });
+    </script>
+</body>
+</html>

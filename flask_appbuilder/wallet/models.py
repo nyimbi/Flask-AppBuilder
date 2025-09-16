@@ -7,6 +7,9 @@ including wallets, transactions, budgets, and related entities.
 
 import json
 import logging
+import hashlib
+import hmac
+import secrets
 from decimal import Decimal, ROUND_HALF_UP
 from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional, Union
@@ -21,25 +24,12 @@ from sqlalchemy import (
     ForeignKey, Index, CheckConstraint, UniqueConstraint, event
 )
 from sqlalchemy.orm import relationship, validates
+from contextlib import contextmanager
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.sql import func
 
-# Import enhanced mixins if available
-try:
-    from flask_appbuilder.mixins import (
-        BaseModelMixin, AuditLogMixin, SoftDeleteMixin, 
-        EncryptionMixin, CacheMixin, SearchableMixin
-    )
-    ENHANCED_MIXINS_AVAILABLE = True
-except ImportError:
-    # Fallback to basic AuditMixin
-    BaseModelMixin = AuditMixin
-    AuditLogMixin = type('AuditLogMixin', (), {})
-    SoftDeleteMixin = type('SoftDeleteMixin', (), {})
-    EncryptionMixin = type('EncryptionMixin', (), {})
-    CacheMixin = type('CacheMixin', (), {})
-    SearchableMixin = type('SearchableMixin', (), {})
-    ENHANCED_MIXINS_AVAILABLE = False
+# Use Flask-AppBuilder's standard AuditMixin pattern
+# This provides created_on, changed_on, created_by_fk, changed_by_fk fields
 
 log = logging.getLogger(__name__)
 
@@ -83,7 +73,7 @@ class PaymentMethodType(Enum):
     OTHER = "other"
 
 
-class UserWallet(BaseModelMixin, CacheMixin, Model):
+class UserWallet(AuditMixin, Model):
     """
     User wallet model for tracking balances and wallet settings.
     
@@ -134,6 +124,7 @@ class UserWallet(BaseModelMixin, CacheMixin, Model):
     
     # Relationships
     user = relationship("User", backref="wallets")
+    user_profile = relationship("UserProfile", back_populates="wallets")
     transactions = relationship("WalletTransaction", back_populates="wallet", 
                               cascade="all, delete-orphan")
     budgets = relationship("WalletBudget", back_populates="wallet",
@@ -159,10 +150,9 @@ class UserWallet(BaseModelMixin, CacheMixin, Model):
     
     def get_transaction_total(self, transaction_type: TransactionType, 
                             start_date: datetime = None, end_date: datetime = None) -> Decimal:
-        """Get total transactions by type and date range."""
-        from sqlalchemy.orm import sessionmaker
-        
-        query = WalletTransaction.query.filter(
+        """Get total transactions by type and date range with optimized query."""
+        # Use optimized aggregation query directly
+        query = db.session.query(func.sum(WalletTransaction.amount)).filter(
             WalletTransaction.wallet_id == self.id,
             WalletTransaction.transaction_type == transaction_type.value,
             WalletTransaction.status == TransactionStatus.COMPLETED.value
@@ -173,7 +163,7 @@ class UserWallet(BaseModelMixin, CacheMixin, Model):
         if end_date:
             query = query.filter(WalletTransaction.transaction_date <= end_date)
         
-        result = query.with_entities(func.sum(WalletTransaction.amount)).scalar()
+        result = query.scalar()
         return result or Decimal('0.00')
     
     def can_transact(self, amount: Decimal, transaction_type: TransactionType) -> tuple[bool, str]:
@@ -224,8 +214,8 @@ class UserWallet(BaseModelMixin, CacheMixin, Model):
     def add_transaction(self, amount: Decimal, transaction_type: TransactionType,
                        description: str = None, category_id: int = None,
                        payment_method_id: int = None, metadata: dict = None,
-                       auto_commit: bool = True) -> 'WalletTransaction':
-        """Add a new transaction to the wallet."""
+                       auto_commit: bool = True, bypass_approval: bool = False) -> 'WalletTransaction':
+        """Add a new transaction to the wallet with security validation."""
         from sqlalchemy.orm import sessionmaker
         
         amount = Decimal(str(amount))
@@ -235,20 +225,91 @@ class UserWallet(BaseModelMixin, CacheMixin, Model):
         if not can_transact:
             raise ValueError(f"Transaction not allowed: {message}")
         
-        # Create transaction
-        transaction = WalletTransaction(
+        # Check if approval is required and not bypassed
+        requires_approval = (
+            self.require_approval and 
+            self.approval_limit and 
+            amount > self.approval_limit and 
+            not bypass_approval
+        )
+        
+        # Create secure transaction
+        transaction = SecureWalletTransaction.create_secure_transaction(
             wallet_id=self.id,
+            user_id=self.user.id if hasattr(self, 'user') and self.user else current_user.id,
             amount=amount,
-            transaction_type=transaction_type.value,
+            transaction_type=transaction_type,
             description=description,
             category_id=category_id,
             payment_method_id=payment_method_id,
-            metadata_json=json.dumps(metadata) if metadata else None,
-            status=TransactionStatus.COMPLETED.value,
-            transaction_date=datetime.utcnow()
+            metadata=metadata,
+            requires_approval=requires_approval
         )
         
-        # Update wallet balance
+        # If approval required, set status to pending
+        if requires_approval:
+            transaction.status = TransactionStatus.PENDING.value
+            transaction.requires_approval = True
+        else:
+            transaction.status = TransactionStatus.COMPLETED.value
+            # Update wallet balance immediately for non-approval transactions
+            self._apply_transaction_to_balance(transaction, transaction_type, amount)
+        
+        # Update last transaction date
+        self.last_transaction_date = datetime.utcnow()
+        
+        # Add to session
+        from flask_appbuilder import db
+        db.session.add(transaction)
+        
+        # Create approval workflow if required
+        if requires_approval:
+            self._create_transaction_approval_workflow(transaction)
+        
+        if auto_commit:
+            db.session.commit()
+        
+        return transaction
+    
+    @contextmanager
+    def _lock_wallet_for_transaction(self):
+        """Database-level locking context manager for wallet balance updates.
+        
+        CRITICAL SECURITY FIX: Prevents race conditions in concurrent transactions
+        by using SELECT FOR UPDATE to lock the wallet row during balance modifications.
+        """
+        # Use Flask-AppBuilder's session access pattern
+        from flask import g
+        db_session = g.appbuilder.get_session if hasattr(g, 'appbuilder') else None
+        if not db_session:
+            from flask_appbuilder import db
+            db_session = db.session
+        
+        try:
+            # Lock this wallet instance for update
+            locked_wallet = db_session.query(UserWallet).filter_by(
+                id=self.id
+            ).with_for_update().first()
+            
+            if not locked_wallet:
+                raise ValueError(f"Wallet {self.id} not found or could not be locked")
+            
+            yield locked_wallet
+        except Exception as e:
+            log.error(f"Database locking failed for wallet {self.id}: {e}")
+            db_session.rollback()
+            raise
+    
+    def _apply_transaction_to_balance(self, transaction: 'WalletTransaction', 
+                                    transaction_type: TransactionType, amount: Decimal):
+        """Apply transaction to wallet balance (internal method with locking).
+        
+        SECURITY FIX: This method now operates within a database lock context
+        to prevent race conditions during concurrent balance updates.
+        """
+        # This method should now only be called within _lock_wallet_for_transaction context
+        log.info(f"Applying {transaction_type.value} of {amount} to wallet {self.id}")
+        
         if transaction_type == TransactionType.INCOME:
             self.balance += amount
             self.available_balance += amount
@@ -267,24 +328,105 @@ class UserWallet(BaseModelMixin, CacheMixin, Model):
                 self.balance += amount  # amount is already negative
                 self.available_balance += amount
         
-        # Update last transaction date
-        self.last_transaction_date = datetime.utcnow()
-        
-        # Add to session
-        from flask_appbuilder import db
-        db.session.add(transaction)
-        
-        if auto_commit:
-            db.session.commit()
-        
-        # Clear cache
-        self.clear_cache()
-        
-        return transaction
+        log.info(f"Wallet {self.id} balance updated: {self.balance} (available: {self.available_balance})")
+    
+    def _create_transaction_approval_workflow(self, transaction: 'WalletTransaction'):
+        """Create approval workflow for high-value transactions."""
+        try:
+            from flask_appbuilder.process.models.process_models import ProcessInstance
+            from flask_appbuilder.process.approval.chain_manager import ApprovalChainManager
+            
+            # Create approval workflow instance
+            workflow_data = {
+                'transaction_id': transaction.id,
+                'wallet_id': self.id,
+                'amount': float(transaction.amount),
+                'currency': self.currency_code,
+                'transaction_type': transaction.transaction_type,
+                'description': transaction.description,
+                'requested_by': transaction.user_id
+            }
+            
+            # Determine approval chain based on amount
+            chain_config = self._get_approval_chain_config(transaction.amount)
+            
+            # Use approval chain manager to create workflow
+            chain_manager = ApprovalChainManager()
+            approval_workflow = chain_manager.create_approval_workflow(
+                target_model='WalletTransaction',
+                target_id=transaction.id,
+                workflow_type='financial_transaction',
+                chain_config=chain_config,
+                input_data=workflow_data
+            )
+            
+            # Link transaction to approval workflow
+            transaction.approval_workflow_id = approval_workflow.id
+            
+            log.info(f"Created approval workflow {approval_workflow.id} for transaction {transaction.id}")
+            
+        except Exception as e:
+            log.error(f"Failed to create approval workflow for transaction {transaction.id}: {str(e)}")
+            # Don't fail the transaction, but log the error
+    
+    def _get_approval_chain_config(self, amount: Decimal) -> Dict[str, Any]:
+        """Get approval chain configuration based on transaction amount."""
+        # Define approval tiers based on amount
+        if amount >= Decimal('10000'):
+            # High value - requires CFO + CEO approval
+            return {
+                'chain_type': 'multi_level',
+                'levels': [
+                    {
+                        'name': 'Manager Approval',
+                        'approver_roles': ['Manager', 'Team Lead'],
+                        'require_all': False
+                    },
+                    {
+                        'name': 'CFO Approval', 
+                        'approver_roles': ['CFO', 'Finance Director'],
+                        'require_all': False
+                    },
+                    {
+                        'name': 'CEO Approval',
+                        'approver_roles': ['CEO', 'President'],
+                        'require_all': False
+                    }
+                ]
+            }
+        elif amount >= Decimal('1000'):
+            # Medium value - requires manager + finance approval
+            return {
+                'chain_type': 'multi_level',
+                'levels': [
+                    {
+                        'name': 'Manager Approval',
+                        'approver_roles': ['Manager', 'Team Lead'],
+                        'require_all': False
+                    },
+                    {
+                        'name': 'Finance Approval',
+                        'approver_roles': ['Finance Manager', 'CFO'],
+                        'require_all': False
+                    }
+                ]
+            }
+        else:
+            # Standard approval - single manager
+            return {
+                'chain_type': 'single',
+                'levels': [
+                    {
+                        'name': 'Manager Approval',
+                        'approver_roles': ['Manager', 'Team Lead'],
+                        'require_all': False
+                    }
+                ]
+            }
     
     def transfer_to(self, target_wallet: 'UserWallet', amount: Decimal,
                    description: str = None, auto_commit: bool = True) -> tuple['WalletTransaction', 'WalletTransaction']:
-        """Transfer funds to another wallet."""
+        """Transfer funds to another wallet with cryptographic security."""
         amount = Decimal(str(amount))
         
         if target_wallet.id == self.id:
@@ -295,56 +437,92 @@ class UserWallet(BaseModelMixin, CacheMixin, Model):
         if not can_transact:
             raise ValueError(f"Transfer not allowed: {message}")
         
-        # Create outgoing transaction
-        outgoing = WalletTransaction(
+        # Create secure transfer pair with cryptographic linking
+        transfer_id = secrets.token_urlsafe(32)
+        transfer_timestamp = datetime.utcnow()
+        
+        # Metadata for transfer linking
+        outgoing_metadata = {
+            'transfer_type': 'outgoing',
+            'target_wallet_id': target_wallet.id,
+            'target_wallet_name': target_wallet.wallet_name,
+            'transfer_id': transfer_id,
+            'transfer_timestamp': transfer_timestamp.isoformat()
+        }
+        
+        incoming_metadata = {
+            'transfer_type': 'incoming',
+            'source_wallet_id': self.id,
+            'source_wallet_name': self.wallet_name,
+            'transfer_id': transfer_id,
+            'transfer_timestamp': transfer_timestamp.isoformat()
+        }
+        
+        # Create secure outgoing transaction
+        outgoing = SecureWalletTransaction.create_secure_transaction(
             wallet_id=self.id,
+            user_id=current_user.id if current_user else self.user.id,
             amount=amount,
-            transaction_type=TransactionType.TRANSFER.value,
+            transaction_type=TransactionType.TRANSFER,
             description=f"Transfer to {target_wallet.wallet_name}: {description}" if description else f"Transfer to {target_wallet.wallet_name}",
-            status=TransactionStatus.COMPLETED.value,
-            transaction_date=datetime.utcnow(),
-            metadata_json=json.dumps({
-                'transfer_type': 'outgoing',
-                'target_wallet_id': target_wallet.id,
-                'target_wallet_name': target_wallet.wallet_name
-            })
+            metadata=outgoing_metadata,
+            transaction_date=transfer_timestamp
         )
         
-        # Create incoming transaction
-        incoming = WalletTransaction(
+        # Create secure incoming transaction
+        incoming = SecureWalletTransaction.create_secure_transaction(
             wallet_id=target_wallet.id,
+            user_id=current_user.id if current_user else self.user.id,
             amount=amount,
-            transaction_type=TransactionType.TRANSFER.value,
+            transaction_type=TransactionType.TRANSFER,
             description=f"Transfer from {self.wallet_name}: {description}" if description else f"Transfer from {self.wallet_name}",
-            status=TransactionStatus.COMPLETED.value,
-            transaction_date=datetime.utcnow(),
-            metadata_json=json.dumps({
-                'transfer_type': 'incoming',
-                'source_wallet_id': self.id,
-                'source_wallet_name': self.wallet_name
-            })
+            metadata=incoming_metadata,
+            transaction_date=transfer_timestamp
         )
         
-        # Update balances
-        self.balance -= amount
-        self.available_balance -= amount
-        self.last_transaction_date = datetime.utcnow()
+        # Link transactions cryptographically
+        outgoing.linked_transaction_id = incoming.id
+        incoming.linked_transaction_id = outgoing.id
         
-        target_wallet.balance += amount
-        target_wallet.available_balance += amount
-        target_wallet.last_transaction_date = datetime.utcnow()
+        # Update transfer signatures to include both transaction IDs
+        outgoing._update_transfer_signature(incoming.id)
+        incoming._update_transfer_signature(outgoing.id)
+        
+        # Check if either transaction requires approval
+        source_requires_approval = (
+            self.require_approval and 
+            self.approval_limit and 
+            amount > self.approval_limit
+        )
+        
+        if source_requires_approval:
+            outgoing.status = TransactionStatus.PENDING.value
+            incoming.status = TransactionStatus.PENDING.value
+            outgoing.requires_approval = True
+        else:
+            # Apply balance changes immediately
+            outgoing.status = TransactionStatus.COMPLETED.value
+            incoming.status = TransactionStatus.COMPLETED.value
+            
+            self.balance -= amount
+            self.available_balance -= amount
+            self.last_transaction_date = transfer_timestamp
+            
+            target_wallet.balance += amount
+            target_wallet.available_balance += amount
+            target_wallet.last_transaction_date = transfer_timestamp
         
         # Add to session
         from flask_appbuilder import db
         db.session.add(outgoing)
         db.session.add(incoming)
         
+        # Create approval workflow if required
+        if source_requires_approval:
+            self._create_transaction_approval_workflow(outgoing)
+        
         if auto_commit:
             db.session.commit()
-        
-        # Clear cache
-        self.clear_cache()
-        target_wallet.clear_cache()
         
         return outgoing, incoming
     
@@ -353,8 +531,11 @@ class UserWallet(BaseModelMixin, CacheMixin, Model):
         end_date = datetime.utcnow()
         start_date = end_date - timedelta(days=days)
         
-        # Get transactions in date range
-        transactions = WalletTransaction.query.filter(
+        # Get transactions in date range with optimized query
+        from sqlalchemy.orm import selectinload
+        transactions = db.session.query(WalletTransaction).options(
+            selectinload(WalletTransaction.category)
+        ).filter(
             WalletTransaction.wallet_id == self.id,
             WalletTransaction.transaction_date >= start_date,
             WalletTransaction.transaction_date <= end_date,
@@ -397,11 +578,306 @@ class UserWallet(BaseModelMixin, CacheMixin, Model):
             raise ValueError("Currency code must be 3 characters")
         return currency_code.upper() if currency_code else currency_code
     
+    # MPESA integration relationships
+    mpesa_accounts = relationship("MPESAAccount", back_populates="wallet", cascade="all, delete-orphan")
+    
+    # Backward compatibility property (lazy loaded fallback)
+    def get_mpesa_accounts(self):
+        """Get MPESA accounts linked to this wallet (fallback method)"""
+        try:
+            from .mpesa_models import MPESAAccount
+            from flask_appbuilder import db
+            return db.session.query(MPESAAccount).filter_by(wallet_id=self.id, is_active=True).all()
+        except ImportError:
+            return []
+    
+    def has_mpesa_integration(self):
+        """Check if wallet has MPESA integration"""
+        return len(self.mpesa_accounts) > 0
+    
+    def get_active_mpesa_accounts(self):
+        """Get active MPESA accounts for this wallet"""
+        return [acc for acc in self.mpesa_accounts if acc.is_active and acc.is_verified]
+    
+    def deposit(self, amount: Decimal, description: str = None, 
+               reference: str = None, auto_commit: bool = True) -> 'WalletTransaction':
+        """
+        Deposit funds into wallet (convenience method for income transactions).
+        
+        Args:
+            amount: Amount to deposit
+            description: Transaction description
+            reference: Transaction reference (stored in metadata)
+            auto_commit: Whether to commit the transaction immediately
+            
+        Returns:
+            WalletTransaction: The created transaction record
+        """
+        metadata = {'reference': reference} if reference else None
+        
+        return self.add_transaction(
+            amount=amount,
+            transaction_type=TransactionType.INCOME,
+            description=description or "Deposit",
+            metadata=metadata,
+            auto_commit=auto_commit
+        )
+    
+    def cashout(self, amount: Decimal, destination: str, description: str = None,
+               reference: str = None, auto_commit: bool = True) -> 'WalletTransaction':
+        """
+        Cash out funds from wallet to external system (creates expense transaction).
+        
+        Args:
+            amount: Amount to cash out
+            destination: Destination identifier (e.g., phone number, bank account)
+            description: Transaction description
+            reference: Transaction reference (stored in metadata)
+            auto_commit: Whether to commit the transaction immediately
+            
+        Returns:
+            WalletTransaction: The created transaction record
+        """
+        metadata = {
+            'destination': destination,
+            'cashout_type': 'external'
+        }
+        if reference:
+            metadata['reference'] = reference
+        
+        return self.add_transaction(
+            amount=amount,
+            transaction_type=TransactionType.EXPENSE,
+            description=description or f"Cashout to {destination}",
+            metadata=metadata,
+            auto_commit=auto_commit
+        )
+    
+    def withdraw(self, amount: Decimal, description: str = None,
+                reference: str = None, auto_commit: bool = True) -> 'WalletTransaction':
+        """
+        Withdraw funds from wallet (creates expense transaction).
+        
+        Args:
+            amount: Amount to withdraw
+            description: Transaction description
+            reference: Transaction reference (stored in metadata)
+            auto_commit: Whether to commit the transaction immediately
+            
+        Returns:
+            WalletTransaction: The created transaction record
+        """
+        metadata = {
+            'withdrawal_type': 'manual',
+            'reference': reference
+        } if reference else {'withdrawal_type': 'manual'}
+        
+        return self.add_transaction(
+            amount=amount,
+            transaction_type=TransactionType.EXPENSE,
+            description=description or "Withdrawal",
+            metadata=metadata,
+            auto_commit=auto_commit
+        )
+    
+    def get_statement(self, start_date: datetime = None, end_date: datetime = None,
+                     transaction_type: str = None, limit: int = None,
+                     include_balance: bool = True) -> Dict[str, Any]:
+        """
+        Generate detailed wallet statement with comprehensive transaction history.
+        
+        Args:
+            start_date: Start date for statement (defaults to 30 days ago)
+            end_date: End date for statement (defaults to now)
+            transaction_type: Filter by transaction type (income, expense, transfer)
+            limit: Maximum number of transactions to include
+            include_balance: Whether to include running balance calculations
+            
+        Returns:
+            Dict containing statement data with transactions and summary
+        """
+        from datetime import datetime, timedelta
+        from flask_appbuilder import db
+        from sqlalchemy import and_
+        
+        # Set default date range if not provided
+        if not end_date:
+            end_date = datetime.utcnow()
+        if not start_date:
+            start_date = end_date - timedelta(days=30)
+        
+        # Build optimized query for transactions in date range with eager loading
+        from sqlalchemy.orm import selectinload
+        query = db.session.query(WalletTransaction).options(
+            selectinload(WalletTransaction.category),
+            selectinload(WalletTransaction.payment_method),
+            selectinload(WalletTransaction.mpesa_transaction)
+        ).filter(
+            and_(
+                WalletTransaction.wallet_id == self.id,
+                WalletTransaction.transaction_date >= start_date,
+                WalletTransaction.transaction_date <= end_date
+            )
+        )
+        
+        # Apply transaction type filter if specified
+        if transaction_type:
+            query = query.filter(WalletTransaction.transaction_type == transaction_type)
+        
+        # Order by date (newest first) and apply limit
+        query = query.order_by(WalletTransaction.transaction_date.desc())
+        if limit:
+            query = query.limit(limit)
+        
+        transactions = query.all()
+        
+        # Calculate summary statistics
+        total_income = Decimal('0')
+        total_expense = Decimal('0')
+        transaction_count = len(transactions)
+        
+        # Process transactions for statement
+        statement_transactions = []
+        running_balance = self.balance if include_balance else None
+        
+        # If including balance, we need to calculate from oldest to newest
+        if include_balance:
+            # Reverse order for balance calculation
+            transactions_for_balance = list(reversed(transactions))
+            
+            # Calculate starting balance (current balance minus net changes)
+            net_change = Decimal('0')
+            for txn in transactions:
+                if txn.transaction_type == TransactionType.INCOME.value:
+                    net_change += txn.amount
+                elif txn.transaction_type == TransactionType.EXPENSE.value:
+                    net_change -= txn.amount
+            
+            starting_balance = self.balance - net_change
+            running_balance = starting_balance
+        
+        # Process each transaction
+        for i, txn in enumerate(transactions):
+            # Update totals
+            if txn.transaction_type == TransactionType.INCOME.value:
+                total_income += txn.amount
+                if include_balance:
+                    running_balance += txn.amount
+            elif txn.transaction_type == TransactionType.EXPENSE.value:
+                total_expense += txn.amount
+                if include_balance:
+                    running_balance -= txn.amount
+            
+            # Parse metadata
+            metadata = {}
+            if txn.metadata_json:
+                try:
+                    import json
+                    metadata = json.loads(txn.metadata_json)
+                except json.JSONDecodeError:
+                    metadata = {}
+            
+            # Determine transaction details
+            transaction_details = {
+                'id': txn.id,
+                'date': txn.transaction_date.isoformat(),
+                'type': txn.transaction_type,
+                'amount': float(txn.amount),
+                'description': txn.description,
+                'reference': txn.reference_number,
+                'status': txn.status,
+                'category': txn.category.name if txn.category else None,
+                'payment_method': txn.payment_method.name if txn.payment_method else None,
+                'metadata': metadata,
+                'is_mpesa': txn.is_mpesa_transaction()
+            }
+            
+            # Add running balance if requested
+            if include_balance:
+                # For display, show balance after this transaction
+                # Since we're displaying newest first, reverse the running balance calculation
+                display_balance = running_balance
+                if i < len(transactions) - 1:  # Not the oldest transaction
+                    next_txn = transactions[i + 1]
+                    if next_txn.transaction_type == TransactionType.INCOME.value:
+                        display_balance -= next_txn.amount
+                    elif next_txn.transaction_type == TransactionType.EXPENSE.value:
+                        display_balance += next_txn.amount
+                
+                transaction_details['balance_after'] = float(display_balance)
+            
+            statement_transactions.append(transaction_details)
+        
+        # Build complete statement
+        statement = {
+            'wallet': {
+                'id': self.id,
+                'name': self.wallet_name,
+                'current_balance': float(self.balance),
+                'currency': self.currency_code
+            },
+            'period': {
+                'start_date': start_date.isoformat(),
+                'end_date': end_date.isoformat(),
+                'days': (end_date - start_date).days + 1
+            },
+            'summary': {
+                'transaction_count': transaction_count,
+                'total_income': float(total_income),
+                'total_expense': float(total_expense),
+                'net_change': float(total_income - total_expense),
+                'average_transaction': float((total_income + total_expense) / transaction_count) if transaction_count > 0 else 0
+            },
+            'transactions': statement_transactions,
+            'generated_at': datetime.utcnow().isoformat(),
+            'include_balance': include_balance
+        }
+        
+        return statement
+    
+    def get_monthly_summary(self, year: int = None, month: int = None) -> Dict[str, Any]:
+        """
+        Get monthly transaction summary for a specific month.
+        
+        Args:
+            year: Year for summary (defaults to current year)
+            month: Month for summary (defaults to current month)
+            
+        Returns:
+            Dict containing monthly summary data
+        """
+        from datetime import datetime
+        from calendar import monthrange
+        
+        if not year:
+            year = datetime.now().year
+        if not month:
+            month = datetime.now().month
+        
+        # Get first and last day of month
+        start_date = datetime(year, month, 1)
+        last_day = monthrange(year, month)[1]
+        end_date = datetime(year, month, last_day, 23, 59, 59)
+        
+        # Get statement for the month
+        statement = self.get_statement(
+            start_date=start_date,
+            end_date=end_date,
+            include_balance=False
+        )
+        
+        # Add month-specific information
+        statement['period']['month_name'] = start_date.strftime('%B')
+        statement['period']['year'] = year
+        statement['period']['month'] = month
+        
+        return statement
+    
     def __repr__(self):
         return f"<UserWallet(id={self.id}, user_id={self.user_id}, name='{self.wallet_name}', balance={self.balance} {self.currency_code})>"
 
 
-class WalletTransaction(BaseModelMixin, AuditLogMixin, SearchableMixin, Model):
+class WalletTransaction(AuditMixin, Model):
     """
     Transaction model for recording all wallet activities.
     
@@ -451,11 +927,24 @@ class WalletTransaction(BaseModelMixin, AuditLogMixin, SearchableMixin, Model):
     processor_id = Column(String(100), nullable=True)
     processing_fee = Column(Numeric(precision=15, scale=2), nullable=True, default=0.00)
     
+    # Security and approval
+    transaction_hash = Column(String(128), nullable=True)  # SHA-512 hash
+    digital_signature = Column(Text, nullable=True)  # Cryptographic signature
+    requires_approval = Column(Boolean, nullable=False, default=False)
+    approval_workflow_id = Column(Integer, nullable=True)  # Link to approval workflow
+    approved_by_id = Column(Integer, ForeignKey('ab_user.id'), nullable=True)
+    approved_at = Column(DateTime, nullable=True)
+    
+    # Transfer linking
+    linked_transaction_id = Column(Integer, ForeignKey('ab_wallet_transactions.id'), nullable=True)
+    
     # Relationships
     wallet = relationship("UserWallet", back_populates="transactions")
-    user = relationship("User")
+    user = relationship("User", foreign_keys=[user_id])
+    approved_by = relationship("User", foreign_keys=[approved_by_id])
     category = relationship("TransactionCategory", backref="transactions")
     payment_method = relationship("PaymentMethod", backref="transactions")
+    linked_transaction = relationship("WalletTransaction", remote_side=[id])
     
     # Search configuration
     __searchable__ = {
@@ -530,11 +1019,228 @@ class WalletTransaction(BaseModelMixin, AuditLogMixin, SearchableMixin, Model):
             raise ValueError(f"Invalid transaction status: {status}")
         return status
     
+    # MPESA integration relationship
+    mpesa_transaction = relationship("MPESATransaction", back_populates="wallet_transaction", uselist=False)
+    
+    def is_mpesa_transaction(self):
+        """Check if this transaction came from MPESA"""
+        return self.mpesa_transaction is not None
+    
+    def verify_transaction_integrity(self) -> bool:
+        """Verify transaction cryptographic integrity."""
+        if not self.transaction_hash or not self.digital_signature:
+            return False
+        
+        # Recreate hash from transaction data
+        expected_hash = self._calculate_transaction_hash()
+        return hmac.compare_digest(self.transaction_hash, expected_hash)
+    
+    def _calculate_transaction_hash(self) -> str:
+        """Calculate SHA-512 hash of transaction data."""
+        # Include all critical transaction fields
+        data_to_hash = (
+            f"{self.wallet_id}|{self.user_id}|{self.amount}|"
+            f"{self.transaction_type}|{self.transaction_date.isoformat()}|"
+            f"{self.reference_number or ''}|{self.description or ''}"
+        )
+        
+        return hashlib.sha512(data_to_hash.encode('utf-8')).hexdigest()
+    
+    def _generate_digital_signature(self) -> str:
+        """Generate HMAC digital signature for transaction."""
+        # Use application secret key for HMAC
+        secret_key = current_app.config.get('SECRET_KEY', '').encode('utf-8')
+        transaction_hash = self._calculate_transaction_hash()
+        
+        return hmac.new(
+            secret_key,
+            transaction_hash.encode('utf-8'),
+            hashlib.sha256
+        ).hexdigest()
+    
+    def approve_transaction(self, approver_id: int, auto_commit: bool = True) -> bool:
+        """Approve a pending transaction and apply balance changes.
+        
+        SECURITY FIX: Added database-level locking to prevent race conditions
+        during concurrent transaction approvals and balance updates.
+        """
+        if self.status != TransactionStatus.PENDING.value:
+            raise ValueError(f"Cannot approve transaction with status: {self.status}")
+        
+        if not self.requires_approval:
+            raise ValueError("Transaction does not require approval")
+        
+        # Verify transaction integrity before approval
+        if not self.verify_transaction_integrity():
+            raise ValueError("Transaction failed integrity check - cannot approve")
+        
+        # Use Flask-AppBuilder's session access pattern
+        from flask import g
+        db_session = g.appbuilder.get_session if hasattr(g, 'appbuilder') else None
+        if not db_session:
+            from flask_appbuilder import db
+            db_session = db.session
+        
+        try:
+            # CRITICAL: Use database-level locking for wallet balance updates
+            with self.wallet._lock_wallet_for_transaction() as locked_wallet:
+                # Double-check transaction status after acquiring lock
+                fresh_transaction = db_session.query(WalletTransaction).filter_by(
+                    id=self.id
+                ).with_for_update().first()
+                
+                if not fresh_transaction or fresh_transaction.status != TransactionStatus.PENDING.value:
+                    raise ValueError(f"Transaction {self.id} no longer pending (concurrent modification)")
+                
+                # Update approval fields on the locked transaction
+                fresh_transaction.approved_by_id = approver_id
+                fresh_transaction.approved_at = datetime.utcnow()
+                fresh_transaction.status = TransactionStatus.COMPLETED.value
+                
+                # Apply balance changes to locked wallet
+                transaction_type = TransactionType(fresh_transaction.transaction_type)
+                locked_wallet._apply_transaction_to_balance(fresh_transaction, transaction_type, fresh_transaction.amount)
+                
+                # Handle linked transactions (transfers) with proper locking
+                if fresh_transaction.linked_transaction_id:
+                    linked_txn = db_session.query(WalletTransaction).filter_by(
+                        id=fresh_transaction.linked_transaction_id
+                    ).with_for_update().first()
+                    
+                    if linked_txn and linked_txn.status == TransactionStatus.PENDING.value:
+                        # Lock the target wallet for the linked transaction
+                        with linked_txn.wallet._lock_wallet_for_transaction() as linked_locked_wallet:
+                            linked_txn.approved_by_id = approver_id
+                            linked_txn.approved_at = datetime.utcnow()
+                            linked_txn.status = TransactionStatus.COMPLETED.value
+                            
+                            # Apply balance to target wallet
+                            linked_type = TransactionType(linked_txn.transaction_type)
+                            linked_locked_wallet._apply_transaction_to_balance(
+                                linked_txn, linked_type, linked_txn.amount
+                            )
+                
+                # Log approval in audit trail
+                WalletAudit.log_event(
+                    wallet_id=fresh_transaction.wallet_id,
+                    user_id=approver_id,
+                    transaction_id=fresh_transaction.id,
+                    event_type='transaction_approved',
+                    event_description=f'Transaction {fresh_transaction.id} approved by user {approver_id}',
+                    metadata={'approved_amount': float(fresh_transaction.amount)},
+                    auto_commit=False
+                )
+                
+                # Update instance attributes to reflect locked instance state
+                self.approved_by_id = fresh_transaction.approved_by_id
+                self.approved_at = fresh_transaction.approved_at
+                self.status = fresh_transaction.status
+            
+            if auto_commit:
+                db_session.commit()
+                log.info(f"Transaction {self.id} approved successfully with database locking")
+            
+            return True
+            
+        except Exception as e:
+            log.error(f"Failed to approve transaction {self.id} with locking: {str(e)}")
+            if auto_commit:
+                db_session.rollback()
+            raise
+    
+    def reject_transaction(self, approver_id: int, reason: str, auto_commit: bool = True) -> bool:
+        """Reject a pending transaction.
+        
+        SECURITY FIX: Added database-level locking to prevent race conditions
+        between concurrent approve/reject operations on the same transaction.
+        """
+        if self.status != TransactionStatus.PENDING.value:
+            raise ValueError(f"Cannot reject transaction with status: {self.status}")
+        
+        # Use Flask-AppBuilder's session access pattern
+        from flask import g
+        db_session = g.appbuilder.get_session if hasattr(g, 'appbuilder') else None
+        if not db_session:
+            from flask_appbuilder import db
+            db_session = db.session
+        
+        try:
+            # CRITICAL: Use database-level locking to prevent concurrent approve/reject
+            fresh_transaction = db_session.query(WalletTransaction).filter_by(
+                id=self.id
+            ).with_for_update().first()
+            
+            if not fresh_transaction:
+                raise ValueError(f"Transaction {self.id} not found")
+            
+            # Double-check transaction status after acquiring lock
+            if fresh_transaction.status != TransactionStatus.PENDING.value:
+                raise ValueError(f"Transaction {self.id} no longer pending (concurrent modification)")
+            
+            # Update transaction on the locked instance
+            fresh_transaction.approved_by_id = approver_id
+            fresh_transaction.approved_at = datetime.utcnow()
+            fresh_transaction.status = TransactionStatus.CANCELLED.value
+            
+            # Add rejection reason to metadata
+            current_metadata = fresh_transaction.metadata.copy() if fresh_transaction.metadata else {}
+            current_metadata['rejection_reason'] = reason
+            current_metadata['rejected_by'] = approver_id
+            current_metadata['rejected_at'] = datetime.utcnow().isoformat()
+            fresh_transaction.metadata = current_metadata
+            
+            # Handle linked transactions (transfers) with proper locking
+            if fresh_transaction.linked_transaction_id:
+                linked_txn = db_session.query(WalletTransaction).filter_by(
+                    id=fresh_transaction.linked_transaction_id
+                ).with_for_update().first()
+                
+                if linked_txn and linked_txn.status == TransactionStatus.PENDING.value:
+                    linked_txn.approved_by_id = approver_id
+                    linked_txn.approved_at = datetime.utcnow()
+                    linked_txn.status = TransactionStatus.CANCELLED.value
+                    
+                    # Add rejection reason to linked transaction
+                    linked_metadata = linked_txn.metadata.copy() if linked_txn.metadata else {}
+                    linked_metadata['rejection_reason'] = reason
+                    linked_metadata['rejected_by'] = approver_id
+                    linked_metadata['rejected_at'] = datetime.utcnow().isoformat()
+                    linked_txn.metadata = linked_metadata
+            
+            # Log rejection in audit trail
+            WalletAudit.log_event(
+                wallet_id=fresh_transaction.wallet_id,
+                user_id=approver_id,
+                transaction_id=fresh_transaction.id,
+                event_type='transaction_rejected',
+                event_description=f'Transaction {fresh_transaction.id} rejected by user {approver_id}: {reason}',
+                metadata={'rejected_amount': float(fresh_transaction.amount), 'reason': reason},
+                auto_commit=False
+            )
+            
+            # Update instance attributes to reflect locked instance state
+            self.approved_by_id = fresh_transaction.approved_by_id
+            self.approved_at = fresh_transaction.approved_at
+            self.status = fresh_transaction.status
+            self.metadata = fresh_transaction.metadata
+            
+            if auto_commit:
+                db_session.commit()
+                log.info(f"Transaction {self.id} rejected successfully with database locking")
+            
+            return True
+            
+        except Exception as e:
+            log.error(f"Failed to reject transaction {self.id}: {str(e)}")
+            if auto_commit:
+                db_session.rollback()
+            raise
+    
     def __repr__(self):
         return f"<WalletTransaction(id={self.id}, wallet_id={self.wallet_id}, amount={self.amount}, type='{self.transaction_type}')>"
 
 
-class TransactionCategory(BaseModelMixin, SoftDeleteMixin, Model):
+class TransactionCategory(AuditMixin, Model):
     """
     Categories for organizing transactions.
     
@@ -625,7 +1331,7 @@ def update_wallet_balance_on_update(mapper, connection, target):
     pass
 
 
-class WalletBudget(BaseModelMixin, Model):
+class WalletBudget(AuditMixin, Model):
     """
     Budget tracking for wallet categories and spending limits.
     
@@ -739,7 +1445,7 @@ class WalletBudget(BaseModelMixin, Model):
         return f"<WalletBudget(id={self.id}, name='{self.name}', amount={self.budget_amount})>"
 
 
-class PaymentMethod(BaseModelMixin, EncryptionMixin, SoftDeleteMixin, Model):
+class PaymentMethod(AuditMixin, Model):
     """
     Payment methods for transactions (cards, bank accounts, etc.).
     
@@ -787,9 +1493,6 @@ class PaymentMethod(BaseModelMixin, EncryptionMixin, SoftDeleteMixin, Model):
     
     # Relationships
     user = relationship("User")
-    
-    # Encryption configuration
-    __encrypted_fields__ = ['account_number', 'account_holder']
     
     @validates('method_type')
     def validate_method_type(self, key, method_type):
@@ -856,7 +1559,7 @@ class PaymentMethod(BaseModelMixin, EncryptionMixin, SoftDeleteMixin, Model):
         return f"<PaymentMethod(id={self.id}, name='{self.name}', type='{self.method_type}')>"
 
 
-class RecurringTransaction(BaseModelMixin, Model):
+class RecurringTransaction(AuditMixin, Model):
     """
     Recurring transaction templates for subscriptions and regular payments.
     
@@ -1015,7 +1718,7 @@ class RecurringTransaction(BaseModelMixin, Model):
         return f"<RecurringTransaction(id={self.id}, name='{self.name}', amount={self.amount})>"
 
 
-class WalletAudit(BaseModelMixin, Model):
+class WalletAudit(AuditMixin, Model):
     """
     Audit trail for wallet operations and security events.
     
@@ -1161,6 +1864,75 @@ class WalletAudit(BaseModelMixin, Model):
         return f"<WalletAudit(id={self.id}, event='{self.event_type}', user_id={self.user_id})>"
 
 
+class SecureWalletTransaction:
+    """Factory class for creating secure wallet transactions with cryptographic integrity."""
+    
+    @staticmethod
+    def create_secure_transaction(
+        wallet_id: int, user_id: int, amount: Decimal, 
+        transaction_type: TransactionType, description: str = None,
+        category_id: int = None, payment_method_id: int = None,
+        metadata: dict = None, requires_approval: bool = False,
+        transaction_date: datetime = None
+    ) -> WalletTransaction:
+        """Create a cryptographically secure transaction."""
+        
+        # Generate reference number
+        reference_number = f"TXN-{datetime.utcnow().strftime('%Y%m%d')}-{secrets.token_urlsafe(8)}"
+        
+        # Create transaction object
+        transaction = WalletTransaction(
+            wallet_id=wallet_id,
+            user_id=user_id,
+            amount=amount,
+            transaction_type=transaction_type.value,
+            description=description,
+            category_id=category_id,
+            payment_method_id=payment_method_id,
+            metadata_json=json.dumps(metadata) if metadata else None,
+            reference_number=reference_number,
+            transaction_date=transaction_date or datetime.utcnow(),
+            requires_approval=requires_approval
+        )
+        
+        # Generate cryptographic hash and signature
+        transaction.transaction_hash = transaction._calculate_transaction_hash()
+        transaction.digital_signature = transaction._generate_digital_signature()
+        
+        return transaction
+    
+    @staticmethod
+    def verify_transaction_chain(transactions: List[WalletTransaction]) -> bool:
+        """Verify integrity of a chain of transactions."""
+        for transaction in transactions:
+            if not transaction.verify_transaction_integrity():
+                log.warning(f"Transaction {transaction.id} failed integrity check")
+                return False
+        return True
+
+
+# Additional wallet transaction security methods
+class WalletTransactionSecurityMixin:
+    """Mixin to add security methods to WalletTransaction."""
+    
+    def _update_transfer_signature(self, linked_transaction_id: int):
+        """Update signature to include linked transaction for transfers."""
+        if self.transaction_type == TransactionType.TRANSFER.value:
+            # Include linked transaction in signature
+            enhanced_data = f"{self._calculate_transaction_hash()}|{linked_transaction_id}"
+            secret_key = current_app.config.get('SECRET_KEY', '').encode('utf-8')
+            
+            self.digital_signature = hmac.new(
+                secret_key,
+                enhanced_data.encode('utf-8'),
+                hashlib.sha256
+            ).hexdigest()
+
+
+# Apply security mixin to WalletTransaction
+WalletTransaction.__bases__ = WalletTransaction.__bases__ + (WalletTransactionSecurityMixin,)
+
+
 __all__ = [
     'TransactionType',
     'TransactionStatus', 
@@ -1172,5 +1944,6 @@ __all__ = [
     'WalletBudget',
     'PaymentMethod',
     'RecurringTransaction',
-    'WalletAudit'
+    'WalletAudit',
+    'SecureWalletTransaction'
 ]

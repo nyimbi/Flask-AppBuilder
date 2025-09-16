@@ -181,6 +181,36 @@ class User(Model):
 
     def get_full_name(self):
         return "{0} {1}".format(self.first_name, self.last_name)
+    
+    # Association-based relationships (clean separation of concerns)
+    profile = relationship("UserProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    
+    # Convenience methods for wallet integration (delegates to profile)
+    def has_wallet(self):
+        """Check if user has a wallet profile with linked wallet"""
+        return self.profile and self.profile.has_wallet()
+    
+    def is_wallet_verified(self):
+        """Check if user's wallet is verified"""
+        return self.profile and self.profile.is_wallet_verified()
+    
+    def get_wallet_info(self):
+        """Get comprehensive wallet information"""
+        return self.profile.get_wallet_info() if self.profile else None
+    
+    def has_mpesa_account(self):
+        """Check if user has any MPESA accounts"""
+        return self.profile and self.profile.has_mpesa_account()
+    
+    def get_verified_mpesa_accounts(self):
+        """Get user's verified MPESA accounts"""
+        return self.profile.get_verified_mpesa_accounts() if self.profile else []
+    
+    def get_or_create_profile(self):
+        """Get or create user profile"""
+        if not self.profile:
+            self.profile = UserProfile(user_id=self.id)
+        return self.profile
 
     def __repr__(self):
         return self.get_full_name()
@@ -239,11 +269,140 @@ class RegisterUser(Model):
     registration_hash = Column(String(256))
 
 
+class UserProfile(Model):
+    """Extended user profile for wallet, M-Pesa, and other integrations.
+    
+    This model follows the association pattern to keep core User model clean
+    while providing extended functionality through composition.
+    """
+    __tablename__ = "ab_user_profile"
+    __table_args__ = (
+        Index('idx_user_profile_wallet_address', 'wallet_address'),
+        Index('idx_user_profile_user_id', 'user_id'),
+    )
+    
+    id = Column(Integer, Sequence("ab_user_profile_id_seq"), primary_key=True)
+    user_id = Column(Integer, ForeignKey('ab_user.id'), nullable=False, unique=True)
+    
+    # Wallet integration fields
+    wallet_address = Column(String(128), unique=True, nullable=True, index=True)
+    wallet_type = Column(String(50), nullable=True)  # e.g., 'metamask', 'coinbase', 'walletconnect'
+    wallet_provider = Column(String(100), nullable=True)
+    wallet_verified = Column(Boolean, default=False, nullable=False)
+    wallet_verification_date = Column(DateTime, nullable=True)
+    wallet_metadata = Column(String(1024), nullable=True)  # JSON metadata for wallet info
+    
+    # Process engine preferences
+    process_preferences = Column(String(2048), nullable=True)  # JSON preferences
+    
+    # Audit fields
+    created_on = Column(DateTime, default=lambda: datetime.datetime.now(), nullable=True)
+    changed_on = Column(DateTime, default=lambda: datetime.datetime.now(), nullable=True)
+    
+    # Relationships
+    user = relationship("User", back_populates="profile")
+    wallets = relationship("UserWallet", back_populates="user_profile", cascade="all, delete-orphan")
+    mpesa_accounts = relationship("MPESAAccount", back_populates="user_profile", cascade="all, delete-orphan", lazy="dynamic")
+    
+    # Wallet integration methods
+    def has_wallet(self):
+        """Check if profile has a linked wallet"""
+        return bool(self.wallet_address)
+    
+    def is_wallet_verified(self):
+        """Check if profile's wallet is verified"""
+        return self.wallet_verified and self.wallet_address
+    
+    def link_wallet(self, address, wallet_type, provider=None, metadata=None):
+        """Link a wallet to the user profile"""
+        import json
+        self.wallet_address = address
+        self.wallet_type = wallet_type
+        self.wallet_provider = provider
+        self.wallet_verified = False  # Requires verification
+        self.wallet_verification_date = None
+        if metadata:
+            self.wallet_metadata = json.dumps(metadata)
+        self.changed_on = datetime.datetime.now()
+        
+    def verify_wallet(self):
+        """Mark wallet as verified"""
+        self.wallet_verified = True
+        self.wallet_verification_date = datetime.datetime.now()
+        self.changed_on = datetime.datetime.now()
+        
+    def unlink_wallet(self):
+        """Remove wallet from user profile"""
+        self.wallet_address = None
+        self.wallet_type = None
+        self.wallet_provider = None
+        self.wallet_verified = False
+        self.wallet_verification_date = None
+        self.wallet_metadata = None
+        self.changed_on = datetime.datetime.now()
+        
+    def get_wallet_metadata(self):
+        """Get wallet metadata as dict"""
+        if self.wallet_metadata:
+            import json
+            try:
+                return json.loads(self.wallet_metadata)
+            except json.JSONDecodeError:
+                return {}
+        return {}
+    
+    def get_wallet_info(self):
+        """Get comprehensive wallet information"""
+        if not self.has_wallet():
+            return None
+            
+        return {
+            'address': self.wallet_address,
+            'type': self.wallet_type,
+            'provider': self.wallet_provider,
+            'verified': self.wallet_verified,
+            'verification_date': self.wallet_verification_date.isoformat() if self.wallet_verification_date else None,
+            'metadata': self.get_wallet_metadata()
+        }
+    
+    # M-Pesa integration methods
+    def has_mpesa_account(self):
+        """Check if profile has any MPESA accounts"""
+        return self.mpesa_accounts.count() > 0
+    
+    def get_verified_mpesa_accounts(self):
+        """Get profile's verified MPESA accounts"""
+        return self.mpesa_accounts.filter_by(is_verified=True, is_active=True).all()
+    
+    def get_primary_wallet(self):
+        """Get user's primary wallet"""
+        return self.wallets.filter_by(is_primary=True).first()
+    
+    def get_process_preferences(self):
+        """Get process engine preferences as dict"""
+        if self.process_preferences:
+            import json
+            try:
+                return json.loads(self.process_preferences)
+            except json.JSONDecodeError:
+                return {}
+        return {}
+    
+    def set_process_preferences(self, preferences):
+        """Set process engine preferences"""
+        import json
+        self.process_preferences = json.dumps(preferences) if preferences else None
+        self.changed_on = datetime.datetime.now()
+    
+    def __repr__(self):
+        return f"<UserProfile(id={self.id}, user_id={self.user_id}, wallet={bool(self.wallet_address)})>"
+
+
 # Import MFA models when MFA is enabled
 try:
     from ..mfa.models import UserMFA, MFABackupCodes, MFAVerificationAttempt, MFAPolicy
-    __all__ = ['Permission', 'ViewMenu', 'PermissionView', 'Role', 'User', 'Group', 'RegisterUser', 
+    __all__ = ['Permission', 'ViewMenu', 'PermissionView', 'Role', 'User', 'Group', 'RegisterUser', 'UserProfile',
                'UserMFA', 'MFABackupCodes', 'MFAVerificationAttempt', 'MFAPolicy', 'assoc_permissionview_role']
 except ImportError:
     # MFA models not available, proceed without them
-    __all__ = ['Permission', 'ViewMenu', 'PermissionView', 'Role', 'User', 'Group', 'RegisterUser', 'assoc_permissionview_role']
+    __all__ = ['Permission', 'ViewMenu', 'PermissionView', 'Role', 'User', 'Group', 'RegisterUser', 'UserProfile', 'assoc_permissionview_role']

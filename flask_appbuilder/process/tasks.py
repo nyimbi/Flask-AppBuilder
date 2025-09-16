@@ -26,29 +26,38 @@ celery = Celery('process_engine')
 def execute_node_async(self, instance_id: int, node_id: str, input_data: Dict[str, Any] = None):
     """Execute a process node asynchronously."""
     try:
-        # Get process instance
-        instance = db.session.query(ProcessInstance).get(instance_id)
-        if not instance:
-            log.error(f"Process instance {instance_id} not found")
-            return {'success': False, 'error': 'Instance not found'}
+        # Run async operation in event loop
+        import asyncio
         
-        # Get node definition
-        node = instance.definition.get_node_by_id(node_id)
-        if not node:
-            log.error(f"Node {node_id} not found in process definition")
-            return {'success': False, 'error': 'Node not found'}
+        async def _execute():
+            # Get process instance
+            instance = db.session.query(ProcessInstance).get(instance_id)
+            if not instance:
+                raise ValueError(f"Process instance {instance_id} not found")
+            
+            # Get node definition  
+            node = instance.definition.get_node_by_id(node_id)
+            if not node:
+                raise ValueError(f"Node {node_id} not found in process definition")
+            
+            # Execute node using process engine
+            engine = ProcessEngine()
+            return await engine._execute_node(instance, node, input_data or {})
         
-        # Execute node using process engine
-        engine = ProcessEngine()
-        output_data = engine._execute_node(instance, node, input_data or {})
-        
-        return {
-            'success': True,
-            'instance_id': instance_id,
-            'node_id': node_id,
-            'output_data': output_data
-        }
-        
+        # Run in new event loop to avoid conflicts
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            output_data = loop.run_until_complete(_execute())
+            return {
+                'success': True,
+                'instance_id': instance_id,
+                'node_id': node_id,
+                'output_data': output_data
+            }
+        finally:
+            loop.close()
+            
     except Exception as e:
         log.error(f"Async node execution failed: {str(e)}")
         
@@ -63,17 +72,27 @@ def execute_node_async(self, instance_id: int, node_id: str, input_data: Dict[st
 def retry_step_async(self, step_id: int):
     """Retry a failed process step."""
     try:
-        step = db.session.query(ProcessStep).get(step_id)
-        if not step:
-            log.error(f"Process step {step_id} not found")
-            return {'success': False, 'error': 'Step not found'}
+        # Run async operation in event loop
+        import asyncio
         
-        # Use process engine to retry step
-        engine = ProcessEngine()
-        result = engine._retry_step(step)
+        async def _retry():
+            step = db.session.query(ProcessStep).get(step_id)
+            if not step:
+                raise ValueError(f"Process step {step_id} not found")
+            
+            # Use process engine to retry step
+            engine = ProcessEngine()
+            return await engine._retry_step(step)
         
-        return {'success': True, 'step_id': step_id, 'retry_result': result}
-        
+        # Run in new event loop to avoid conflicts
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            result = loop.run_until_complete(_retry())
+            return {'success': True, 'step_id': step_id, 'retry_result': result}
+        finally:
+            loop.close()
+            
     except Exception as e:
         log.error(f"Step retry failed: {str(e)}")
         
@@ -464,4 +483,28 @@ def continue_process_async(self, instance_id: int, node_id: str, step_data: Dict
     except Exception as e:
         log.error(f"Failed to continue process {instance_id}: {str(e)}")
         self.retry(countdown=60, exc=e)
+
+
+@celery.task(bind=True, max_retries=3)
+def escalate_approval_request(self, request_id: int):
+    """Escalate an approval request that has timed out."""
+    try:
+        with current_app.app_context():
+            from .approval.chain_manager import EscalationManager
+            
+            escalation_manager = EscalationManager()
+            
+            # Run async escalation in event loop
+            import asyncio
+            result = asyncio.run(escalation_manager.escalate_request(request_id))
+            
+            return {
+                "success": True,
+                "request_id": request_id,
+                "escalated": True
+            }
+            
+    except Exception as e:
+        log.error(f"Failed to escalate approval request {request_id}: {str(e)}")
+        self.retry(countdown=300, exc=e)  # Retry after 5 minutes
 

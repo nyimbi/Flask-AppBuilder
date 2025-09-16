@@ -1,0 +1,1480 @@
+/*
+ * Extended Fields Styles for Flask-AppBuilder
+ * Advanced field types with modern UI components
+ */
+
+/* ==============================================
+   Rich Text Editor Field Styles
+   ============================================== */
+.richtext-editor-container {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.richtext-editor {
+    width: 100%;
+    border: none;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    padding: 15px;
+    resize: vertical;
+    min-height: 300px;
+}
+
+.richtext-stats {
+    background: #f8f9fa;
+    padding: 8px 15px;
+    border-top: 1px solid #e9ecef;
+    font-size: 12px;
+    color: #6c757d;
+    display: flex;
+    justify-content: space-between;
+}
+
+.richtext-stats span {
+    margin-right: 15px;
+}
+
+/* TinyMCE customizations */
+.tox-tinymce {
+    border-radius: 8px !important;
+}
+
+.tox .tox-toolbar__group {
+    border-radius: 4px;
+}
+
+/* ==============================================
+   Code Editor Field Styles
+   ============================================== */
+.code-editor-container {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.code-editor-toolbar {
+    background: #f8f9fa;
+    padding: 10px 15px;
+    border-bottom: 1px solid #e9ecef;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.code-editor-toolbar select {
+    padding: 5px 10px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    background: #fff;
+    font-size: 12px;
+}
+
+.code-editor-toolbar button {
+    padding: 5px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    background: #fff;
+    color: #495057;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s;
+}
+
+.code-editor-toolbar button:hover {
+    background: #e9ecef;
+    border-color: #adb5bd;
+}
+
+.code-editor {
+    width: 100%;
+    height: 400px;
+    border: none;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 14px;
+}
+
+.code-editor-stats {
+    background: #f8f9fa;
+    padding: 8px 15px;
+    border-top: 1px solid #e9ecef;
+    font-size: 12px;
+    color: #6c757d;
+    display: flex;
+    justify-content: space-between;
+}
+
+.syntax-status.error {
+    color: #dc3545;
+}
+
+.syntax-status.success {
+    color: #28a745;
+}
+
+/* ==============================================
+   DateTime Picker Field Styles
+   ============================================== */
+.datetime-picker-container {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.datetime-input-group {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.datetime-picker-input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 14px;
+    min-width: 200px;
+}
+
+.timezone-selector {
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    background: #fff;
+    min-width: 150px;
+}
+
+.datetime-format-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.datetime-format-group label {
+    font-weight: 500;
+    min-width: 60px;
+}
+
+.format-selector {
+    padding: 6px 10px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    background: #fff;
+    flex: 1;
+}
+
+.datetime-preview {
+    background: #f8f9fa;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 13px;
+    color: #495057;
+}
+
+/* ==============================================
+   Color Picker Field Styles
+   ============================================== */
+.color-picker-container {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.color-input-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.color-picker-input {
+    width: 50px;
+    height: 40px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.color-preview {
+    width: 40px;
+    height: 40px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: #fff;
+    text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
+}
+
+.color-formats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.format-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.format-group label {
+    font-weight: 500;
+    font-size: 12px;
+    color: #495057;
+}
+
+.format-group input {
+    padding: 6px 8px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: monospace;
+}
+
+.alpha-slider {
+    width: 100%;
+}
+
+.alpha-value {
+    font-family: monospace;
+    font-size: 12px;
+    color: #495057;
+}
+
+.color-swatches {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+
+.swatch {
+    width: 30px;
+    height: 30px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.swatch:hover {
+    transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+/* ==============================================
+   Signature Field Styles
+   ============================================== */
+.signature-container {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.signature-toolbar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.signature-toolbar button {
+    padding: 6px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    background: #fff;
+    color: #495057;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s;
+}
+
+.signature-toolbar button:hover {
+    background: #e9ecef;
+    border-color: #adb5bd;
+}
+
+.pen-size, .pen-color {
+    padding: 4px 8px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+}
+
+.signature-canvas {
+    border: 2px dashed #ced4da;
+    border-radius: 4px;
+    cursor: crosshair;
+    background: #fafafa;
+    display: block;
+    margin: 0 auto;
+}
+
+.signature-canvas.signing {
+    border-color: #007bff;
+    background: #fff;
+}
+
+.signature-info {
+    text-align: center;
+    margin-top: 10px;
+    color: #6c757d;
+    font-size: 12px;
+}
+
+/* ==============================================
+   Rating Field Styles
+   ============================================== */
+.rating-container {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.star-rating {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 10px;
+    align-items: center;
+}
+
+.star {
+    font-size: 24px;
+    color: #e0e0e0;
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+}
+
+.star:hover,
+.star.filled {
+    color: #ffc107;
+    transform: scale(1.1);
+}
+
+.star.half-filled {
+    background: linear-gradient(90deg, #ffc107 50%, #e0e0e0 50%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.rating-value {
+    font-weight: 500;
+    color: #495057;
+    margin-bottom: 10px;
+}
+
+.current-rating {
+    font-size: 18px;
+    color: #ffc107;
+}
+
+.review-section {
+    margin-top: 15px;
+}
+
+.review-text {
+    width: 100%;
+    min-height: 80px;
+    padding: 10px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 14px;
+    resize: vertical;
+}
+
+/* ==============================================
+   QR Code Field Styles
+   ============================================== */
+.qrcode-container {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.qrcode-input-section {
+    margin-bottom: 15px;
+}
+
+.qrcode-input-section label {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 5px;
+}
+
+.qrcode-content {
+    width: 100%;
+    min-height: 60px;
+    padding: 8px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 14px;
+    resize: vertical;
+    margin-bottom: 10px;
+}
+
+.generate-qr {
+    padding: 8px 16px;
+    background: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+
+.generate-qr:hover {
+    background: #0056b3;
+}
+
+.qrcode-display-section {
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+.qrcode-preview {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    padding: 20px;
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 10px;
+}
+
+.qrcode-placeholder {
+    color: #6c757d;
+    font-style: italic;
+}
+
+.qrcode-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.qrcode-actions button {
+    padding: 6px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    background: #fff;
+    color: #495057;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s;
+}
+
+.qrcode-actions button:hover {
+    background: #e9ecef;
+    border-color: #adb5bd;
+}
+
+.qrcode-scan-section {
+    border-top: 1px solid #e9ecef;
+    padding-top: 15px;
+    text-align: center;
+}
+
+.scan-qr {
+    padding: 8px 16px;
+    background: #28a745;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+
+.scan-qr:hover {
+    background: #1e7e34;
+}
+
+.qr-scanner {
+    max-width: 100%;
+    border-radius: 4px;
+    margin-top: 10px;
+}
+
+/* ==============================================
+   File Upload Field Styles
+   ============================================== */
+.file-upload-container {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.upload-area {
+    border: 2px dashed #ced4da;
+    border-radius: 8px;
+    padding: 40px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    background: #fafafa;
+    margin-bottom: 15px;
+}
+
+.upload-area:hover,
+.upload-area.dragover {
+    border-color: #007bff;
+    background: #f0f8ff;
+}
+
+.upload-icon {
+    font-size: 48px;
+    margin-bottom: 10px;
+    opacity: 0.7;
+}
+
+.upload-text p {
+    margin: 5px 0;
+    color: #495057;
+}
+
+.upload-text strong {
+    color: #007bff;
+}
+
+.upload-limits {
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.file-input {
+    display: none;
+}
+
+.file-list {
+    margin-bottom: 15px;
+}
+
+.file-item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    margin-bottom: 5px;
+    background: #f8f9fa;
+}
+
+.file-item .file-icon {
+    font-size: 24px;
+    margin-right: 10px;
+}
+
+.file-item .file-info {
+    flex: 1;
+}
+
+.file-item .file-name {
+    font-weight: 500;
+    color: #495057;
+}
+
+.file-item .file-size {
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.file-item .file-actions {
+    display: flex;
+    gap: 5px;
+}
+
+.file-item button {
+    padding: 4px 8px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    background: #fff;
+    color: #495057;
+    cursor: pointer;
+    font-size: 11px;
+}
+
+.upload-progress {
+    margin-bottom: 15px;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 20px;
+    background: #e9ecef;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #007bff, #0056b3);
+    transition: width 0.3s;
+    width: 0%;
+}
+
+.progress-text {
+    text-align: center;
+    margin-top: 5px;
+    font-size: 12px;
+    color: #495057;
+}
+
+/* ==============================================
+   JSON Editor Field Styles
+   ============================================== */
+.json-editor-container {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.json-editor-toolbar {
+    background: #f8f9fa;
+    padding: 10px 15px;
+    border-bottom: 1px solid #e9ecef;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.json-editor-toolbar button {
+    padding: 5px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    background: #fff;
+    color: #495057;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s;
+}
+
+.json-editor-toolbar button:hover {
+    background: #e9ecef;
+    border-color: #adb5bd;
+}
+
+.json-view-mode {
+    padding: 5px 10px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    background: #fff;
+    font-size: 12px;
+}
+
+.json-editor-area {
+    position: relative;
+}
+
+.json-editor-text {
+    width: 100%;
+    height: 300px;
+    border: none;
+    padding: 15px;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    resize: vertical;
+}
+
+.json-tree-view,
+.json-form-view {
+    padding: 15px;
+    height: 300px;
+    overflow-y: auto;
+}
+
+.json-validation-status {
+    background: #f8f9fa;
+    padding: 8px 15px;
+    border-top: 1px solid #e9ecef;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.validation-icon {
+    font-weight: bold;
+}
+
+.validation-icon.valid {
+    color: #28a745;
+}
+
+.validation-icon.invalid {
+    color: #dc3545;
+}
+
+.validation-message.valid {
+    color: #28a745;
+}
+
+.validation-message.invalid {
+    color: #dc3545;
+}
+
+/* ==============================================
+   Tag Field Styles
+   ============================================== */
+.tag-container {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.tag-input-area {
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    padding: 5px;
+    background: #fff;
+    min-height: 40px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 5px;
+}
+
+.selected-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    flex: 1;
+}
+
+.tag-item {
+    background: #007bff;
+    color: #fff;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.remove-tag {
+    background: none;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.remove-tag:hover {
+    background: rgba(255,255,255,0.2);
+}
+
+.tag-input {
+    border: none;
+    outline: none;
+    flex: 1;
+    min-width: 100px;
+    font-size: 14px;
+    padding: 5px;
+}
+
+.tag-suggestions {
+    border: 1px solid #ced4da;
+    border-top: none;
+    border-radius: 0 0 4px 4px;
+    background: #fff;
+    max-height: 200px;
+    overflow-y: auto;
+    position: absolute;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.tag-suggestion {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #f1f3f4;
+    transition: background 0.2s;
+}
+
+.tag-suggestion:hover,
+.tag-suggestion.highlighted {
+    background: #f8f9fa;
+}
+
+.tag-stats {
+    margin-top: 10px;
+    font-size: 12px;
+    color: #6c757d;
+    text-align: center;
+}
+
+/* ==============================================
+   Password Strength Field Styles
+   ============================================== */
+.password-strength-container {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.password-input-group {
+    display: flex;
+    margin-bottom: 10px;
+    position: relative;
+}
+
+.password-input {
+    flex: 1;
+    padding: 8px 40px 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px 0 0 4px;
+    font-size: 14px;
+}
+
+.toggle-password {
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-left: none;
+    border-radius: 0;
+    background: #f8f9fa;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.generate-password {
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-left: none;
+    border-radius: 0 4px 4px 0;
+    background: #007bff;
+    color: #fff;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background 0.2s;
+}
+
+.generate-password:hover {
+    background: #0056b3;
+}
+
+.strength-meter {
+    margin-bottom: 15px;
+}
+
+.strength-bar {
+    width: 100%;
+    height: 8px;
+    background: #e9ecef;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 5px;
+}
+
+.strength-fill {
+    height: 100%;
+    transition: all 0.3s;
+    width: 0%;
+}
+
+.strength-fill.very-weak {
+    background: #dc3545;
+    width: 20%;
+}
+
+.strength-fill.weak {
+    background: #fd7e14;
+    width: 40%;
+}
+
+.strength-fill.fair {
+    background: #ffc107;
+    width: 60%;
+}
+
+.strength-fill.good {
+    background: #20c997;
+    width: 80%;
+}
+
+.strength-fill.strong {
+    background: #28a745;
+    width: 100%;
+}
+
+.strength-text {
+    font-size: 12px;
+    font-weight: 500;
+    text-align: center;
+}
+
+.password-requirements {
+    margin-bottom: 10px;
+}
+
+.requirement {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #6c757d;
+    margin-bottom: 4px;
+}
+
+.check-icon {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: bold;
+}
+
+.requirement.met .check-icon {
+    background: #28a745;
+    color: #fff;
+}
+
+.requirement.met {
+    color: #28a745;
+}
+
+.password-suggestions {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 4px;
+    padding: 10px;
+    margin-top: 10px;
+}
+
+.suggestion-list {
+    margin: 5px 0 0 0;
+    padding-left: 20px;
+}
+
+.suggestion-list li {
+    font-size: 12px;
+    margin-bottom: 2px;
+}
+
+/* ==============================================
+   Phone Number Field Styles
+   ============================================== */
+.phone-number-container {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.phone-input-group {
+    display: flex;
+    margin-bottom: 10px;
+}
+
+.country-selector {
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px 0 0 4px;
+    background: #fff;
+    min-width: 180px;
+    font-size: 14px;
+}
+
+.phone-input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-left: none;
+    border-radius: 0 4px 4px 0;
+    font-size: 14px;
+}
+
+.phone-validation {
+    margin-bottom: 10px;
+}
+
+.validation-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    margin-bottom: 5px;
+}
+
+.validation-icon {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: bold;
+}
+
+.validation-status.valid .validation-icon {
+    background: #28a745;
+    color: #fff;
+}
+
+.validation-status.invalid .validation-icon {
+    background: #dc3545;
+    color: #fff;
+}
+
+.validation-status.valid {
+    color: #28a745;
+}
+
+.validation-status.invalid {
+    color: #dc3545;
+}
+
+.phone-info {
+    background: #f8f9fa;
+    border-radius: 4px;
+    padding: 8px;
+    font-size: 12px;
+}
+
+.phone-info div {
+    margin-bottom: 2px;
+}
+
+/* ==============================================
+   Address Field Styles
+   ============================================== */
+.address-container {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.address-search {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    align-items: center;
+}
+
+.address-autocomplete {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.use-current-location {
+    padding: 8px 12px;
+    background: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    white-space: nowrap;
+    transition: background 0.2s;
+}
+
+.use-current-location:hover {
+    background: #0056b3;
+}
+
+.address-fields {
+    margin-bottom: 15px;
+}
+
+.field-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.field-row input,
+.field-row select {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.field-row input:first-child {
+    flex: 2;
+}
+
+.address-map {
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    margin-bottom: 10px;
+}
+
+.geocoding-info {
+    background: #f8f9fa;
+    padding: 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: #495057;
+    font-family: monospace;
+}
+
+/* ==============================================
+   Drawing Field Styles
+   ============================================== */
+.drawing-container {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.drawing-toolbar {
+    background: #f8f9fa;
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 15px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    align-items: center;
+}
+
+.tool-group,
+.color-group,
+.size-group,
+.action-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tool-group label,
+.color-group label,
+.size-group label {
+    font-weight: 500;
+    font-size: 12px;
+    color: #495057;
+}
+
+.tool-btn {
+    padding: 6px 10px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    background: #fff;
+    color: #495057;
+    cursor: pointer;
+    font-size: 11px;
+    transition: all 0.2s;
+}
+
+.tool-btn:hover,
+.tool-btn.active {
+    background: #007bff;
+    color: #fff;
+    border-color: #007bff;
+}
+
+.brush-color,
+.bg-color {
+    width: 30px;
+    height: 30px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.brush-size {
+    width: 100px;
+}
+
+.size-display {
+    font-size: 12px;
+    color: #495057;
+    min-width: 30px;
+}
+
+.action-group button {
+    padding: 6px 10px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    background: #fff;
+    color: #495057;
+    cursor: pointer;
+    font-size: 11px;
+    transition: all 0.2s;
+}
+
+.action-group button:hover {
+    background: #e9ecef;
+    border-color: #adb5bd;
+}
+
+.canvas-area {
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+.drawing-canvas {
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    cursor: crosshair;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.layer-panel {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    padding: 10px;
+}
+
+.layer-panel h4 {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    color: #495057;
+}
+
+.layer-list {
+    margin-bottom: 10px;
+}
+
+.layer-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 5px 8px;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    margin-bottom: 2px;
+    background: #fff;
+    cursor: pointer;
+}
+
+.layer-item.active {
+    background: #e3f2fd;
+    border-color: #007bff;
+}
+
+.layer-name {
+    font-size: 12px;
+    color: #495057;
+}
+
+.layer-visible {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.add-layer {
+    width: 100%;
+    padding: 6px;
+    border: 1px dashed #ced4da;
+    border-radius: 4px;
+    background: #fff;
+    color: #495057;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s;
+}
+
+.add-layer:hover {
+    background: #f8f9fa;
+    border-color: #adb5bd;
+}
+
+/* ==============================================
+   Responsive Design
+   ============================================== */
+@media (max-width: 768px) {
+    .datetime-input-group,
+    .phone-input-group,
+    .address-search,
+    .field-row {
+        flex-direction: column;
+    }
+    
+    .color-formats {
+        grid-template-columns: 1fr;
+    }
+    
+    .drawing-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .tool-group,
+    .color-group,
+    .size-group,
+    .action-group {
+        justify-content: center;
+    }
+    
+    .signature-toolbar,
+    .code-editor-toolbar,
+    .json-editor-toolbar {
+        flex-direction: column;
+        gap: 8px;
+    }
+}
+
+/* ==============================================
+   Dark Theme Support
+   ============================================== */
+@media (prefers-color-scheme: dark) {
+    .richtext-editor-container,
+    .code-editor-container,
+    .datetime-picker-container,
+    .color-picker-container,
+    .signature-container,
+    .rating-container,
+    .qrcode-container,
+    .file-upload-container,
+    .json-editor-container,
+    .tag-container,
+    .password-strength-container,
+    .phone-number-container,
+    .address-container,
+    .drawing-container {
+        background: #2d3748;
+        border-color: #4a5568;
+        color: #e2e8f0;
+    }
+    
+    .richtext-editor,
+    .datetime-picker-input,
+    .timezone-selector,
+    .format-selector,
+    .color-picker-input,
+    .signature-canvas,
+    .qrcode-content,
+    .tag-input,
+    .password-input,
+    .phone-input,
+    .country-selector,
+    .address-autocomplete,
+    .field-row input,
+    .field-row select {
+        background: #1a202c;
+        border-color: #4a5568;
+        color: #e2e8f0;
+    }
+    
+    .richtext-stats,
+    .code-editor-stats,
+    .datetime-preview,
+    .phone-info,
+    .geocoding-info {
+        background: #1a202c;
+        border-color: #4a5568;
+        color: #a0aec0;
+    }
+}
+
+/* ==============================================
+   Accessibility Enhancements
+   ============================================== */
+.extended-field:focus-within {
+    outline: 2px solid #007bff;
+    outline-offset: 2px;
+}
+
+.extended-field [aria-invalid="true"] {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+}
+
+.extended-field .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .extended-field,
+    .extended-field input,
+    .extended-field select,
+    .extended-field textarea,
+    .extended-field button {
+        border-width: 2px;
+        border-style: solid;
+    }
+    
+    .star:hover,
+    .star.filled {
+        text-shadow: 2px 2px 4px #000;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .extended-field *,
+    .extended-field *::before,
+    .extended-field *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}

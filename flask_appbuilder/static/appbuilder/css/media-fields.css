@@ -1,0 +1,1122 @@
+/**
+ * Flask-AppBuilder Media Fields CSS
+ * 
+ * Comprehensive styling for media capture and interaction fields:
+ * - Camera Field: Live preview, capture controls, and media preview
+ * - Audio Recording Field: Waveform visualization and recording controls
+ * - GPS Field: Interactive mapping and location display
+ * - Media Gallery Field: Drag-and-drop upload and gallery display
+ */
+
+/* ==========================================================================
+   BASE MEDIA FIELD STYLES
+   ========================================================================== */
+
+:root {
+    /* Media Field Colors */
+    --media-primary: #007bff;
+    --media-success: #28a745;
+    --media-danger: #dc3545;
+    --media-warning: #ffc107;
+    --media-info: #17a2b8;
+    --media-secondary: #6c757d;
+    
+    /* Media Field Background Colors */
+    --media-bg-light: #ffffff;
+    --media-bg-dark: #343a40;
+    --media-bg-overlay: rgba(0, 0, 0, 0.7);
+    --media-bg-preview: #f8f9fa;
+    
+    /* Media Field Border Colors */
+    --media-border-light: #dee2e6;
+    --media-border-dark: #495057;
+    --media-border-active: #80bdff;
+    
+    /* Media Field Shadows */
+    --media-shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    --media-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    --media-shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.175);
+    
+    /* Media Field Transitions */
+    --media-transition: all 0.3s ease;
+    --media-transition-fast: all 0.15s ease-in-out;
+    
+    /* Media Field Sizes */
+    --media-button-size: 48px;
+    --media-control-height: 40px;
+    --media-thumbnail-size: 150px;
+}
+
+.fab-media-field-base {
+    background: var(--media-bg-light);
+    border: 1px solid var(--media-border-light);
+    border-radius: 8px;
+    box-shadow: var(--media-shadow-sm);
+    overflow: hidden;
+    position: relative;
+    margin-bottom: 1rem;
+}
+
+/* ==========================================================================
+   CAMERA FIELD STYLES
+   ========================================================================== */
+
+.fab-camera-field {
+    @extend .fab-media-field-base;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.camera-controls {
+    position: relative;
+}
+
+.camera-preview-container {
+    position: relative;
+    background: #000;
+    border-radius: 8px 8px 0 0;
+    overflow: hidden;
+    height: 400px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.camera-preview {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 8px 8px 0 0;
+}
+
+.camera-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.camera-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+}
+
+.camera-focus-ring {
+    position: absolute;
+    width: 80px;
+    height: 80px;
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    border-radius: 50%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.camera-preview-container:active .camera-focus-ring {
+    opacity: 1;
+    animation: focusRing 0.6s ease;
+}
+
+@keyframes focusRing {
+    0% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+    50% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+}
+
+.camera-grid {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: 1fr 1fr 1fr;
+    gap: 0;
+}
+
+.grid-line {
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.grid-vertical-1 {
+    grid-column: 1;
+    border-right: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.grid-vertical-2 {
+    grid-column: 2;
+    border-right: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.grid-horizontal-1 {
+    grid-row: 1;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.grid-horizontal-2 {
+    grid-row: 2;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.camera-buttons {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    padding: 20px;
+    background: #f8f9fa;
+}
+
+.camera-buttons .btn {
+    width: var(--media-button-size);
+    height: var(--media-button-size);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    transition: var(--media-transition-fast);
+    position: relative;
+}
+
+.camera-capture-photo {
+    width: 60px;
+    height: 60px;
+    font-size: 24px;
+    border: 3px solid #fff;
+    box-shadow: 0 0 0 3px var(--media-primary);
+}
+
+.camera-capture-video {
+    width: 60px;
+    height: 60px;
+    font-size: 24px;
+}
+
+.camera-capture-video.recording {
+    animation: recordingPulse 1.5s infinite;
+}
+
+@keyframes recordingPulse {
+    0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+}
+
+.camera-status {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    background: #e9ecef;
+    font-size: 14px;
+}
+
+.recording-indicator {
+    color: var(--media-danger);
+    font-weight: 600;
+    animation: recordingBlink 1s infinite;
+}
+
+@keyframes recordingBlink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0.3; }
+}
+
+.camera-media-preview {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--media-bg-overlay);
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.media-preview-container {
+    max-width: 90%;
+    max-height: 70%;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: var(--media-shadow-lg);
+}
+
+.media-preview-image,
+.media-preview-video {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.media-preview-actions {
+    margin-top: 20px;
+    display: flex;
+    gap: 15px;
+}
+
+.camera-settings-panel {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: white;
+    border: 1px solid var(--media-border-light);
+    border-radius: 8px;
+    box-shadow: var(--media-shadow);
+    padding: 15px;
+    min-width: 200px;
+    z-index: 20;
+}
+
+.settings-group {
+    margin-bottom: 15px;
+}
+
+.settings-group:last-child {
+    margin-bottom: 0;
+}
+
+.settings-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 5px;
+    font-size: 13px;
+}
+
+.quality-value {
+    font-size: 12px;
+    color: var(--media-secondary);
+    margin-left: 10px;
+}
+
+.capture-flash {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    z-index: 5;
+    display: none;
+}
+
+/* ==========================================================================
+   AUDIO RECORDING FIELD STYLES
+   ========================================================================== */
+
+.fab-audio-field {
+    @extend .fab-media-field-base;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.audio-controls {
+    padding: 20px;
+}
+
+.audio-visualizer-container {
+    position: relative;
+    margin-bottom: 20px;
+    background: #000;
+    border-radius: 8px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.audio-visualizer {
+    border-radius: 4px;
+    background: #111;
+    margin-bottom: 10px;
+}
+
+.audio-level-meter {
+    width: 100%;
+    height: 8px;
+    background: #333;
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+}
+
+.level-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--media-success) 0%, var(--media-warning) 70%, var(--media-danger) 100%);
+    width: 0%;
+    transition: width 0.1s ease;
+    border-radius: 4px;
+}
+
+.audio-buttons {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.audio-buttons .btn {
+    width: var(--media-button-size);
+    height: var(--media-button-size);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    transition: var(--media-transition-fast);
+}
+
+.audio-record {
+    width: 56px;
+    height: 56px;
+    font-size: 20px;
+}
+
+.audio-record.recording {
+    animation: recordingPulse 1.5s infinite;
+}
+
+.audio-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    font-size: 14px;
+    color: var(--media-secondary);
+}
+
+.recording-time {
+    font-family: 'Courier New', monospace;
+    font-weight: 600;
+    font-size: 16px;
+    color: var(--media-primary);
+}
+
+.file-size {
+    font-size: 12px;
+    background: var(--media-bg-preview);
+    padding: 2px 6px;
+    border-radius: 3px;
+}
+
+.audio-waveform-container {
+    position: relative;
+    margin-top: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 10px;
+}
+
+.audio-waveform {
+    width: 100%;
+    border-radius: 4px;
+    background: white;
+}
+
+.playback-cursor {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    width: 2px;
+    height: 60px;
+    background: var(--media-primary);
+    opacity: 0.8;
+    transition: left 0.1s linear;
+}
+
+.audio-settings {
+    border-top: 1px solid var(--media-border-light);
+    padding: 15px 20px;
+    background: #f8f9fa;
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.audio-settings .settings-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 0;
+}
+
+.audio-settings label {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 0;
+    white-space: nowrap;
+}
+
+.audio-settings select,
+.audio-settings input[type="checkbox"] {
+    font-size: 13px;
+}
+
+/* ==========================================================================
+   GPS FIELD STYLES
+   ========================================================================== */
+
+.fab-gps-field {
+    @extend .fab-media-field-base;
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+.gps-controls {
+    padding: 15px 20px;
+    background: #f8f9fa;
+    border-bottom: 1px solid var(--media-border-light);
+}
+
+.gps-buttons {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+
+.gps-buttons .btn {
+    height: var(--media-control-height);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    padding: 0 15px;
+    white-space: nowrap;
+}
+
+.gps-info {
+    margin-bottom: 15px;
+}
+
+.location-display {
+    margin-bottom: 10px;
+}
+
+.coordinates-display {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--media-primary);
+    display: block;
+    margin-bottom: 5px;
+}
+
+.accuracy-display {
+    font-size: 12px;
+    color: var(--media-secondary);
+    background: var(--media-bg-preview);
+    padding: 2px 6px;
+    border-radius: 3px;
+    display: inline-block;
+}
+
+.location-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 10px;
+    font-size: 13px;
+}
+
+.detail-group {
+    background: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--media-border-light);
+}
+
+.detail-group label {
+    display: block;
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--media-secondary);
+    margin-bottom: 2px;
+}
+
+.gps-map-container {
+    position: relative;
+    margin-bottom: 15px;
+}
+
+.gps-map {
+    border-radius: 8px;
+    border: 1px solid var(--media-border-light);
+    overflow: hidden;
+}
+
+.map-loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--media-bg-overlay);
+    color: white;
+    padding: 10px 15px;
+    border-radius: 6px;
+    font-size: 14px;
+    z-index: 1000;
+}
+
+.gps-address-lookup {
+    padding: 0 20px 20px;
+}
+
+.address-input {
+    height: var(--media-control-height);
+    font-size: 14px;
+}
+
+.address-search {
+    height: var(--media-control-height);
+    width: var(--media-control-height);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.address-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid var(--media-border-light);
+    border-top: none;
+    border-radius: 0 0 6px 6px;
+    box-shadow: var(--media-shadow);
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 10;
+}
+
+.address-suggestion {
+    padding: 10px 15px;
+    cursor: pointer;
+    border-bottom: 1px solid #f1f3f4;
+    font-size: 14px;
+    transition: background-color 0.2s ease;
+}
+
+.address-suggestion:hover {
+    background: #f8f9fa;
+}
+
+.address-suggestion:last-child {
+    border-bottom: none;
+}
+
+/* ==========================================================================
+   MEDIA GALLERY FIELD STYLES
+   ========================================================================== */
+
+.fab-media-gallery-field {
+    @extend .fab-media-field-base;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.gallery-upload-area {
+    padding: 20px;
+    border-bottom: 1px solid var(--media-border-light);
+}
+
+.upload-dropzone {
+    border: 2px dashed var(--media-border-light);
+    border-radius: 8px;
+    padding: 40px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: var(--media-transition);
+    background: #f8f9fa;
+    position: relative;
+}
+
+.upload-dropzone:hover,
+.upload-dropzone.dragover {
+    border-color: var(--media-primary);
+    background: rgba(0, 123, 255, 0.05);
+}
+
+.upload-icon {
+    font-size: 48px;
+    color: var(--media-secondary);
+    margin-bottom: 15px;
+}
+
+.upload-dropzone:hover .upload-icon,
+.upload-dropzone.dragover .upload-icon {
+    color: var(--media-primary);
+}
+
+.upload-text {
+    color: var(--media-secondary);
+}
+
+.upload-text strong {
+    color: #333;
+    font-size: 16px;
+}
+
+.upload-progress {
+    margin-top: 15px;
+}
+
+.progress-text {
+    text-align: center;
+    margin-top: 5px;
+    font-size: 14px;
+    color: var(--media-secondary);
+}
+
+.gallery-grid {
+    padding: 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(var(--media-thumbnail-size), 1fr));
+    gap: 15px;
+    align-items: start;
+}
+
+.gallery-item {
+    background: white;
+    border: 1px solid var(--media-border-light);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: var(--media-transition);
+    position: relative;
+}
+
+.gallery-item:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--media-shadow);
+}
+
+.gallery-item-content {
+    position: relative;
+    height: var(--media-thumbnail-size);
+    overflow: hidden;
+}
+
+.gallery-thumbnail {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.gallery-audio-preview,
+.gallery-document-preview {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #f8f9fa;
+    color: var(--media-secondary);
+}
+
+.gallery-audio-preview i,
+.gallery-document-preview i {
+    font-size: 32px;
+    margin-bottom: 8px;
+}
+
+.gallery-item-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--media-bg-overlay);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.gallery-item:hover .gallery-item-overlay {
+    opacity: 1;
+}
+
+.gallery-item-overlay .btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+}
+
+.gallery-item-info {
+    padding: 10px;
+    border-top: 1px solid var(--media-border-light);
+}
+
+.gallery-item-info small {
+    display: block;
+    line-height: 1.3;
+    word-break: break-word;
+}
+
+.gallery-add-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: var(--media-thumbnail-size);
+}
+
+.gallery-add {
+    width: 100px;
+    height: 100px;
+    border: 2px dashed var(--media-border-light);
+    background: transparent;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: var(--media-secondary);
+    transition: var(--media-transition);
+}
+
+.gallery-add:hover {
+    border-color: var(--media-primary);
+    color: var(--media-primary);
+    background: rgba(0, 123, 255, 0.05);
+}
+
+.gallery-add i {
+    font-size: 24px;
+    margin-bottom: 5px;
+}
+
+/* Gallery Preview Modal */
+.gallery-preview-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.preview-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--media-bg-overlay);
+    cursor: pointer;
+}
+
+.preview-container {
+    position: relative;
+    background: white;
+    border-radius: 12px;
+    box-shadow: var(--media-shadow-lg);
+    max-width: 90vw;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.preview-header {
+    padding: 15px 20px;
+    border-bottom: 1px solid var(--media-border-light);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f8f9fa;
+}
+
+.preview-title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+    word-break: break-word;
+}
+
+.preview-close {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+}
+
+.preview-content {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    min-height: 300px;
+    background: #000;
+}
+
+.preview-image,
+.preview-video,
+.preview-audio {
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 8px;
+}
+
+.preview-actions {
+    padding: 15px 20px;
+    border-top: 1px solid var(--media-border-light);
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    background: #f8f9fa;
+}
+
+/* ==========================================================================
+   RESPONSIVE DESIGN
+   ========================================================================== */
+
+@media (max-width: 768px) {
+    .fab-camera-field,
+    .fab-audio-field,
+    .fab-gps-field,
+    .fab-media-gallery-field {
+        margin: 0 10px 1rem;
+    }
+    
+    .camera-preview-container {
+        height: 300px;
+    }
+    
+    .camera-buttons {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    
+    .gps-buttons {
+        justify-content: center;
+    }
+    
+    .location-details {
+        grid-template-columns: 1fr 1fr;
+    }
+    
+    .gallery-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 10px;
+        padding: 15px;
+    }
+    
+    .audio-settings {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 15px;
+    }
+    
+    .audio-settings .settings-group {
+        justify-content: space-between;
+    }
+}
+
+@media (max-width: 480px) {
+    :root {
+        --media-thumbnail-size: 100px;
+        --media-button-size: 40px;
+        --media-control-height: 36px;
+    }
+    
+    .camera-preview-container {
+        height: 250px;
+    }
+    
+    .camera-buttons .btn {
+        font-size: 14px;
+    }
+    
+    .camera-capture-photo,
+    .camera-capture-video {
+        width: 50px;
+        height: 50px;
+        font-size: 18px;
+    }
+    
+    .location-details {
+        grid-template-columns: 1fr;
+    }
+    
+    .gallery-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .preview-container {
+        margin: 10px;
+        max-width: calc(100vw - 20px);
+        max-height: calc(100vh - 20px);
+    }
+    
+    .preview-content {
+        min-height: 200px;
+        padding: 15px;
+    }
+}
+
+/* ==========================================================================
+   ACCESSIBILITY ENHANCEMENTS
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+.fab-camera-field:focus-within,
+.fab-audio-field:focus-within,
+.fab-gps-field:focus-within,
+.fab-media-gallery-field:focus-within {
+    outline: 2px solid var(--media-primary);
+    outline-offset: 2px;
+}
+
+.camera-buttons .btn:focus,
+.audio-buttons .btn:focus,
+.gps-buttons .btn:focus {
+    outline: 2px solid var(--media-primary);
+    outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    :root {
+        --media-border-light: #000000;
+        --media-border-dark: #ffffff;
+        --media-shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.5);
+        --media-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.8);
+        --media-shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.9);
+    }
+}
+
+/* ==========================================================================
+   LOADING AND ERROR STATES
+   ========================================================================== */
+
+.media-loading {
+    position: relative;
+    overflow: hidden;
+}
+
+.media-loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    animation: mediaLoading 1.5s infinite;
+}
+
+@keyframes mediaLoading {
+    0% { left: -100%; }
+    100% { left: 100%; }
+}
+
+.media-error {
+    border-left: 4px solid var(--media-danger);
+    margin-bottom: 15px;
+}
+
+.media-disabled {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+/* ==========================================================================
+   UTILITY CLASSES
+   ========================================================================== */
+
+.media-hidden {
+    display: none !important;
+}
+
+.media-fade-in {
+    animation: mediaFadeIn 0.3s ease;
+}
+
+@keyframes mediaFadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.media-fade-out {
+    animation: mediaFadeOut 0.3s ease;
+}
+
+@keyframes mediaFadeOut {
+    from { opacity: 1; transform: translateY(0); }
+    to { opacity: 0; transform: translateY(-10px); }
+}
+
+.media-pulse {
+    animation: mediaPulse 2s infinite;
+}
+
+@keyframes mediaPulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+/* Print styles */
+@media print {
+    .fab-camera-field,
+    .fab-audio-field,
+    .fab-gps-field {
+        display: none !important;
+    }
+    
+    .fab-media-gallery-field {
+        break-inside: avoid;
+    }
+    
+    .gallery-grid {
+        display: block;
+    }
+    
+    .gallery-item {
+        break-inside: avoid;
+        margin-bottom: 10px;
+    }
+    
+    .gallery-item-overlay {
+        display: none !important;
+    }
+}

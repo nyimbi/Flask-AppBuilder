@@ -30,27 +30,83 @@ log = logging.getLogger(__name__)
 
 class ProcessSecurityError(Exception):
     """Base exception for process security violations."""
-    pass
+    
+    def __init__(self, message: str, error_code: str = None, context: Dict[str, Any] = None):
+        super().__init__(message)
+        self.error_code = error_code or 'PROCESS_SECURITY_ERROR'
+        self.context = context or {}
+        self.timestamp = datetime.utcnow()
+        self.request_id = getattr(g, 'request_id', str(uuid4()))
+        self.user_id = getattr(current_user, 'id', None) if current_user and not current_user.is_anonymous else None
+        self.tenant_id = get_current_tenant_id()
+        
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert exception to dictionary for logging."""
+        return {
+            'error_code': self.error_code,
+            'message': str(self),
+            'context': self.context,
+            'timestamp': self.timestamp.isoformat(),
+            'request_id': self.request_id,
+            'user_id': self.user_id,
+            'tenant_id': self.tenant_id
+        }
 
 
 class ValidationError(ProcessSecurityError):
     """Input validation error."""
-    pass
+    
+    def __init__(self, message: str, field: str = None, value: Any = None, rule: str = None):
+        super().__init__(message, 'VALIDATION_ERROR')
+        self.field = field
+        self.value = value
+        self.rule = rule
+        self.context.update({
+            'field': field,
+            'value': str(value) if value is not None else None,
+            'validation_rule': rule
+        })
 
 
 class AuthorizationError(ProcessSecurityError):
     """Authorization error."""
-    pass
+    
+    def __init__(self, message: str, required_permission: str = None, resource: str = None):
+        super().__init__(message, 'AUTHORIZATION_ERROR')
+        self.required_permission = required_permission
+        self.resource = resource
+        self.context.update({
+            'required_permission': required_permission,
+            'resource': resource
+        })
 
 
 class TenantIsolationError(ProcessSecurityError):
     """Tenant isolation violation."""
-    pass
+    
+    def __init__(self, message: str, accessed_tenant: str = None, user_tenant: str = None):
+        super().__init__(message, 'TENANT_ISOLATION_ERROR')
+        self.accessed_tenant = accessed_tenant
+        self.user_tenant = user_tenant
+        self.context.update({
+            'accessed_tenant': accessed_tenant,
+            'user_tenant': user_tenant
+        })
 
 
 class RateLimitExceededError(ProcessSecurityError):
     """Rate limit exceeded."""
-    pass
+    
+    def __init__(self, message: str, limit: int = None, window: int = None, retry_after: int = None):
+        super().__init__(message, 'RATE_LIMIT_EXCEEDED')
+        self.limit = limit
+        self.window = window
+        self.retry_after = retry_after
+        self.context.update({
+            'rate_limit': limit,
+            'time_window': window,
+            'retry_after_seconds': retry_after
+        })
 
 
 class ProcessValidator:

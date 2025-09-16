@@ -118,7 +118,21 @@
   },
   "permissions": {
     "allow": [
-      "Bash(echo:*)"
+      "Bash(which:*)",
+      "Bash(test:*)",
+      "Bash(git:*)",
+      "Bash(npm:*)",
+      "Bash(node:*)",
+      "Bash(cat:*)",
+      "Bash(ls:*)",
+      "Bash(grep:*)",
+      "Bash(rg:*)",
+      "Bash(find:*)",
+      "Bash(uv:*)",
+      "WebFetch",
+      "Grep",
+      "Glob",
+      "LS"
     ]
   }
 }

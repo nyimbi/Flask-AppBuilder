@@ -1,0 +1,106 @@
+{% extends "appbuilder/general/model/base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-md-8 offset-md-2">
+      <div class="card">
+        <div class="card-header">
+          <h4>{{ _("Reject Transaction") }} #{{ transaction.id }}</h4>
+        </div>
+        <div class="card-body">
+          <!-- Transaction Details -->
+          <div class="card mb-4">
+            <div class="card-header">
+              <h6>{{ _("Transaction Details") }}</h6>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-6">
+                  <p><strong>{{ _("ID") }}:</strong> #{{ transaction.id }}</p>
+                  <p><strong>{{ _("Type") }}:</strong> 
+                    <span class="badge badge-secondary">{{ transaction.transaction_type.title() }}</span>
+                  </p>
+                  <p><strong>{{ _("Amount") }}:</strong> 
+                    <span class="text-{% if transaction.transaction_type == 'expense' %}danger{% else %}success{% endif %}">
+                      ${{ "%.2f"|format(transaction.amount) }}
+                    </span>
+                  </p>
+                </div>
+                <div class="col-md-6">
+                  <p><strong>{{ _("Date") }}:</strong> {{ transaction.transaction_date.strftime('%Y-%m-%d %H:%M') if transaction.transaction_date else _("N/A") }}</p>
+                  <p><strong>{{ _("Status") }}:</strong> 
+                    <span class="badge badge-warning">{{ transaction.status.title() }}</span>
+                  </p>
+                  <p><strong>{{ _("Description") }}:</strong> {{ transaction.description or _("No description") }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Rejection Form -->
+          <form method="POST" action="{{ url_for('ApprovalWorkflowView.reject_transaction_submit', transaction_id=transaction.id) }}">
+            <div class="form-group">
+              <label for="rejection_reason" class="required">{{ _("Rejection Reason") }}</label>
+              <textarea class="form-control" id="rejection_reason" name="rejection_reason" rows="4" required 
+                        placeholder="{{ _('Please provide a detailed reason for rejecting this transaction...') }}"></textarea>
+              <small class="form-text text-muted">{{ _("This reason will be visible in the transaction audit trail.") }}</small>
+            </div>
+            
+            <div class="alert alert-warning">
+              <i class="fa fa-exclamation-triangle"></i>
+              <strong>{{ _("Warning") }}:</strong> {{ _("Rejecting this transaction cannot be undone. The transaction will be permanently cancelled.") }}
+            </div>
+            
+            <div class="form-group text-right">
+              <a href="{{ url_for('ApprovalWorkflowView.pending_approvals') }}" class="btn btn-secondary">
+                <i class="fa fa-arrow-left"></i> {{ _("Back to Pending Approvals") }}
+              </a>
+              <button type="submit" class="btn btn-danger ml-2">
+                <i class="fa fa-times"></i> {{ _("Reject Transaction") }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block tail_js %}
+{{ super() }}
+<script>
+$(document).ready(function() {
+    // Add confirmation dialog for rejection
+    $('form').submit(function(e) {
+        var reason = $('#rejection_reason').val().trim();
+        if (reason.length < 10) {
+            e.preventDefault();
+            alert('{{ _("Please provide a detailed rejection reason (at least 10 characters).") }}');
+            return false;
+        }
+        
+        if (!confirm('{{ _("Are you sure you want to reject this transaction? This action cannot be undone.") }}')) {
+            e.preventDefault();
+            return false;
+        }
+    });
+    
+    // Character counter for textarea
+    $('#rejection_reason').on('input', function() {
+        var length = $(this).val().length;
+        var minLength = 10;
+        var button = $('button[type="submit"]');
+        
+        if (length < minLength) {
+            button.prop('disabled', true);
+            $(this).removeClass('is-valid').addClass('is-invalid');
+        } else {
+            button.prop('disabled', false);
+            $(this).removeClass('is-invalid').addClass('is-valid');
+        }
+    });
+});
+</script>
+{% endblock %}

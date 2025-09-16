@@ -1,0 +1,373 @@
+{% extends "appbuilder/base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fa fa-wallet" aria-hidden="true"></i>
+                        Wallet Management
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div id="wallet-status" class="mb-4">
+                        {% if current_user.has_wallet() %}
+                            <div class="alert alert-info">
+                                <h5><i class="fa fa-info-circle"></i> Wallet Linked</h5>
+                                <p><strong>Address:</strong> <code>{{ current_user.wallet_address }}</code></p>
+                                <p><strong>Type:</strong> {{ current_user.wallet_type|title }}</p>
+                                {% if current_user.wallet_provider %}
+                                    <p><strong>Provider:</strong> {{ current_user.wallet_provider }}</p>
+                                {% endif %}
+                                <p><strong>Status:</strong> 
+                                    {% if current_user.is_wallet_verified() %}
+                                        <span class="badge badge-success">Verified</span>
+                                        <small class="text-muted">
+                                            Verified on {{ current_user.wallet_verification_date.strftime('%Y-%m-%d %H:%M') if current_user.wallet_verification_date else 'N/A' }}
+                                        </small>
+                                    {% else %}
+                                        <span class="badge badge-warning">Unverified</span>
+                                    {% endif %}
+                                </p>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-warning">
+                                <h5><i class="fa fa-exclamation-triangle"></i> No Wallet Linked</h5>
+                                <p>Link a cryptocurrency wallet to your account for enhanced features and Web3 integration.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Wallet Actions -->
+                    <div class="wallet-actions">
+                        {% if not current_user.has_wallet() %}
+                            <!-- Link Wallet Section -->
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h5><i class="fa fa-link"></i> Link Wallet</h5>
+                                </div>
+                                <div class="card-body">
+                                    <form id="link-wallet-form">
+                                        <div class="form-group">
+                                            <label for="wallet-address">Wallet Address</label>
+                                            <input type="text" class="form-control" id="wallet-address" 
+                                                   placeholder="0x..." required
+                                                   pattern="^0x[a-fA-F0-9]{40}$">
+                                            <small class="form-text text-muted">
+                                                Enter your Ethereum wallet address (starts with 0x)
+                                            </small>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="wallet-type">Wallet Type</label>
+                                            <select class="form-control" id="wallet-type" required>
+                                                <option value="">Select wallet type...</option>
+                                                <option value="metamask">MetaMask</option>
+                                                <option value="coinbase">Coinbase Wallet</option>
+                                                <option value="walletconnect">WalletConnect</option>
+                                                <option value="trust">Trust Wallet</option>
+                                                <option value="other">Other</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="wallet-provider">Provider (Optional)</label>
+                                            <input type="text" class="form-control" id="wallet-provider"
+                                                   placeholder="e.g. MetaMask Browser Extension">
+                                        </div>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fa fa-link"></i> Link Wallet
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+
+                            <!-- Connect with MetaMask Button -->
+                            <div class="text-center mb-4">
+                                <button id="connect-metamask" class="btn btn-warning btn-lg" style="display: none;">
+                                    <i class="fab fa-ethereum"></i> Connect with MetaMask
+                                </button>
+                                <small class="form-text text-muted">
+                                    Or link manually using the form above
+                                </small>
+                            </div>
+                        {% else %}
+                            <!-- Manage Existing Wallet -->
+                            <div class="row">
+                                {% if not current_user.is_wallet_verified() %}
+                                    <div class="col-md-6">
+                                        <div class="card">
+                                            <div class="card-header">
+                                                <h5><i class="fa fa-shield-alt"></i> Verify Wallet</h5>
+                                            </div>
+                                            <div class="card-body">
+                                                <p>Verify ownership of your wallet by signing a message.</p>
+                                                <button id="verify-wallet" class="btn btn-success">
+                                                    <i class="fa fa-check"></i> Verify Wallet
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                                
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h5><i class="fa fa-cog"></i> Manage Wallet</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <button id="update-metadata" class="btn btn-info mb-2">
+                                                <i class="fa fa-edit"></i> Update Metadata
+                                            </button>
+                                            <br>
+                                            <button id="unlink-wallet" class="btn btn-danger">
+                                                <i class="fa fa-unlink"></i> Unlink Wallet
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Wallet Information -->
+                    {% if current_user.has_wallet() and current_user.get_wallet_metadata() %}
+                        <div class="card mt-4">
+                            <div class="card-header">
+                                <h5><i class="fa fa-info"></i> Wallet Metadata</h5>
+                            </div>
+                            <div class="card-body">
+                                <pre id="wallet-metadata">{{ current_user.get_wallet_metadata() | tojson(indent=2) }}</pre>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Metadata Update Modal -->
+<div class="modal fade" id="metadata-modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Update Wallet Metadata</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="metadata-form">
+                    <div class="form-group">
+                        <label for="metadata-json">Metadata (JSON format)</label>
+                        <textarea class="form-control" id="metadata-json" rows="10" 
+                                  placeholder='{"chain_id": 1, "network_name": "mainnet"}'>{{ current_user.get_wallet_metadata() | tojson(indent=2) if current_user.has_wallet() else '{}' }}</textarea>
+                        <small class="form-text text-muted">
+                            Enter valid JSON metadata for your wallet
+                        </small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="save-metadata">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block tail_js %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Check for MetaMask
+    if (typeof window.ethereum !== 'undefined') {
+        document.getElementById('connect-metamask').style.display = 'block';
+    }
+    
+    // MetaMask connection
+    document.getElementById('connect-metamask').addEventListener('click', async function() {
+        try {
+            const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+            if (accounts.length > 0) {
+                document.getElementById('wallet-address').value = accounts[0];
+                document.getElementById('wallet-type').value = 'metamask';
+                document.getElementById('wallet-provider').value = 'MetaMask Browser Extension';
+            }
+        } catch (error) {
+            showAlert('Failed to connect to MetaMask', 'error');
+        }
+    });
+    
+    // Link wallet form
+    document.getElementById('link-wallet-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = {
+            address: document.getElementById('wallet-address').value,
+            type: document.getElementById('wallet-type').value,
+            provider: document.getElementById('wallet-provider').value,
+            metadata: {
+                linked_at: new Date().toISOString(),
+                user_agent: navigator.userAgent
+            }
+        };
+        
+        try {
+            const response = await fetch('/api/v1/wallet/link', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCSRFToken()
+                },
+                body: JSON.stringify(formData)
+            });
+            
+            const result = await response.json();
+            if (response.ok) {
+                showAlert(result.message, 'success');
+                setTimeout(() => location.reload(), 2000);
+            } else {
+                showAlert(result.error || 'Failed to link wallet', 'error');
+            }
+        } catch (error) {
+            showAlert('Network error occurred', 'error');
+        }
+    });
+    
+    // Verify wallet
+    document.getElementById('verify-wallet')?.addEventListener('click', async function() {
+        if (typeof window.ethereum === 'undefined') {
+            showAlert('MetaMask not detected. Please install MetaMask to verify your wallet.', 'warning');
+            return;
+        }
+        
+        try {
+            const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+            if (accounts.length === 0) {
+                showAlert('Please connect your MetaMask wallet first', 'warning');
+                return;
+            }
+            
+            const message = `Verify wallet ownership for Flask-AppBuilder account at ${Date.now()}`;
+            const signature = await window.ethereum.request({
+                method: 'personal_sign',
+                params: [message, accounts[0]]
+            });
+            
+            const response = await fetch('/api/v1/wallet/verify', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCSRFToken()
+                },
+                body: JSON.stringify({
+                    signature: signature,
+                    message: message,
+                    timestamp: Date.now()
+                })
+            });
+            
+            const result = await response.json();
+            if (response.ok) {
+                showAlert(result.message, 'success');
+                setTimeout(() => location.reload(), 2000);
+            } else {
+                showAlert(result.error || 'Verification failed', 'error');
+            }
+        } catch (error) {
+            showAlert('Verification failed: ' + error.message, 'error');
+        }
+    });
+    
+    // Unlink wallet
+    document.getElementById('unlink-wallet')?.addEventListener('click', async function() {
+        if (!confirm('Are you sure you want to unlink your wallet? This action cannot be undone.')) {
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/v1/wallet/unlink', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCSRFToken()
+                }
+            });
+            
+            const result = await response.json();
+            if (response.ok) {
+                showAlert(result.message, 'success');
+                setTimeout(() => location.reload(), 2000);
+            } else {
+                showAlert(result.error || 'Failed to unlink wallet', 'error');
+            }
+        } catch (error) {
+            showAlert('Network error occurred', 'error');
+        }
+    });
+    
+    // Update metadata
+    document.getElementById('update-metadata')?.addEventListener('click', function() {
+        $('#metadata-modal').modal('show');
+    });
+    
+    document.getElementById('save-metadata')?.addEventListener('click', async function() {
+        try {
+            const metadataText = document.getElementById('metadata-json').value;
+            const metadata = JSON.parse(metadataText);
+            
+            const response = await fetch('/api/v1/wallet/update-metadata', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCSRFToken()
+                },
+                body: JSON.stringify({ metadata })
+            });
+            
+            const result = await response.json();
+            if (response.ok) {
+                $('#metadata-modal').modal('hide');
+                showAlert(result.message, 'success');
+                setTimeout(() => location.reload(), 2000);
+            } else {
+                showAlert(result.error || 'Failed to update metadata', 'error');
+            }
+        } catch (error) {
+            showAlert('Invalid JSON format', 'error');
+        }
+    });
+    
+    function showAlert(message, type) {
+        const alertClass = type === 'success' ? 'alert-success' : 
+                          type === 'warning' ? 'alert-warning' : 'alert-danger';
+        
+        const alert = document.createElement('div');
+        alert.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
+        alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        alert.innerHTML = `
+            ${message}
+            <button type="button" class="close" data-dismiss="alert">
+                <span>&times;</span>
+            </button>
+        `;
+        
+        document.body.appendChild(alert);
+        
+        setTimeout(() => {
+            if (alert.parentNode) {
+                alert.parentNode.removeChild(alert);
+            }
+        }, 5000);
+    }
+    
+    function getCSRFToken() {
+        const token = document.querySelector('meta[name="csrf-token"]');
+        return token ? token.getAttribute('content') : '';
+    }
+});
+</script>
+{% endblock %}

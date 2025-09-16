@@ -52,9 +52,41 @@ ADDON_MANAGERS = [
     # Export Enhancement Manager  
     'flask_appbuilder.export.manager.ExportManager',
     
+    # Approval Workflow System Manager
+    'flask_appbuilder.process.approval.addon_manager.ApprovalWorkflowAddonManager',
+    
     # Add other existing managers here if you have them
     # 'your_app.custom_manager.CustomManager',
 ]
+
+# ===========================
+# Approval Workflow Configuration
+# ===========================
+
+# Configure approval workflows for different transaction types
+FAB_APPROVAL_WORKFLOWS = {
+    'default': {
+        'steps': [
+            {'name': 'manager_review', 'required_role': 'Manager', 'required_approvals': 1, 'timeout_hours': 72},
+            {'name': 'admin_approval', 'required_role': 'Admin', 'required_approvals': 1, 'timeout_hours': 48}
+        ],
+        'initial_state': 'pending_approval',
+        'approved_state': 'approved',
+        'rejected_state': 'rejected',
+        'timeout_state': 'timeout_expired'
+    },
+    'financial': {
+        'steps': [
+            {'name': 'financial_review', 'required_role': 'Financial_Manager', 'required_approvals': 2, 'timeout_hours': 24},
+            {'name': 'executive_approval', 'required_role': 'Executive', 'required_approvals': 1, 'timeout_hours': 48, 'requires_mfa': True}
+        ],
+        'initial_state': 'pending_financial_review',
+        'approved_state': 'financially_approved',
+        'rejected_state': 'financially_rejected',
+        'timeout_state': 'financial_timeout',
+        'requires_database_locking': True  # Enable for financial transactions
+    }
+}
 
 # ===========================
 # Advanced Analytics Configuration

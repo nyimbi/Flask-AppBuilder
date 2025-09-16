@@ -26,9 +26,23 @@ import os
 from typing import Dict, List, Any, Optional, Type
 from sqlalchemy.ext.declarative import declared_attr
 
-# Add appgen mixins to path
-appgen_mixins_path = '/Users/nyimbiodero/src/pjs/appgen/src/mixins'
-if appgen_mixins_path not in sys.path:
+# Add appgen mixins to path (with fallback for portability)
+def find_appgen_mixins_path():
+    """Dynamically locate appgen mixins or use fallbacks."""
+    possible_paths = [
+        '/Users/nyimbiodero/src/pjs/appgen/src/mixins',  # Development path
+        os.path.join(os.path.dirname(__file__), '..', '..', '..', 'appgen', 'src', 'mixins'),
+        os.environ.get('APPGEN_MIXINS_PATH'),
+        '/opt/appgen/mixins',  # System install path
+    ]
+    
+    for path in possible_paths:
+        if path and os.path.exists(path):
+            return path
+    return None
+
+appgen_mixins_path = find_appgen_mixins_path()
+if appgen_mixins_path:
     sys.path.insert(0, appgen_mixins_path)
 
 # Import all appgen mixins
@@ -106,6 +120,12 @@ from .fab_integration import *
 from .view_mixins import *
 from .widget_integration import *
 from .migration_tools import *
+
+# Import new enhanced mixins for Flask-AppBuilder
+from .enhanced_mixins import *
+from .content_mixins import *
+from .business_mixins import *
+from .specialized_mixins import *
 
 # Mixin registry for documentation and discovery
 MIXIN_REGISTRY = {
@@ -288,6 +308,116 @@ MIXIN_REGISTRY = {
             'features': ['automatic_archiving', 'retention_policies', 'restore_capability'],
             'flask_appbuilder_ready': True
         }
+    },
+    'enhanced_core': {
+        'EnhancedSoftDeleteMixin': {
+            'class': EnhancedSoftDeleteMixin,
+            'description': 'Advanced soft delete with metadata tracking and cascading',
+            'features': ['soft_delete', 'restore', 'metadata_tracking', 'cascade_delete', 'bulk_operations'],
+            'flask_appbuilder_ready': True
+        },
+        'MetadataMixin': {
+            'class': MetadataMixin,
+            'description': 'Schema-less metadata storage with JSON support',
+            'features': ['dynamic_metadata', 'key_value_storage', 'search_by_metadata'],
+            'flask_appbuilder_ready': True
+        },
+        'StateTrackingMixin': {
+            'class': StateTrackingMixin,
+            'description': 'Enhanced state tracking with audit integration',
+            'features': ['state_transitions', 'audit_trail', 'transition_history'],
+            'flask_appbuilder_ready': True
+        },
+        'CacheableMixin': {
+            'class': CacheableMixin,
+            'description': 'Model-level caching with automatic invalidation',
+            'features': ['instance_caching', 'cache_invalidation', 'user_context_caching'],
+            'flask_appbuilder_ready': True
+        },
+        'ImportExportMixin': {
+            'class': ImportExportMixin,
+            'description': 'Data import/export with field control',
+            'features': ['csv_export', 'json_export', 'bulk_import', 'field_filtering'],
+            'flask_appbuilder_ready': True
+        }
+    },
+    'enhanced_content': {
+        'DocumentMixin': {
+            'class': DocumentMixin,
+            'description': 'Comprehensive document management with permissions',
+            'features': ['file_storage', 'metadata_extraction', 'access_control', 'download_tracking'],
+            'flask_appbuilder_ready': True
+        },
+        'SlugMixin': {
+            'class': SlugMixin,
+            'description': 'URL-friendly slug generation with uniqueness',
+            'features': ['automatic_slugs', 'uniqueness_validation', 'seo_friendly'],
+            'flask_appbuilder_ready': True
+        },
+        'CommentableMixin': {
+            'class': CommentableMixin,
+            'description': 'Threading commenting system with moderation',
+            'features': ['threaded_comments', 'moderation', 'permissions'],
+            'flask_appbuilder_ready': True
+        },
+        'SearchableMixin': {
+            'class': SearchableMixin,
+            'description': 'Full-text search with configurable fields',
+            'features': ['full_text_search', 'weighted_fields', 'search_ranking'],
+            'flask_appbuilder_ready': True
+        }
+    },
+    'enhanced_business': {
+        'WorkflowMixin': {
+            'class': WorkflowMixin,
+            'description': 'Advanced workflow state management',
+            'features': ['configurable_states', 'transition_validation', 'history_tracking'],
+            'flask_appbuilder_ready': True
+        },
+        'ApprovalWorkflowMixin': {
+            'class': ApprovalWorkflowMixin,
+            'description': 'Multi-step approval processes with delegation',
+            'features': ['multi_step_approval', 'parallel_approval', 'delegation'],
+            'flask_appbuilder_ready': True
+        },
+        'MultiTenancyMixin': {
+            'class': MultiTenancyMixin,
+            'description': 'Multi-tenant data isolation',
+            'features': ['tenant_scoping', 'data_isolation', 'cross_tenant_sharing'],
+            'flask_appbuilder_ready': True
+        },
+        'TreeMixin': {
+            'class': TreeMixin,
+            'description': 'Hierarchical tree structures with traversal',
+            'features': ['parent_child', 'tree_traversal', 'depth_calculation'],
+            'flask_appbuilder_ready': True
+        }
+    },
+    'enhanced_specialized': {
+        'CurrencyMixin': {
+            'class': CurrencyMixin,
+            'description': 'Currency handling with exchange rates',
+            'features': ['currency_conversion', 'exchange_rates', 'currency_math'],
+            'flask_appbuilder_ready': True
+        },
+        'GeoLocationMixin': {
+            'class': GeoLocationMixin,
+            'description': 'Geographic data with spatial operations',
+            'features': ['coordinates', 'distance_calculation', 'geocoding'],
+            'flask_appbuilder_ready': True
+        },
+        'EncryptionMixin': {
+            'class': EncryptionMixin,
+            'description': 'Field-level encryption for sensitive data',
+            'features': ['field_encryption', 'key_management', 'secure_storage'],
+            'flask_appbuilder_ready': True
+        },
+        'VersioningMixin': {
+            'class': VersioningMixin,
+            'description': 'Simple versioning with rollback support',
+            'features': ['version_history', 'rollback', 'version_comparison'],
+            'flask_appbuilder_ready': True
+        }
     }
 }
 
@@ -355,18 +485,24 @@ def create_enhanced_model(base_class, mixins: List[str], **kwargs):
 
 # Export commonly used mixins
 __all__ = [
-    # Core mixins
+    # Core mixins (from appgen)
     'BaseModelMixin',
     'AuditLogMixin', 
     'SoftDeleteMixin',
     'VersioningMixin',
     
+    # Enhanced core mixins (Flask-AppBuilder optimized)
+    'EnhancedSoftDeleteMixin',
+    'EnhancedSoftDeleteQuery',
+    'MetadataMixin',
+    'StateTrackingMixin',
+    'CacheableMixin',
+    'ImportExportMixin',
+    
     # Data mixins
     'EncryptionMixin',
     'CacheMixin',
     'SearchableMixin',
-    'MetadataMixin',
-    'ImportExportMixin',
     
     # Business mixins
     'WorkflowMixin',
@@ -374,9 +510,11 @@ __all__ = [
     'MultiTenancyMixin',
     'ProjectMixin',
     'SchedulingMixin',
+    'TreeMixin',
     
     # Content mixins
     'DocMixin',
+    'DocumentMixin',
     'CommentableMixin',
     'InternationalizationMixin',
     'SlugMixin',
@@ -388,7 +526,6 @@ __all__ = [
     'VersionControlMixin',
     
     # Specialized mixins
-    'TreeMixin',
     'PolymorphicMixin',
     'CurrencyMixin',
     'GeoLocationMixin',
@@ -399,6 +536,12 @@ __all__ = [
     'EnhancedModelView',
     'MixinWidgetMapping',
     'MigrationHelper',
+    
+    # Setup functions
+    'setup_enhanced_mixins',
+    'setup_content_mixins',
+    'setup_business_mixins', 
+    'setup_specialized_mixins',
     
     # Utility functions
     'get_all_mixins',

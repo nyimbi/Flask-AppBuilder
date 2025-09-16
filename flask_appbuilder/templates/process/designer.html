@@ -204,6 +204,218 @@
       fill: none;
       marker-end: url(#arrowhead);
     }
+    
+    /* Pool and Lane Styles */
+    .canvas-node.pool {
+      background: rgba(173, 216, 230, 0.1);
+      border: 2px solid #87ceeb;
+      border-radius: 12px;
+      min-width: 400px;
+      min-height: 200px;
+      position: relative;
+    }
+    
+    .canvas-node.lane {
+      background: rgba(144, 238, 144, 0.1);
+      border: 2px dashed #90ee90;
+      border-radius: 8px;
+      min-width: 350px;
+      min-height: 80px;
+      position: relative;
+      margin: 5px;
+    }
+    
+    .pool-header {
+      position: absolute;
+      top: -2px;
+      left: -2px;
+      background: #87ceeb;
+      color: white;
+      padding: 4px 12px;
+      font-size: 12px;
+      font-weight: bold;
+      border-radius: 6px 0 6px 0;
+    }
+    
+    .lane-header {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      background: #90ee90;
+      color: #333;
+      padding: 2px 8px;
+      font-size: 10px;
+      font-weight: bold;
+      border-radius: 4px;
+    }
+    
+    .lane-role-indicator {
+      position: absolute;
+      bottom: 2px;
+      right: 2px;
+      background: #ffc107;
+      color: #333;
+      padding: 1px 6px;
+      font-size: 9px;
+      border-radius: 3px;
+    }
+    
+    /* Subprocess Styles */
+    .canvas-node.subprocess {
+      border: 3px solid #6f42c1;
+      background: rgba(111, 66, 193, 0.05);
+      position: relative;
+    }
+    
+    .canvas-node.subprocess.embedded {
+      border-style: solid;
+    }
+    
+    .canvas-node.subprocess.call_activity {
+      border-style: double;
+      border-width: 4px;
+    }
+    
+    .canvas-node.subprocess.event {
+      border-style: dotted;
+      border-width: 3px;
+    }
+    
+    .subprocess-indicator {
+      position: absolute;
+      bottom: 4px;
+      right: 4px;
+      width: 12px;
+      height: 12px;
+      background: #6f42c1;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 8px;
+      border-radius: 2px;
+    }
+    
+    .subprocess-container {
+      min-width: 200px;
+      min-height: 100px;
+      padding: 20px 10px 10px 10px;
+    }
+    
+    /* Container Resize Handles */
+    .resize-handle {
+      position: absolute;
+      background: #007bff;
+      opacity: 0.7;
+    }
+    
+    .resize-handle.se {
+      bottom: -3px;
+      right: -3px;
+      width: 12px;
+      height: 12px;
+      cursor: se-resize;
+      border-radius: 0 0 4px 0;
+    }
+    
+    .resize-handle.e {
+      top: 50%;
+      right: -3px;
+      width: 6px;
+      height: 20px;
+      cursor: e-resize;
+      transform: translateY(-50%);
+    }
+    
+    .resize-handle.s {
+      bottom: -3px;
+      left: 50%;
+      width: 20px;
+      height: 6px;
+      cursor: s-resize;
+      transform: translateX(-50%);
+    }
+    
+    /* Pool/Lane Layout Helpers */
+    .pool-swimlanes {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      padding-top: 25px;
+    }
+    
+    .swimlane {
+      flex: 1;
+      min-height: 80px;
+      border-bottom: 1px solid #90ee90;
+      position: relative;
+      padding: 5px;
+    }
+    
+    .swimlane:last-child {
+      border-bottom: none;
+    }
+    
+    /* Drag and Drop Indicators */
+    .drop-zone {
+      position: absolute;
+      border: 2px dashed #007bff;
+      background: rgba(0, 123, 255, 0.1);
+      border-radius: 4px;
+      display: none;
+    }
+    
+    .drop-zone.active {
+      display: block;
+      animation: pulse 1s infinite;
+    }
+    
+    @keyframes pulse {
+      0% { opacity: 0.5; }
+      50% { opacity: 0.8; }
+      100% { opacity: 0.5; }
+    }
+    
+    /* Nested Element Indicators */
+    .nested-element {
+      margin-left: 20px;
+      position: relative;
+    }
+    
+    .nested-element::before {
+      content: '';
+      position: absolute;
+      left: -15px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: #6c757d;
+    }
+    
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+      .designer-container {
+        flex-direction: column;
+        height: auto;
+      }
+      
+      .designer-sidebar {
+        width: 100%;
+        height: 200px;
+        order: 2;
+      }
+      
+      .designer-properties {
+        width: 100%;
+        height: 300px;
+        order: 3;
+      }
+      
+      .designer-canvas {
+        order: 1;
+        height: 400px;
+      }
+    }
   </style>
 {% endblock %}
 
@@ -290,6 +502,29 @@
           </div>
           <div class="palette-node" data-node-type="approval" data-node-subtype="multi">
             <i class="fa fa-users"></i> Multi Approval
+          </div>
+        </div>
+        
+        <div class="node-palette">
+          <h4><i class="fa fa-sitemap"></i> Subprocesses</h4>
+          <div class="palette-node" data-node-type="subprocess" data-node-subtype="embedded">
+            <i class="fa fa-square-o"></i> Embedded Subprocess
+          </div>
+          <div class="palette-node" data-node-type="subprocess" data-node-subtype="call_activity">
+            <i class="fa fa-external-link"></i> Call Activity
+          </div>
+          <div class="palette-node" data-node-type="subprocess" data-node-subtype="event">
+            <i class="fa fa-bell"></i> Event Subprocess
+          </div>
+        </div>
+        
+        <div class="node-palette">
+          <h4><i class="fa fa-layer-group"></i> Organization</h4>
+          <div class="palette-node" data-node-type="pool" data-node-subtype="participant">
+            <i class="fa fa-rectangle-o"></i> Pool
+          </div>
+          <div class="palette-node" data-node-type="lane" data-node-subtype="role">
+            <i class="fa fa-bars"></i> Lane
           </div>
         </div>
       </div>

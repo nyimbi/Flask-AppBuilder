@@ -6,6 +6,8 @@ views and APIs, providing a unified security layer.
 """
 
 import logging
+import time
+from datetime import datetime
 from functools import wraps
 from typing import Dict, Any, Optional, List, Union
 
@@ -20,7 +22,7 @@ from .validation import (
     TenantIsolationError, RateLimitExceededError,
     process_read_limiter, process_write_limiter, process_deploy_limiter, process_execute_limiter
 )
-from ..models.process_models import ProcessDefinition, ProcessInstance, ProcessStep
+from ..models.process_models import ProcessDefinition, ProcessInstance, ProcessStep, ProcessPool, ProcessLane
 from ..models.audit_models import ProcessSecurityEvent
 from flask_appbuilder import db
 
@@ -220,8 +222,347 @@ class ProcessSecurityManager:
             log.error(f"Failed to record security event: {e}")
 
 
-# Global security manager instance
+class PoolLaneSecurityManager:
+    """
+    Security manager for Pool/Lane operations with role-based access control.
+    
+    Integrates with Flask-AppBuilder's security manager to provide
+    role-based lane assignment and pool access validation.
+    """
+    
+    def __init__(self):
+        self.role_cache = {}  # Cache for role lookups
+        self.lane_role_cache = {}  # Cache for lane-role mappings
+        self.cache_timeout = 300  # 5 minutes
+    
+    def get_available_roles(self, tenant_id: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Get available roles from Flask-AppBuilder security manager."""
+        from flask_appbuilder.security import current_user
+        from flask import current_app
+        
+        try:
+            # Get the Flask-AppBuilder security manager
+            fab = current_app.extensions.get('appbuilder')
+            if not fab or not fab.sm:
+                log.warning("Flask-AppBuilder security manager not available")
+                return []
+            
+            security_manager = fab.sm
+            
+            # Get all roles
+            roles = security_manager.get_all_roles()
+            
+            # Filter roles based on tenant if multi-tenant
+            available_roles = []
+            for role in roles:
+                role_data = {
+                    'id': role.id,
+                    'name': role.name,
+                    'description': getattr(role, 'description', ''),
+                    'permissions': [p.permission.name for p in role.permissions] if hasattr(role, 'permissions') else []
+                }
+                
+                # Add tenant filtering if applicable
+                if tenant_id and hasattr(role, 'tenant_id'):
+                    if role.tenant_id == tenant_id or role.tenant_id is None:
+                        available_roles.append(role_data)
+                else:
+                    available_roles.append(role_data)
+            
+            # Cache the results
+            cache_key = f"roles_{tenant_id or 'global'}"
+            self.role_cache[cache_key] = {
+                'data': available_roles,
+                'timestamp': time.time()
+            }
+            
+            return available_roles
+            
+        except Exception as e:
+            log.error(f"Failed to get available roles: {str(e)}")
+            return []
+    
+    def validate_lane_role_assignment(self, lane_id: int, role_name: str, user_id: Optional[int] = None) -> bool:
+        """
+        Validate that a role can be assigned to a lane.
+        
+        Args:
+            lane_id: ID of the lane
+            role_name: Name of the role to assign
+            user_id: Optional user ID for additional validation
+            
+        Returns:
+            True if assignment is valid, False otherwise
+        """
+        try:
+            # Get lane from database
+            lane = db.session.query(ProcessLane).filter_by(
+                id=lane_id,
+                tenant_id=getattr(current_user, 'tenant_id', None) if hasattr(current_user, 'tenant_id') else None
+            ).first()
+            
+            if not lane:
+                log.warning(f"Lane {lane_id} not found for role assignment validation")
+                return False
+            
+            # Get role from Flask-AppBuilder
+            from flask import current_app
+            fab = current_app.extensions.get('appbuilder')
+            if not fab or not fab.sm:
+                log.warning("Flask-AppBuilder security manager not available for role validation")
+                return False
+            
+            role = fab.sm.find_role(role_name)
+            if not role:
+                log.warning(f"Role {role_name} not found in security manager")
+                return False
+            
+            # Check if current user has permission to assign this role
+            if user_id and hasattr(current_user, 'id') and current_user.id != user_id:
+                if not fab.sm.has_access('can_edit', 'ProcessLane', user=current_user):
+                    log.warning(f"User {current_user.username} lacks permission to assign roles to lanes")
+                    return False
+            
+            # Validate role compatibility with lane type
+            if lane.lane_type == 'system' and not self._is_system_role(role):
+                log.warning(f"Role {role_name} is not compatible with system lane")
+                return False
+            
+            return True
+            
+        except Exception as e:
+            log.error(f"Error validating lane role assignment: {str(e)}")
+            return False
+    
+    def assign_role_to_lane(self, lane_id: int, role_name: str) -> bool:
+        """
+        Assign a role to a lane with security validation.
+        
+        Args:
+            lane_id: ID of the lane
+            role_name: Name of the role to assign
+            
+        Returns:
+            True if assignment successful, False otherwise
+        """
+        try:
+            # Validate the assignment
+            if not self.validate_lane_role_assignment(lane_id, role_name):
+                return False
+            
+            # Get and update the lane
+            lane = db.session.query(ProcessLane).filter_by(
+                id=lane_id,
+                tenant_id=getattr(current_user, 'tenant_id', None) if hasattr(current_user, 'tenant_id') else None
+            ).first()
+            
+            if not lane:
+                return False
+            
+            # Update lane with role assignment
+            old_role = lane.assigned_role
+            lane.assigned_role = role_name
+            lane.updated_at = datetime.utcnow()
+            lane.updated_by = getattr(current_user, 'id', None) if current_user else None
+            
+            db.session.commit()
+            
+            # Log the role assignment
+            ProcessAuditLogger.log_operation(
+                operation='assign_lane_role',
+                resource_type='process_lane',
+                resource_id=lane_id,
+                details={
+                    'old_role': old_role,
+                    'new_role': role_name,
+                    'lane_name': lane.name
+                },
+                success=True
+            )
+            
+            # Clear cache
+            self._clear_lane_role_cache(lane_id)
+            
+            return True
+            
+        except Exception as e:
+            log.error(f"Failed to assign role {role_name} to lane {lane_id}: {str(e)}")
+            db.session.rollback()
+            return False
+    
+    def check_lane_access(self, lane_id: int, user_id: Optional[int] = None) -> bool:
+        """
+        Check if a user has access to a specific lane.
+        
+        Args:
+            lane_id: ID of the lane
+            user_id: User ID to check (defaults to current user)
+            
+        Returns:
+            True if user has access, False otherwise
+        """
+        try:
+            user = current_user if user_id is None else self._get_user_by_id(user_id)
+            if not user:
+                return False
+            
+            # Get lane with role assignment
+            lane = db.session.query(ProcessLane).filter_by(
+                id=lane_id,
+                tenant_id=getattr(user, 'tenant_id', None) if hasattr(user, 'tenant_id') else None
+            ).first()
+            
+            if not lane:
+                return False
+            
+            # If no role assigned to lane, check general process permissions
+            if not lane.assigned_role:
+                from flask import current_app
+                fab = current_app.extensions.get('appbuilder')
+                if fab and fab.sm:
+                    return fab.sm.has_access('can_read', 'ProcessInstance', user=user)
+                return False
+            
+            # Check if user has the assigned role
+            user_roles = [role.name for role in user.roles] if hasattr(user, 'roles') else []
+            
+            # Allow access if user has the assigned role or admin privileges
+            has_lane_role = lane.assigned_role in user_roles
+            has_admin_role = any(role in ['Admin', 'ProcessAdmin'] for role in user_roles)
+            
+            return has_lane_role or has_admin_role
+            
+        except Exception as e:
+            log.error(f"Error checking lane access for lane {lane_id}: {str(e)}")
+            return False
+    
+    def get_user_accessible_lanes(self, pool_id: Optional[int] = None, user_id: Optional[int] = None) -> List[Dict[str, Any]]:
+        """
+        Get all lanes accessible to a user.
+        
+        Args:
+            pool_id: Optional pool ID to filter lanes
+            user_id: User ID to check (defaults to current user)
+            
+        Returns:
+            List of accessible lane data
+        """
+        try:
+            user = current_user if user_id is None else self._get_user_by_id(user_id)
+            if not user:
+                return []
+            
+            # Build query
+            query = db.session.query(ProcessLane)
+            
+            # Filter by tenant
+            if hasattr(user, 'tenant_id') and user.tenant_id:
+                query = query.filter_by(tenant_id=user.tenant_id)
+            
+            # Filter by pool if specified
+            if pool_id:
+                query = query.filter_by(pool_id=pool_id)
+            
+            lanes = query.all()
+            accessible_lanes = []
+            
+            for lane in lanes:
+                if self.check_lane_access(lane.id, user_id):
+                    accessible_lanes.append({
+                        'id': lane.id,
+                        'name': lane.name,
+                        'pool_id': lane.pool_id,
+                        'assigned_role': lane.assigned_role,
+                        'workload_balancing': lane.workload_balancing,
+                        'lane_type': getattr(lane, 'lane_type', 'user')
+                    })
+            
+            return accessible_lanes
+            
+        except Exception as e:
+            log.error(f"Error getting accessible lanes: {str(e)}")
+            return []
+    
+    def validate_pool_access(self, pool_id: int, operation: str = 'read', user_id: Optional[int] = None) -> bool:
+        """
+        Validate user access to a process pool.
+        
+        Args:
+            pool_id: ID of the pool
+            operation: Operation being performed (read, write, execute)
+            user_id: User ID to check (defaults to current user)
+            
+        Returns:
+            True if access allowed, False otherwise
+        """
+        try:
+            user = current_user if user_id is None else self._get_user_by_id(user_id)
+            if not user:
+                return False
+            
+            # Get pool
+            pool = db.session.query(ProcessPool).filter_by(
+                id=pool_id,
+                tenant_id=getattr(user, 'tenant_id', None) if hasattr(user, 'tenant_id') else None
+            ).first()
+            
+            if not pool:
+                return False
+            
+            # Check if user has access to at least one lane in the pool
+            pool_lanes = db.session.query(ProcessLane).filter_by(pool_id=pool_id).all()
+            
+            if not pool_lanes:
+                # No lanes, check general pool permissions
+                from flask import current_app
+                fab = current_app.extensions.get('appbuilder')
+                if fab and fab.sm:
+                    permission_map = {
+                        'read': 'can_show',
+                        'write': 'can_edit',
+                        'execute': 'can_edit'
+                    }
+                    return fab.sm.has_access(permission_map.get(operation, 'can_show'), 'ProcessPool', user=user)
+                return False
+            
+            # Check access to at least one lane
+            for lane in pool_lanes:
+                if self.check_lane_access(lane.id, user_id):
+                    return True
+            
+            return False
+            
+        except Exception as e:
+            log.error(f"Error validating pool access: {str(e)}")
+            return False
+    
+    def _is_system_role(self, role) -> bool:
+        """Check if a role is a system role."""
+        system_roles = ['Admin', 'ProcessAdmin', 'SystemUser']
+        return role.name in system_roles if role else False
+    
+    def _get_user_by_id(self, user_id: int):
+        """Get user by ID from Flask-AppBuilder."""
+        try:
+            from flask import current_app
+            fab = current_app.extensions.get('appbuilder')
+            if fab and fab.sm:
+                return fab.sm.get_user_by_id(user_id)
+            return None
+        except Exception as e:
+            log.error(f"Failed to get user by ID {user_id}: {str(e)}")
+            return None
+    
+    def _clear_lane_role_cache(self, lane_id: int):
+        """Clear cache entries for a specific lane."""
+        keys_to_remove = [key for key in self.lane_role_cache.keys() if str(lane_id) in key]
+        for key in keys_to_remove:
+            del self.lane_role_cache[key]
+
+
+# Global security manager instances
 security_manager = ProcessSecurityManager()
+pool_lane_security_manager = PoolLaneSecurityManager()
 
 
 def secure_api_endpoint(operation: str, resource_type: str = 'process', 
@@ -461,10 +802,12 @@ def init_process_security(app):
 # Export commonly used decorators and classes
 __all__ = [
     'ProcessSecurityManager',
+    'PoolLaneSecurityManager',
     'secure_api_endpoint',
     'secure_view_method',
     'secure_process_operation',
     'SecurityHeaders',
     'init_process_security',
-    'security_manager'
+    'security_manager',
+    'pool_lane_security_manager'
 ]

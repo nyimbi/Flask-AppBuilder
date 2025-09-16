@@ -1,0 +1,203 @@
+{% extends "appbuilder/general/model/base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h4>{{ _("Approval History") }} - Transaction #{{ transaction.id }}</h4>
+          <a href="{{ url_for('ApprovalWorkflowView.pending_approvals') }}" class="btn btn-secondary btn-sm float-right">
+            <i class="fa fa-arrow-left"></i> {{ _("Back to Pending Approvals") }}
+          </a>
+        </div>
+        <div class="card-body">
+          <!-- Transaction Summary -->
+          <div class="row mb-4">
+            <div class="col-md-6">
+              <div class="card border-left-primary">
+                <div class="card-body">
+                  <h6>{{ _("Transaction Details") }}</h6>
+                  <p><strong>{{ _("ID") }}:</strong> #{{ transaction.id }}</p>
+                  <p><strong>{{ _("Type") }}:</strong> 
+                    <span class="badge badge-secondary">{{ transaction.transaction_type.title() }}</span>
+                  </p>
+                  <p><strong>{{ _("Amount") }}:</strong> 
+                    <span class="text-{% if transaction.transaction_type == 'expense' %}danger{% else %}success{% endif %}">
+                      ${{ "%.2f"|format(transaction.amount) }}
+                    </span>
+                  </p>
+                  <p><strong>{{ _("Description") }}:</strong> {{ transaction.description or _("No description") }}</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="card border-left-info">
+                <div class="card-body">
+                  <h6>{{ _("Current Status") }}</h6>
+                  <p><strong>{{ _("Status") }}:</strong> 
+                    <span class="badge badge-{% if transaction.status == 'completed' %}success{% elif transaction.status == 'pending' %}warning{% elif transaction.status == 'cancelled' %}danger{% else %}secondary{% endif %}">
+                      {{ transaction.status.title() }}
+                    </span>
+                  </p>
+                  <p><strong>{{ _("Created") }}:</strong> {{ transaction.transaction_date.strftime('%Y-%m-%d %H:%M') if transaction.transaction_date else _("N/A") }}</p>
+                  {% if transaction.approved_at %}
+                  <p><strong>{{ _("Last Action") }}:</strong> {{ transaction.approved_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                  {% endif %}
+                  <p><strong>{{ _("Requires Approval") }}:</strong> 
+                    <span class="badge badge-{% if transaction.requires_approval %}warning{% else %}success{% endif %}">
+                      {% if transaction.requires_approval %}{{ _("Yes") }}{% else %}{{ _("No") }}{% endif %}
+                    </span>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Approval Timeline -->
+          <h5>{{ _("Approval Timeline") }}</h5>
+          {% if approval_history %}
+            <div class="timeline">
+              {% for approval in approval_history %}
+              <div class="timeline-item">
+                <div class="timeline-marker {% if approval.status == 'approved' %}bg-success{% elif approval.status == 'rejected' %}bg-danger{% else %}bg-warning{% endif %}">
+                  {% if approval.status == 'approved' %}
+                    <i class="fa fa-check text-white"></i>
+                  {% elif approval.status == 'rejected' %}
+                    <i class="fa fa-times text-white"></i>
+                  {% else %}
+                    <i class="fa fa-clock text-white"></i>
+                  {% endif %}
+                </div>
+                <div class="timeline-content">
+                  <div class="card">
+                    <div class="card-body">
+                      <div class="row">
+                        <div class="col-md-8">
+                          <h6 class="mb-1">
+                            {{ approval.step_name.title() }} 
+                            <span class="badge badge-{% if approval.status == 'approved' %}success{% elif approval.status == 'rejected' %}danger{% else %}warning{% endif %} ml-2">
+                              {{ approval.status.title() }}
+                            </span>
+                          </h6>
+                          <p class="text-muted mb-2">
+                            <strong>{{ _("Approver") }}:</strong> {{ approval.user_full_name }} ({{ approval.user_name }})
+                          </p>
+                          <p class="text-muted mb-2">
+                            <strong>{{ _("Required Role") }}:</strong> {{ approval.required_role }}
+                          </p>
+                          {% if approval.comments %}
+                          <p class="mb-2">
+                            <strong>{{ _("Comments") }}:</strong><br>
+                            <em>"{{ approval.comments }}"</em>
+                          </p>
+                          {% endif %}
+                        </div>
+                        <div class="col-md-4 text-right">
+                          <small class="text-muted">
+                            {{ approval.timestamp[:19] | replace('T', ' ') if approval.timestamp else _("N/A") }}
+                          </small>
+                          {% if approval.ip_address %}
+                          <br><small class="text-muted">{{ _("IP") }}: {{ approval.ip_address }}</small>
+                          {% endif %}
+                        </div>
+                      </div>
+                      
+                      <!-- Integrity Verification -->
+                      {% if approval.integrity_hash %}
+                      <div class="row mt-2">
+                        <div class="col-12">
+                          <small class="text-muted">
+                            <i class="fa fa-shield-alt text-success"></i> {{ _("Integrity Verified") }}
+                            <span class="font-monospace">{{ approval.integrity_hash[:16] }}...</span>
+                          </small>
+                        </div>
+                      </div>
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="alert alert-info">
+              <i class="fa fa-info-circle"></i>
+              {{ _("No approval actions have been taken on this transaction yet.") }}
+            </div>
+          {% endif %}
+          
+          <!-- Current Pending Step (if applicable) -->
+          {% if transaction.status == 'pending' and transaction.requires_approval %}
+          <div class="card mt-4 border-warning">
+            <div class="card-header bg-warning text-dark">
+              <h6 class="mb-0">
+                <i class="fa fa-clock"></i> {{ _("Next Required Action") }}
+              </h6>
+            </div>
+            <div class="card-body">
+              <p>{{ _("This transaction is waiting for approval at step") }}: <strong>{{ approval_history|length + 1 }}</strong></p>
+              <p class="text-muted">{{ _("Required role for next approval step will be determined by the workflow configuration.") }}</p>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block head_css %}
+{{ super() }}
+<style>
+.timeline {
+  position: relative;
+  padding-left: 30px;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 15px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #dee2e6;
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: 30px;
+}
+
+.timeline-marker {
+  position: absolute;
+  left: -23px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 2px #dee2e6;
+}
+
+.timeline-content {
+  margin-left: 20px;
+}
+
+.border-left-primary {
+  border-left: 4px solid #007bff;
+}
+
+.border-left-info {
+  border-left: 4px solid #17a2b8;
+}
+
+.font-monospace {
+  font-family: 'Courier New', Courier, monospace;
+}
+</style>
+{% endblock %}
