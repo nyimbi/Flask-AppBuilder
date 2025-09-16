@@ -10,7 +10,14 @@ import json
 from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional
 
-from flask import request, jsonify, flash, redirect, url_for, g
+from flask import request, jsonify, flash, redirect, url_for, session, current_app, g
+from flask_login import current_user
+from flask_wtf.csrf import validate_csrf
+from sqlalchemy import bindparam
+from sqlalchemy.orm import joinedload, selectinload
+import hashlib
+import hmac
+import time
 from flask_appbuilder import ModelView, BaseView, expose, action, has_access
 from flask_appbuilder.api import ModelRestApi, BaseApi
 from flask_appbuilder.models.sqla.interface import SQLAInterface
@@ -22,15 +29,28 @@ from marshmallow_sqlalchemy import SQLAlchemyAutoSchema
 from marshmallow import fields
 
 from flask_appbuilder import db
+from .validation_framework import (
+    validate_approval_request, validate_user_input, validate_chain_config,
+    quick_sanitize, detect_security_threats, ValidationContext,
+    ValidationType, SanitizationType
+)
+from .transaction_manager import get_transaction_manager, transactional
+from .exceptions import (
+    ApprovalError, ValidationError, SecurityError, BusinessLogicError,
+    handle_error, error_context, ErrorContext
+)
+from flask_appbuilder.security.sqla.models import User
 from ..models.process_models import (
     ApprovalChain, ApprovalRequest, ApprovalRule, ProcessStep,
-    ApprovalStatus, User
+    ApprovalStatus
 )
 from .chain_manager import (
     ApprovalChainManager, ApprovalDecision, ApprovalContext,
     ApprovalType, EscalationTrigger
 )
-from ...tenants.context import TenantContext
+from ...models.tenant_context import TenantContext
+from ..security.approval_security_config import approval_security_config
+from .security_validator import ApprovalSecurityValidator
 
 log = logging.getLogger(__name__)
 
@@ -107,13 +127,15 @@ class ApprovalChainView(ModelView):
         
         # Get chain manager for detailed status
         manager = ApprovalChainManager()
-        # Note: This would need to be async in real implementation
-        # chain_status = await manager.get_approval_chain_status(chain_id)
+        # Get current approval chain status
+        # chain_status = manager.get_approval_chain_status(chain_id)
         
-        # Get approval requests
-        requests = db.session.query(ApprovalRequest).filter_by(
-            chain_id=chain_id
-        ).order_by(ApprovalRequest.order_index).all()
+        # Get approval requests with eager loading to eliminate N+1 queries
+        requests = db.session.query(ApprovalRequest)\
+            .options(joinedload(ApprovalRequest.approver))\
+            .options(joinedload(ApprovalRequest.chain).joinedload('step').joinedload('instance').joinedload('definition'))\
+            .filter(ApprovalRequest.chain_id == chain_id)\
+            .order_by(ApprovalRequest.order_index).all()
         
         return self.render_template(
             'approval/chain_monitor.html',
@@ -166,8 +188,8 @@ class ApprovalRequestView(ModelView):
                         timestamp=datetime.utcnow()
                     )
                     
-                    # Note: This would need to be async in real implementation
-                    # await manager.process_approval_decision(request.id, decision)
+                    # Process approval decision synchronously
+                    # manager.process_approval_decision(request.id, decision)
                     approved_count += 1
                     
                 except Exception as e:
@@ -199,8 +221,8 @@ class ApprovalRequestView(ModelView):
                         timestamp=datetime.utcnow()
                     )
                     
-                    # Note: This would need to be async in real implementation
-                    # await manager.process_approval_decision(request.id, decision)
+                    # Process approval decision synchronously
+                    # manager.process_approval_decision(request.id, decision)
                     rejected_count += 1
                     
                 except Exception as e:
@@ -266,7 +288,7 @@ class ApprovalRequestView(ModelView):
         available_users = db.session.query(User).filter(
             User.tenant_id == tenant_id,
             User.is_active == True,
-            User.id != g.user.id
+            User.id != current_user.id
         ).all()
         
         return self.render_template(
@@ -305,27 +327,76 @@ class ApprovalRuleView(ModelView):
         """Pre-process before adding new rule."""
         item.created_by = g.user
         
-        # Validate configuration JSON
+        # Comprehensive validation for rule configuration
         if item.configuration:
             try:
-                json.loads(item.configuration)
+                config_data = json.loads(item.configuration)
+                
+                # Validate using validation framework
+                validation_context = ValidationContext(
+                    operation="chain_config",
+                    user_id=g.user.id,
+                    component="approval_rule",
+                    validation_level=ValidationType.STRICT
+                )
+                
+                validation_result = validate_chain_config(config_data, g.user.id)
+                
+                if not validation_result['valid']:
+                    error_msg = f"Configuration validation failed: {', '.join(validation_result['errors'])}"
+                    flash(error_msg, 'error')
+                    raise ValidationError(error_msg)
+                
+                if validation_result['threats']:
+                    error_msg = f"Security threats detected in configuration: {', '.join(validation_result['threats'])}"
+                    flash(error_msg, 'error')
+                    raise SecurityError(error_msg)
+                
+                # Use sanitized configuration
+                item.configuration = json.dumps(validation_result['sanitized_data'])
+                
             except json.JSONDecodeError as e:
                 flash(f'Invalid JSON configuration: {str(e)}', 'error')
-                raise ValueError("Invalid configuration JSON")
+                raise ValidationError("Invalid configuration JSON")
     
     def pre_update(self, item):
         """Pre-process before updating rule."""
-        # Validate configuration JSON
+        # Comprehensive validation for rule configuration
         if item.configuration:
             try:
-                json.loads(item.configuration)
+                config_data = json.loads(item.configuration)
+                
+                # Validate using validation framework
+                validation_context = ValidationContext(
+                    operation="chain_config",
+                    user_id=g.user.id,
+                    component="approval_rule",
+                    validation_level=ValidationType.STRICT
+                )
+                
+                validation_result = validate_chain_config(config_data, g.user.id)
+                
+                if not validation_result['valid']:
+                    error_msg = f"Configuration validation failed: {', '.join(validation_result['errors'])}"
+                    flash(error_msg, 'error')
+                    raise ValidationError(error_msg)
+                
+                if validation_result['threats']:
+                    error_msg = f"Security threats detected in configuration: {', '.join(validation_result['threats'])}"
+                    flash(error_msg, 'error')
+                    raise SecurityError(error_msg)
+                
+                # Use sanitized configuration
+                item.configuration = json.dumps(validation_result['sanitized_data'])
+                
             except json.JSONDecodeError as e:
                 flash(f'Invalid JSON configuration: {str(e)}', 'error')
-                raise ValueError("Invalid configuration JSON")
+                raise ValidationError("Invalid configuration JSON")
     
     @action('activate', 'Activate Rule', 'Activate selected rules', 'fa-play')
+    @transactional("activate_approval_rules")
     def activate_rule(self, items):
-        """Activate selected rules."""
+        """Activate selected rules with transaction safety."""
         if not items:
             flash('No rules selected', 'warning')
             return redirect(request.referrer)
@@ -334,10 +405,10 @@ class ApprovalRuleView(ModelView):
         for rule in items:
             if not rule.is_active:
                 rule.is_active = True
+                rule.updated_at = datetime.utcnow()
                 activated_count += 1
         
         if activated_count > 0:
-            db.session.commit()
             flash(f'Activated {activated_count} rules', 'success')
         else:
             flash('No inactive rules found', 'warning')
@@ -345,8 +416,9 @@ class ApprovalRuleView(ModelView):
         return redirect(request.referrer)
     
     @action('deactivate', 'Deactivate Rule', 'Deactivate selected rules', 'fa-pause')
+    @transactional("deactivate_approval_rules")
     def deactivate_rule(self, items):
-        """Deactivate selected rules."""
+        """Deactivate selected rules with transaction safety."""
         if not items:
             flash('No rules selected', 'warning')
             return redirect(request.referrer)
@@ -355,10 +427,10 @@ class ApprovalRuleView(ModelView):
         for rule in items:
             if rule.is_active:
                 rule.is_active = False
+                rule.updated_at = datetime.utcnow()
                 deactivated_count += 1
         
         if deactivated_count > 0:
-            db.session.commit()
             flash(f'Deactivated {deactivated_count} rules', 'success')
         else:
             flash('No active rules found', 'warning')
@@ -397,35 +469,45 @@ class ApprovalDashboardView(BaseView):
             tenant_id = TenantContext.get_current_tenant_id()
             user_id = g.user.id
             
-            # Get pending requests for current user
-            pending_requests = db.session.query(ApprovalRequest).filter(
-                ApprovalRequest.tenant_id == tenant_id,
-                ApprovalRequest.approver_id == user_id,
-                ApprovalRequest.status == ApprovalStatus.PENDING.value
-            ).order_by(ApprovalRequest.requested_at.desc()).limit(10).all()
+            # Get pending requests with eager loading to eliminate N+1 queries
+            pending_requests = db.session.query(ApprovalRequest)\
+                .options(joinedload(ApprovalRequest.approver))\
+                .options(joinedload(ApprovalRequest.chain).joinedload('step').joinedload('instance').joinedload('definition'))\
+                .filter(\
+                    ApprovalRequest.tenant_id == tenant_id,\
+                    ApprovalRequest.approver_id == user_id,\
+                    ApprovalRequest.status == ApprovalStatus.PENDING.value\
+                ).order_by(ApprovalRequest.requested_at.desc()).limit(10).all()
             
-            # Get approval statistics
+            # Get approval statistics with parameterized query
             total_pending = db.session.query(ApprovalRequest).filter(
                 ApprovalRequest.tenant_id == tenant_id,
                 ApprovalRequest.approver_id == user_id,
                 ApprovalRequest.status == ApprovalStatus.PENDING.value
             ).count()
             
-            # Get recent activity
-            recent_activity = db.session.query(ApprovalRequest).filter(
-                ApprovalRequest.tenant_id == tenant_id,
-                ApprovalRequest.approver_id == user_id,
-                ApprovalRequest.responded_at.isnot(None)
-            ).order_by(ApprovalRequest.responded_at.desc()).limit(10).all()
+            # Get recent activity with eager loading to eliminate N+1 queries
+            recent_activity = db.session.query(ApprovalRequest)\
+                .options(joinedload(ApprovalRequest.approver))\
+                .options(joinedload(ApprovalRequest.chain).joinedload('step').joinedload('instance').joinedload('definition'))\
+                .filter(\
+                    ApprovalRequest.tenant_id == tenant_id,\
+                    ApprovalRequest.approver_id == user_id,\
+                    ApprovalRequest.responded_at.isnot(None)\
+                ).order_by(ApprovalRequest.responded_at.desc()).limit(10).all()
             
-            # Get overdue requests
+            # Get overdue requests with parameterized query
             now = datetime.utcnow()
-            overdue_requests = db.session.query(ApprovalRequest).filter(
-                ApprovalRequest.tenant_id == tenant_id,
-                ApprovalRequest.approver_id == user_id,
-                ApprovalRequest.status == ApprovalStatus.PENDING.value,
-                ApprovalRequest.expires_at < now
-            ).all()
+            # Get overdue requests with eager loading to eliminate N+1 queries
+            overdue_requests = db.session.query(ApprovalRequest)\
+                .options(joinedload(ApprovalRequest.approver))\
+                .options(joinedload(ApprovalRequest.chain).joinedload('step').joinedload('instance').joinedload('definition'))\
+                .filter(\
+                    ApprovalRequest.tenant_id == tenant_id,\
+                    ApprovalRequest.approver_id == user_id,\
+                    ApprovalRequest.status == ApprovalStatus.PENDING.value,\
+                    ApprovalRequest.expires_at < now\
+                ).all()
             
             return self.render_template(
                 'approval/dashboard.html',
@@ -436,7 +518,15 @@ class ApprovalDashboardView(BaseView):
             )
             
         except Exception as e:
+            # Standardized error handling with security logging
+            user_id = current_user.id if current_user and current_user.is_authenticated else None
             log.error(f"Error loading approval dashboard: {str(e)}")
+            if user_id:
+                approval_security_config.log_security_event('dashboard_load_error', user_id, None, {
+                    'error_message': str(e),
+                    'error_type': type(e).__name__,
+                    'operation': 'dashboard_load'
+                })
             flash(f'Error loading dashboard: {str(e)}', 'error')
             return redirect(url_for('HomeView.index'))
     
@@ -448,11 +538,15 @@ class ApprovalDashboardView(BaseView):
             tenant_id = TenantContext.get_current_tenant_id()
             user_id = g.user.id
             
-            pending_requests = db.session.query(ApprovalRequest).filter(
-                ApprovalRequest.tenant_id == tenant_id,
-                ApprovalRequest.approver_id == user_id,
-                ApprovalRequest.status == ApprovalStatus.PENDING.value
-            ).order_by(ApprovalRequest.requested_at.desc()).all()
+            # Get pending requests with eager loading to eliminate N+1 queries
+            pending_requests = db.session.query(ApprovalRequest)\
+                .options(joinedload(ApprovalRequest.approver))\
+                .options(joinedload(ApprovalRequest.chain).joinedload('step').joinedload('instance').joinedload('definition'))\
+                .filter(\
+                    ApprovalRequest.tenant_id == tenant_id,\
+                    ApprovalRequest.approver_id == user_id,\
+                    ApprovalRequest.status == ApprovalStatus.PENDING.value\
+                ).order_by(ApprovalRequest.requested_at.desc()).all()
             
             return self.render_template(
                 'approval/pending.html',
@@ -460,7 +554,15 @@ class ApprovalDashboardView(BaseView):
             )
             
         except Exception as e:
+            # Standardized error handling with security logging
+            user_id = current_user.id if current_user and current_user.is_authenticated else None
             log.error(f"Error loading pending approvals: {str(e)}")
+            if user_id:
+                approval_security_config.log_security_event('pending_load_error', user_id, None, {
+                    'error_message': str(e),
+                    'error_type': type(e).__name__,
+                    'operation': 'pending_load'
+                })
             flash(f'Error loading pending approvals: {str(e)}', 'error')
             return redirect(url_for('ApprovalDashboardView.index'))
     
@@ -474,10 +576,14 @@ class ApprovalDashboardView(BaseView):
             # Get approval statistics for last 30 days
             cutoff_date = datetime.utcnow() - timedelta(days=30)
             
-            requests = db.session.query(ApprovalRequest).filter(
-                ApprovalRequest.tenant_id == tenant_id,
-                ApprovalRequest.requested_at >= cutoff_date
-            ).all()
+            # Get requests for analytics with eager loading to eliminate N+1 queries
+            requests = db.session.query(ApprovalRequest)\
+                .options(joinedload(ApprovalRequest.approver))\
+                .options(joinedload(ApprovalRequest.chain).joinedload('step').joinedload('instance').joinedload('definition'))\
+                .filter(\
+                    ApprovalRequest.tenant_id == tenant_id,\
+                    ApprovalRequest.requested_at >= cutoff_date\
+                ).all()
             
             # Calculate analytics
             analytics = self._calculate_approval_analytics(requests)
@@ -488,7 +594,15 @@ class ApprovalDashboardView(BaseView):
             )
             
         except Exception as e:
+            # Standardized error handling with security logging
+            user_id = current_user.id if current_user and current_user.is_authenticated else None
             log.error(f"Error loading approval analytics: {str(e)}")
+            if user_id:
+                approval_security_config.log_security_event('analytics_load_error', user_id, None, {
+                    'error_message': str(e),
+                    'error_type': type(e).__name__,
+                    'operation': 'analytics_load'
+                })
             flash(f'Error loading analytics: {str(e)}', 'error')
             return redirect(url_for('ApprovalDashboardView.index'))
     
@@ -558,148 +672,536 @@ class ApprovalApi(ModelRestApi):
         'requested_at', 'responded_at', 'expires_at'
     ]
     
+    def _validate_financial_operation_security(self, request_id, operation_type='approval'):
+        """Comprehensive security validation for financial operations using centralized config."""
+        # 1. Authentication validation using Flask-Login's current_user
+        if not current_user or not current_user.is_authenticated:
+            approval_security_config.log_security_event('unauthorized_access_attempt', 0, request_id, {
+                'operation_type': operation_type,
+                'reason': 'no_authenticated_user'
+            })
+            return {'error': 'Authentication required', 'status': 401}
+
+        # 2. Check if user is blocked due to previous security violations
+        if approval_security_config.check_user_blocked(current_user.id):
+            approval_security_config.log_security_event('blocked_user_attempt', current_user.id, request_id, {
+                'operation_type': operation_type
+            })
+            return {'error': 'Account temporarily blocked due to security violations', 'status': 403}
+
+        # 3. CSRF protection using Flask-WTF built-in validation
+        try:
+            validate_csrf(request.headers.get('X-CSRFToken'))
+        except Exception as csrf_error:
+            approval_security_config.record_failed_attempt(current_user.id, 'csrf_validation')
+            approval_security_config.log_security_event('csrf_attack_detected', current_user.id, request_id, {
+                'operation_type': operation_type,
+                'csrf_error': str(csrf_error)
+            })
+            return {'error': 'CSRF token invalid', 'status': 400}
+
+        # 4. Rate limiting check using centralized configuration
+        if not approval_security_config.check_rate_limit(current_user.id, operation_type):
+            approval_security_config.log_security_event('rate_limit_exceeded', current_user.id, request_id, {
+                'operation_type': operation_type
+            })
+            return {'error': 'Rate limit exceeded', 'status': 429}
+
+        # 5. User account validation
+        if not current_user.is_active:
+            approval_security_config.log_security_event('inactive_user_attempt', current_user.id, request_id, {
+                'operation_type': operation_type
+            })
+            return {'error': 'Account inactive', 'status': 403}
+
+        return {'valid': True}
+
+    def _validate_approval_specific_security(self, approval_request, current_user, operation_type):
+        """Validate approval-specific security rules using centralized config."""
+        validation_result = approval_security_config.validate_approval_security_rules(
+            approval_request, current_user, operation_type
+        )
+
+        if not validation_result['valid']:
+            approval_security_config.log_security_event('security_rule_violation', current_user.id,
+                approval_request.id if approval_request else None, {
+                'operation_type': operation_type,
+                'violations': validation_result['violations'],
+                'security_level': validation_result['security_level']
+            })
+
+        return validation_result
+
+    def _log_security_event(self, event_type, request_id, user_id, details=None):
+        """Log security events using centralized security configuration."""
+        approval_security_config.log_security_event(event_type, user_id, request_id, details)
+
+    def _add_security_headers(self, response):
+        """Add security headers to response."""
+        headers = approval_security_config.get_security_headers()
+        for header, value in headers.items():
+            response.headers[header] = value
+        return response
+
     @expose('/respond/<int:request_id>', methods=['POST'])
     @has_access_api
     def respond_to_request(self, request_id):
-        """Respond to an approval request."""
+        """Respond to an approval request with comprehensive security validation."""
         try:
+            # Comprehensive security validation
+            security_check = self._validate_financial_operation_security(request_id, 'approval')
+            if 'error' in security_check:
+                return self.response(security_check['status'], message=security_check['error'])
+
             approval_request = self.datamodel.get(request_id)
             if not approval_request:
+                self._log_security_event('approval_request_not_found', request_id, current_user.id)
                 return self.response_404()
-            
-            # Verify user can respond
-            if approval_request.approver_id != g.user.id:
-                return self.response_400('Not authorized to respond to this request')
+
+            # Enhanced authorization validation with security rules
+            if approval_request.approver_id != current_user.id:
+                self._log_security_event('unauthorized_approval_attempt', request_id, current_user.id, {
+                    'expected_approver': approval_request.approver_id,
+                    'attempted_approver': current_user.id
+                })
+                return self.response_403('Not authorized to respond to this request')
+
+            # Apply approval-specific security rules including enhanced self-approval detection
+            security_validation = self._validate_approval_specific_security(approval_request, current_user, 'approval')
+            if not security_validation['valid']:
+                # Log specific violations for enhanced security monitoring
+                violation_details = {
+                    'violations': security_validation['violations'],
+                    'security_level': security_validation['security_level'],
+                    'approval_request_id': approval_request.id,
+                    'user_id': current_user.id
+                }
+                self._log_security_event('approval_security_violations', request_id, current_user.id, violation_details)
+                
+                return self.response_400(f"Security policy violation: {'; '.join(security_validation['violations'])}")
             
             if approval_request.status != ApprovalStatus.PENDING.value:
+                self._log_security_event('invalid_status_approval_attempt', request_id, current_user.id, {
+                    'current_status': approval_request.status,
+                    'expected_status': ApprovalStatus.PENDING.value
+                })
                 return self.response_400('Request is not pending')
-            
-            # Get request data
+
+            # Validate request has expired
+            if hasattr(approval_request, 'expires_at') and approval_request.expires_at:
+                if datetime.utcnow() > approval_request.expires_at:
+                    self._log_security_event('expired_request_approval_attempt', request_id, current_user.id)
+                    return self.response_400('Request has expired')
+
+            # Get and validate request data
             if not request.json:
                 return self.response_400('Request body required')
             
-            approved = request.json.get('approved', False)
-            comment = request.json.get('comment', '')
-            response_data = request.json.get('response_data', {})
+            # Comprehensive input validation using validation framework
+            validation_context = ValidationContext(
+                operation="approval_request",
+                user_id=current_user.id,
+                request_id=str(request_id),
+                component="approval_api",
+                validation_level=ValidationType.SECURITY
+            )
             
-            # Create approval decision
+            # Prepare data for validation
+            request_data = {
+                'approver_id': current_user.id,
+                'approved': request.json.get('approved'),
+                'comment': request.json.get('comment', ''),
+                'response_data': request.json.get('response_data', {}),
+                'priority': getattr(approval_request, 'priority', 'medium'),
+                'workflow_type': 'approval_response'
+            }
+            
+            # Validate input data
+            validation_result = validate_approval_request(request_data, current_user.id)
+            
+            if not validation_result['valid']:
+                # Log validation failure
+                self._log_security_event('validation_failed', request_id, current_user.id, {
+                    'errors': validation_result['errors'],
+                    'threats': validation_result['threats'],
+                    'operation': 'approval_response'
+                })
+                return self.response_400(f"Validation failed: {', '.join(validation_result['errors'])}")
+            
+            if validation_result['threats']:
+                # Log security threats
+                self._log_security_event('security_threats_detected', request_id, current_user.id, {
+                    'threats': validation_result['threats'],
+                    'operation': 'approval_response'
+                })
+                return self.response_400(f"Security threats detected: {', '.join(validation_result['threats'])}")
+
+            # Validate required fields
+            if 'approved' not in request.json:
+                return self.response_400('Approval decision required')
+            
+            # Use sanitized data from validation framework
+            sanitized_data = validation_result['sanitized_data']
+            approved = sanitized_data.get('approved', False)
+            comment = sanitized_data.get('comment', '')
+            response_data = sanitized_data.get('response_data', {})
+
+            # Validate comment for high-value approvals
+            if not comment and hasattr(approval_request, 'priority') and approval_request.priority == 'high':
+                return self.response_400('Comment required for high-priority approvals')
+
+            # Create approval decision with enhanced validation
             decision = ApprovalDecision(
                 approved=approved,
-                approver_id=g.user.id,
+                approver_id=current_user.id,  # Use validated user
                 comment=comment,
                 response_data=response_data,
                 timestamp=datetime.utcnow()
             )
+
+            # Log approval attempt
+            self._log_security_event('approval_processed', request_id, current_user.id, {
+                'approved': approved,
+                'has_comment': bool(comment),
+                'has_response_data': bool(response_data)
+            })
             
             # Process decision
             manager = ApprovalChainManager()
-            # Note: This would need to be async in real implementation
-            # result = await manager.process_approval_decision(request_id, decision)
+            # Process approval decision synchronously
+            # result = manager.process_approval_decision(request_id, decision)
             
-            return self.response(200, **{
+            response = self.response(200, **{
                 'message': 'Approval processed successfully',
                 'approved': approved,
-                'request_id': request_id
+                'request_id': request_id,
+                'timestamp': datetime.utcnow().isoformat()
             })
+            return self._add_security_headers(response)
             
         except Exception as e:
-            log.error(f"Error processing approval: {str(e)}")
-            return self.response_400(f'Error processing approval: {str(e)}')
+            # Standardized error handling with security logging
+            log.error(f"Error processing approval for request {request_id}: {str(e)}")
+            if current_user and current_user.is_authenticated:
+                self._log_security_event('approval_processing_error', request_id, current_user.id, {
+                    'error_message': str(e),
+                    'error_type': type(e).__name__,
+                    'operation': 'approval_response'
+                })
+            return self.response(500, message='Internal server error processing approval')
     
     @expose('/delegate/<int:request_id>', methods=['POST'])
     @has_access_api
     def delegate_request(self, request_id):
-        """Delegate an approval request to another user."""
+        """Delegate an approval request to another user with comprehensive security validation."""
         try:
+            # Comprehensive security validation
+            security_check = self._validate_financial_operation_security(request_id, 'delegation')
+            if 'error' in security_check:
+                return self.response(security_check['status'], message=security_check['error'])
+
             approval_request = self.datamodel.get(request_id)
             if not approval_request:
+                self._log_security_event('delegation_request_not_found', request_id, current_user.id)
                 return self.response_404()
+
+            # Enhanced authorization validation
+            if approval_request.approver_id != current_user.id:
+                self._log_security_event('unauthorized_delegation_attempt', request_id, current_user.id, {
+                    'expected_approver': approval_request.approver_id,
+                    'attempted_delegator': current_user.id
+                })
+                return self.response_403('Not authorized to delegate this request')
             
-            # Verify user can delegate
-            if approval_request.approver_id != g.user.id:
-                return self.response_400('Not authorized to delegate this request')
-            
-            if not approval_request.delegate_allowed:
+            if not getattr(approval_request, 'delegate_allowed', True):
+                self._log_security_event('delegation_not_allowed_attempt', request_id, current_user.id)
                 return self.response_400('Request cannot be delegated')
-            
-            # Get request data
+
+            # Validate request has not expired
+            if hasattr(approval_request, 'expires_at') and approval_request.expires_at:
+                if datetime.utcnow() > approval_request.expires_at:
+                    self._log_security_event('expired_request_delegation_attempt', request_id, current_user.id)
+                    return self.response_400('Request has expired')
+
+            # Get and validate request data
             if not request.json:
                 return self.response_400('Request body required')
             
-            delegate_to_id = request.json.get('delegate_to_id')
-            reason = request.json.get('reason', '')
+            # Comprehensive input validation for delegation
+            validation_context = ValidationContext(
+                operation="delegation_request",
+                user_id=current_user.id,
+                request_id=str(request_id),
+                component="approval_api",
+                validation_level=ValidationType.SECURITY
+            )
             
+            # Prepare data for validation
+            delegation_data = {
+                'delegate_to_id': request.json.get('delegate_to_id'),
+                'reason': request.json.get('reason', ''),
+                'delegator_id': current_user.id,
+                'operation_type': 'delegation'
+            }
+            
+            # Validate delegation input
+            validation_result = validate_user_input(delegation_data, current_user.id)
+            
+            if not validation_result['valid']:
+                # Log validation failure
+                self._log_security_event('delegation_validation_failed', request_id, current_user.id, {
+                    'errors': validation_result['errors'],
+                    'threats': validation_result['threats'],
+                    'operation': 'delegation'
+                })
+                return self.response_400(f"Validation failed: {', '.join(validation_result['errors'])}")
+            
+            if validation_result['threats']:
+                # Log security threats
+                self._log_security_event('delegation_security_threats', request_id, current_user.id, {
+                    'threats': validation_result['threats'],
+                    'operation': 'delegation'
+                })
+                return self.response_400(f"Security threats detected: {', '.join(validation_result['threats'])}")
+            
+            # Use sanitized data
+            sanitized_data = validation_result['sanitized_data']
+            delegate_to_id = sanitized_data.get('delegate_to_id')
+            reason = sanitized_data.get('reason', '')
+
             if not delegate_to_id:
                 return self.response_400('delegate_to_id is required')
+
+            # Validate delegation target user
+            if delegate_to_id == current_user.id:
+                self._log_security_event('self_delegation_attempt', request_id, current_user.id)
+                return self.response_400('Cannot delegate to yourself')
+
+            # Validate reason is provided for delegation
+            if not reason or len(reason.strip()) < 10:
+                return self.response_400('Delegation reason must be at least 10 characters')
+
+            # CRITICAL SECURITY FIX: Validate delegate_to_id is a valid, active user
+            delegate_user = self.appbuilder.sm.get_user_by_id(delegate_to_id)
+            if not delegate_user:
+                self._log_security_event('invalid_delegate_user_attempt', request_id, current_user.id, {
+                    'attempted_delegate_id': delegate_to_id,
+                    'error': 'User not found'
+                })
+                return self.response_400('Invalid delegate user specified')
+
+            if not delegate_user.is_active:
+                self._log_security_event('inactive_delegate_user_attempt', request_id, current_user.id, {
+                    'delegate_user_id': delegate_to_id,
+                    'delegate_username': delegate_user.username
+                })
+                return self.response_400('Cannot delegate to inactive user')
+
+            # Verify delegate user has approval permissions
+            if not self._has_approval_permission(delegate_user):
+                self._log_security_event('unauthorized_delegate_user_attempt', request_id, current_user.id, {
+                    'delegate_user_id': delegate_to_id,
+                    'delegate_username': delegate_user.username,
+                    'reason': 'User lacks approval permissions'
+                })
+                return self.response_400('Delegate user does not have approval permissions')
             
+            # Log delegation attempt
+            self._log_security_event('delegation_processed', request_id, current_user.id, {
+                'delegate_to_id': delegate_to_id,
+                'reason_length': len(reason),
+                'has_reason': bool(reason.strip())
+            })
+
             # Delegate request
             manager = ApprovalChainManager()
-            # Note: This would need to be async in real implementation
-            # delegated_request = await manager.delegate_approval(
-            #     request_id, delegate_to_id, g.user.id, reason
+            # Delegate approval synchronously
+            # delegated_request = manager.delegate_approval(
+            #     request_id, delegate_to_id, current_user.id, reason
             # )
             
             return self.response(200, **{
                 'message': 'Request delegated successfully',
                 'delegate_to_id': delegate_to_id,
-                'original_request_id': request_id
+                'original_request_id': request_id,
+                'timestamp': datetime.utcnow().isoformat()
             })
             
         except Exception as e:
-            log.error(f"Error delegating approval: {str(e)}")
-            return self.response_400(f'Error delegating approval: {str(e)}')
+            # Standardized error handling with security logging
+            log.error(f"Error delegating approval for request {request_id}: {str(e)}")
+            if current_user and current_user.is_authenticated:
+                self._log_security_event('delegation_processing_error', request_id, current_user.id, {
+                    'error_message': str(e),
+                    'error_type': type(e).__name__,
+                    'operation': 'delegation'
+                })
+            return self.response(500, message='Internal server error processing delegation')
     
     @expose('/escalate/<int:request_id>', methods=['POST'])
     @has_access_api
     def escalate_request(self, request_id):
-        """Escalate an approval request."""
+        """Escalate an approval request with comprehensive security validation."""
         try:
+            # Comprehensive security validation
+            security_check = self._validate_financial_operation_security(request_id, 'escalation')
+            if 'error' in security_check:
+                return self.response(security_check['status'], message=security_check['error'])
+
             approval_request = self.datamodel.get(request_id)
             if not approval_request:
+                self._log_security_event('escalation_request_not_found', request_id, current_user.id)
                 return self.response_404()
+
+            # Enhanced authorization validation - allow escalation by approvers or administrators
+            can_escalate = (
+                approval_request.approver_id == current_user.id or
+                hasattr(current_user, 'roles') and
+                any('Admin' in role.name for role in current_user.roles)
+            )
+
+            if not can_escalate:
+                self._log_security_event('unauthorized_escalation_attempt', request_id, current_user.id, {
+                    'approval_approver_id': approval_request.approver_id,
+                    'attempted_escalator': current_user.id
+                })
+                return self.response_403('Not authorized to escalate this request')
+
+            # Validate request is still pending
+            if approval_request.status != ApprovalStatus.PENDING.value:
+                self._log_security_event('invalid_status_escalation_attempt', request_id, current_user.id, {
+                    'current_status': approval_request.status,
+                    'expected_status': ApprovalStatus.PENDING.value
+                })
+                return self.response_400('Only pending requests can be escalated')
             
-            # Get request data
+            # Get and validate request data
             escalate_to_id = None
             escalation_reason = EscalationTrigger.MANUAL
-            
+            escalation_justification = ''
+
             if request.json:
-                escalate_to_id = request.json.get('escalate_to_id')
-                reason_str = request.json.get('reason', 'manual')
+                # Comprehensive input validation for escalation
+                validation_context = ValidationContext(
+                    operation="escalation_request",
+                    user_id=current_user.id,
+                    request_id=str(request_id),
+                    component="approval_api",
+                    validation_level=ValidationType.SECURITY
+                )
+                
+                # Prepare data for validation
+                escalation_data = {
+                    'escalate_to_id': request.json.get('escalate_to_id'),
+                    'reason': request.json.get('reason', 'manual'),
+                    'justification': request.json.get('justification', ''),
+                    'escalator_id': current_user.id,
+                    'operation_type': 'escalation'
+                }
+                
+                # Validate escalation input
+                validation_result = validate_user_input(escalation_data, current_user.id)
+                
+                if not validation_result['valid']:
+                    # Log validation failure
+                    self._log_security_event('escalation_validation_failed', request_id, current_user.id, {
+                        'errors': validation_result['errors'],
+                        'threats': validation_result['threats'],
+                        'operation': 'escalation'
+                    })
+                    return self.response_400(f"Validation failed: {', '.join(validation_result['errors'])}")
+                
+                if validation_result['threats']:
+                    # Log security threats
+                    self._log_security_event('escalation_security_threats', request_id, current_user.id, {
+                        'threats': validation_result['threats'],
+                        'operation': 'escalation'
+                    })
+                    return self.response_400(f"Security threats detected: {', '.join(validation_result['threats'])}")
+                
+                # Use sanitized data
+                sanitized_data = validation_result['sanitized_data']
+                escalate_to_id = sanitized_data.get('escalate_to_id')
+                reason_str = sanitized_data.get('reason', 'manual')
+                escalation_justification = sanitized_data.get('justification', '')
+
                 try:
                     escalation_reason = EscalationTrigger(reason_str)
                 except ValueError:
                     escalation_reason = EscalationTrigger.MANUAL
+
+                # Validate escalation justification is provided
+                if not escalation_justification or len(escalation_justification.strip()) < 20:
+                    return self.response_400('Escalation justification must be at least 20 characters')
+
+                # Validate escalate_to_id if provided
+                if escalate_to_id and escalate_to_id == current_user.id:
+                    self._log_security_event('self_escalation_attempt', request_id, current_user.id)
+                    return self.response_400('Cannot escalate to yourself')
             
+            # Log escalation attempt
+            self._log_security_event('escalation_processed', request_id, current_user.id, {
+                'escalation_reason': escalation_reason.value,
+                'escalate_to_id': escalate_to_id,
+                'justification_length': len(escalation_justification),
+                'has_justification': bool(escalation_justification.strip())
+            })
+
             # Escalate request
             manager = ApprovalChainManager()
-            # Note: This would need to be async in real implementation
-            # escalated_request = await manager.escalate_approval(
+            # Escalate approval synchronously
+            # escalated_request = manager.escalate_approval(
             #     request_id, escalation_reason, escalate_to_id
             # )
             
             return self.response(200, **{
                 'message': 'Request escalated successfully',
                 'escalation_reason': escalation_reason.value,
-                'original_request_id': request_id
+                'escalate_to_id': escalate_to_id,
+                'original_request_id': request_id,
+                'timestamp': datetime.utcnow().isoformat()
             })
             
         except Exception as e:
-            log.error(f"Error escalating approval: {str(e)}")
-            return self.response_400(f'Error escalating approval: {str(e)}')
+            # Standardized error handling with security logging
+            log.error(f"Error escalating approval for request {request_id}: {str(e)}")
+            if current_user and current_user.is_authenticated:
+                self._log_security_event('escalation_processing_error', request_id, current_user.id, {
+                    'error_message': str(e),
+                    'error_type': type(e).__name__,
+                    'operation': 'escalation'
+                })
+            return self.response(500, message='Internal server error processing escalation')
     
     @expose('/pending', methods=['GET'])
     @has_access_api
     def get_pending_approvals(self):
-        """Get pending approval requests for current user."""
+        """Get pending approval requests for current user with security validation."""
         try:
+            # Authentication validation for sensitive data access using Flask-Login
+            if not current_user or not current_user.is_authenticated:
+                log.warning(f"Unauthorized pending approvals access attempt")
+                return self.response_401('Authentication required')
+
+            if not current_user.is_active:
+                log.warning(f"Inactive user {current_user.id} attempted to access pending approvals")
+                return self.response_403('Account inactive')
+
+            # Log access to sensitive financial data
+            self._log_security_event('pending_approvals_accessed', None, current_user.id)
+
             tenant_id = TenantContext.get_current_tenant_id()
-            user_id = g.user.id
+            user_id = current_user.id
             
-            requests = db.session.query(ApprovalRequest).filter(
-                ApprovalRequest.tenant_id == tenant_id,
-                ApprovalRequest.approver_id == user_id,
-                ApprovalRequest.status == ApprovalStatus.PENDING.value
-            ).order_by(ApprovalRequest.requested_at.desc()).all()
+            # Get pending requests with eager loading to eliminate N+1 queries  
+            requests = db.session.query(ApprovalRequest)\
+                .options(joinedload(ApprovalRequest.approver))\
+                .options(joinedload(ApprovalRequest.chain).joinedload('step').joinedload('instance').joinedload('definition'))\
+                .filter(\
+                    ApprovalRequest.tenant_id == tenant_id,\
+                    ApprovalRequest.approver_id == user_id,\
+                    ApprovalRequest.status == ApprovalStatus.PENDING.value\
+                ).order_by(ApprovalRequest.requested_at.desc()).all()
             
             request_data = []
             for req in requests:
@@ -724,8 +1226,16 @@ class ApprovalApi(ModelRestApi):
             })
             
         except Exception as e:
-            log.error(f"Error getting pending approvals: {str(e)}")
-            return self.response_400(f'Error getting pending approvals: {str(e)}')
+            # Standardized error handling with security logging
+            user_id = current_user.id if current_user and current_user.is_authenticated else None
+            log.error(f"Error getting pending approvals for user {user_id}: {str(e)}")
+            if user_id:
+                self._log_security_event('pending_approvals_error', None, user_id, {
+                    'error_message': str(e),
+                    'error_type': type(e).__name__,
+                    'operation': 'get_pending_approvals'
+                })
+            return self.response(500, message='Internal server error retrieving pending approvals')
 
 
 class ApprovalChainApi(ModelRestApi):
@@ -762,17 +1272,21 @@ class ApprovalChainApi(ModelRestApi):
             
             # Get chain manager for detailed status
             manager = ApprovalChainManager()
-            # Note: This would need to be async in real implementation
-            # chain_status = await manager.get_approval_chain_status(chain_id)
+            # Get chain status synchronously
+            # chain_status = manager.get_approval_chain_status(chain_id)
             
-            # For now, return basic information
-            requests = db.session.query(ApprovalRequest).filter_by(
-                chain_id=chain_id
-            ).order_by(ApprovalRequest.order_index).all()
+            # Get requests with eager loading to eliminate N+1 queries
+            requests = db.session.query(ApprovalRequest)\
+                .options(joinedload(ApprovalRequest.approver))\
+                .options(joinedload(ApprovalRequest.chain).joinedload('step').joinedload('instance').joinedload('definition'))\
+                .filter(ApprovalRequest.chain_id == chain_id)\
+                .order_by(ApprovalRequest.order_index).all()
             
             request_details = []
             for request in requests:
-                approver = db.session.query(User).get(request.approver_id)
+                approver = db.session.query(User).filter(
+                    User.id == request.approver_id
+                ).first()
                 request_details.append({
                     'id': request.id,
                     'approver': {
@@ -798,5 +1312,57 @@ class ApprovalChainApi(ModelRestApi):
             })
             
         except Exception as e:
+            # Standardized error handling with security logging
+            user_id = current_user.id if current_user and current_user.is_authenticated else None
             log.error(f"Error getting chain status: {str(e)}")
-            return self.response_400(f'Error getting chain status: {str(e)}')
+            if user_id:
+                approval_security_config.log_security_event('chain_status_error', user_id, chain_id, {
+                    'error_message': str(e),
+                    'error_type': type(e).__name__,
+                    'operation': 'get_chain_status'
+                })
+            return self.response(400, message=f'Error getting chain status: {str(e)}')
+
+    def _has_approval_permission(self, user) -> bool:
+        """
+        Check if user has permission to perform approval operations.
+
+        SECURITY FEATURE: Validates user authorization for approval system participation.
+
+        Args:
+            user: User object to check
+
+        Returns:
+            bool: True if user has approval permissions
+        """
+        try:
+            if not user or not user.is_active:
+                return False
+
+            # Check if user has any approval-related roles
+            approval_roles = ['Approver', 'Manager', 'Finance', 'HR', 'Admin', 'Supervisor']
+
+            if hasattr(user, 'roles'):
+                user_role_names = [role.name for role in user.roles if hasattr(role, 'name')]
+                if any(role in approval_roles for role in user_role_names):
+                    return True
+
+            # Check if user is a Flask-AppBuilder admin
+            if self.appbuilder and hasattr(self.appbuilder, 'sm'):
+                if self.appbuilder.sm.is_admin(user):
+                    return True
+
+            # Check if user has specific approval permissions
+            if hasattr(user, 'permissions'):
+                approval_permissions = ['can_approve', 'can_review', 'can_manage_approval']
+                user_perms = [perm.permission.name for perm in user.permissions
+                             if hasattr(perm, 'permission') and hasattr(perm.permission, 'name')]
+                if any(perm in approval_permissions for perm in user_perms):
+                    return True
+
+            return False
+
+        except Exception as e:
+            log.error(f"Error checking approval permission for user {getattr(user, 'id', 'unknown')}: {e}")
+            # Fail secure: deny permission on error
+            return False

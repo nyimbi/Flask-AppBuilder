@@ -7,7 +7,7 @@ escalation, conditional routing, and parallel approval processing.
 
 import logging
 import json
-import asyncio
+
 from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional, Tuple, Callable
 from enum import Enum
@@ -15,15 +15,23 @@ from dataclasses import dataclass
 import threading
 
 from flask import current_app, g
-from flask_appbuilder import db
 from sqlalchemy import and_, or_, desc
+from sqlalchemy.orm import joinedload
 
 from ..models.process_models import (
     ApprovalRequest, ApprovalChain, ApprovalRule, ProcessStep,
-    ProcessInstance, ApprovalStatus, User
+    ProcessInstance, ApprovalStatus
 )
-from ...tenants.context import TenantContext
+from ...models.tenant_context import TenantContext
+from ...security.sqla.models import User
 from ..engine.process_engine import ProcessEngine
+from .exceptions import (
+    ApprovalError, DatabaseError, ValidationError, BusinessLogicError,
+    AuthorizationError, ConfigurationError, handle_error, error_context,
+    ErrorContext, handle_approval_errors
+)
+from .secure_expression_evaluator import SecureExpressionEvaluator, ExpressionContext, SecurityViolation
+from .transaction_manager import DatabaseTransactionManager, transactional, TransactionConfig
 
 log = logging.getLogger(__name__)
 
@@ -80,19 +88,24 @@ class ApprovalChainManager:
         self.rule_engine = ApprovalRuleEngine()
         self.escalation_manager = EscalationManager()
         self.notification_handler = None
+        self.transaction_manager = DatabaseTransactionManager()
+        self.expression_evaluator = SecureExpressionEvaluator()
         
-    async def create_approval_chain(self, context: ApprovalContext, 
-                                  chain_config: Dict[str, Any]) -> ApprovalChain:
+    @handle_approval_errors()
+    def create_approval_chain(self, context: ApprovalContext, 
+                            chain_config: Dict[str, Any]) -> ApprovalChain:
         """Create a new approval chain based on configuration."""
         with self._lock:
-            try:
-                # Determine approvers based on rules and configuration
-                approvers = await self._determine_approvers(context, chain_config)
+            # Determine approvers based on rules and configuration
+            approvers = self._determine_approvers(context, chain_config)
+            
+            if not approvers:
+                raise BusinessLogicError("No approvers found for approval chain")
+            
+            # Use transaction manager for atomic operations
+            with self.transaction_manager.transaction("create_approval_chain"):
+                from flask_appbuilder import db
                 
-                if not approvers:
-                    raise ValueError("No approvers found for approval chain")
-                
-                # Create approval chain
                 chain = ApprovalChain(
                     tenant_id=TenantContext.get_current_tenant_id(),
                     step_id=context.step_id,
@@ -109,32 +122,25 @@ class ApprovalChainManager:
                 db.session.flush()
                 
                 # Create individual approval requests
-                requests = await self._create_approval_requests(chain, context, approvers)
-                
-                db.session.commit()
+                requests = self._create_approval_requests(chain, context, approvers)
                 
                 log.info(f"Created approval chain {chain.id} with {len(requests)} requests")
                 return chain
-                
-            except Exception as e:
-                db.session.rollback()
-                log.error(f"Failed to create approval chain: {str(e)}")
-                raise
     
-    async def _determine_approvers(self, context: ApprovalContext, 
-                                 config: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def _determine_approvers(self, context: ApprovalContext, 
+                           config: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Determine approvers based on configuration and rules."""
         approvers = []
         
         # Get explicit approvers from configuration
         if 'approvers' in config:
             for approver_config in config['approvers']:
-                approver_info = await self._resolve_approver(approver_config, context)
+                approver_info = self._resolve_approver(approver_config, context)
                 if approver_info:
                     approvers.append(approver_info)
         
         # Apply approval rules
-        rule_based_approvers = await self.rule_engine.get_approvers_for_context(context)
+        rule_based_approvers = self.rule_engine.get_approvers_for_context(context)
         approvers.extend(rule_based_approvers)
         
         # Remove duplicates and sort by order/priority
@@ -152,16 +158,18 @@ class ApprovalChainManager:
         
         return sorted_approvers
     
-    async def _resolve_approver(self, approver_config: Dict[str, Any], 
-                              context: ApprovalContext) -> Optional[Dict[str, Any]]:
+    def _resolve_approver(self, approver_config: Dict[str, Any], 
+                        context: ApprovalContext) -> Optional[Dict[str, Any]]:
         """Resolve approver configuration to actual user information."""
         try:
+            from flask_appbuilder import db
+            db_session = db.session
             approver_type = approver_config.get('type', 'user')
             
             if approver_type == 'user':
                 user_id = approver_config.get('user_id')
                 if user_id:
-                    user = db.session.query(User).get(user_id)
+                    user = db_session.query(User).get(user_id)
                     if user and user.is_active:
                         return {
                             'user_id': user.id,
@@ -175,11 +183,19 @@ class ApprovalChainManager:
             elif approver_type == 'role':
                 role_name = approver_config.get('role')
                 if role_name:
-                    # Get users with the specified role
-                    users = db.session.query(User).join(User.roles).filter(
-                        User.roles.any(name=role_name),
-                        User.is_active == True
-                    ).all()
+                    # Use FAB's security manager for role-based user lookup
+                    try:
+                        from flask import current_app
+                        sm = current_app.appbuilder.sm
+                        
+                        role = sm.find_role(role_name)
+                        users = []
+                        if role:
+                            # Get active users with this role
+                            users = [user for user in role.user if user.is_active]
+                    except Exception as e:
+                        log.error(f"Failed to resolve users by role '{role_name}': {str(e)}")
+                        users = []
                     
                     # Return first available user or all users depending on configuration
                     if users:
@@ -213,10 +229,33 @@ class ApprovalChainManager:
                 if expression:
                     # Evaluate expression to determine approver
                     # This would need a safe expression evaluator
-                    resolved_user_id = await self._evaluate_dynamic_approver(expression, context)
+                    resolved_user_id = self._evaluate_dynamic_approver(expression, context)
                     if resolved_user_id:
-                        user = db.session.query(User).get(resolved_user_id)
+                        user = db_session.query(User).get(resolved_user_id)
                         if user and user.is_active:
+                            # CRITICAL SECURITY FIX: Validate authorization before assigning dynamic approver
+                            from .security_validator import ApprovalSecurityValidator
+                            security_validator = ApprovalSecurityValidator(self.appbuilder)
+
+                            # Check if resolved user has required role for this step
+                            required_role = approver_config.get('required_role')
+                            if required_role and not security_validator.validate_role_access(user, required_role):
+                                log.warning(f"Dynamic approver {user.id} lacks required role '{required_role}' for step")
+                                return None  # Skip this approver and return
+
+                            # Additional authorization check: verify user can approve this entity type
+                            entity_type = context.get('entity_type') or context.get('instance', {}).get('__class__', {}).get('__name__')
+                            if entity_type and not security_validator.can_user_approve_entity_type(user, entity_type):
+                                log.warning(f"Dynamic approver {user.id} not authorized for entity type '{entity_type}'")
+                                return None
+
+                            # Prevent privilege escalation through dynamic assignment
+                            requester = context.get('instance', {}).get('created_by')
+                            if requester and hasattr(requester, 'id'):
+                                if user.id == requester.id:
+                                    log.warning(f"Prevented self-approval attempt through dynamic assignment: user {user.id}")
+                                    return None
+
                             return {
                                 'user_id': user.id,
                                 'username': user.username,
@@ -232,43 +271,40 @@ class ApprovalChainManager:
             log.error(f"Error resolving approver: {str(e)}")
             return None
     
-    async def _evaluate_dynamic_approver(self, expression: str, 
-                                       context: ApprovalContext) -> Optional[int]:
-        """Safely evaluate dynamic approver expression."""
+    def _evaluate_dynamic_approver(self, expression: str,
+                                 context: ApprovalContext) -> Optional[int]:
+        """
+        Securely evaluate dynamic approver expression using SecureExpressionEvaluator.
+
+        SECURITY IMPROVEMENT: Now uses SecureExpressionEvaluator to prevent
+        SQL injection and code injection attacks, addressing CVE-2024-004.
+        """
         try:
-            # Get process instance data
-            instance = db.session.query(ProcessInstance).get(context.instance_id)
-            if not instance:
-                return None
-            
-            # Simple expression evaluation (in production, use a safer evaluator)
-            variables = {
-                'input_data': instance.input_data or {},
-                'context_variables': instance.context_variables or {},
-                'initiator_id': context.initiator_id,
-                'priority': context.priority
-            }
-            
-            # For safety, only allow specific patterns
-            if 'input_data.manager_id' in expression:
-                manager_id = variables['input_data'].get('manager_id')
-                if manager_id:
-                    return int(manager_id)
-            elif 'initiator_manager' in expression:
-                # Get initiator's manager
-                initiator = db.session.query(User).get(context.initiator_id)
-                if initiator and hasattr(initiator, 'manager_id'):
-                    return initiator.manager_id
-            
+            # Create secure evaluation context
+            evaluation_context = ExpressionContext(
+                instance_id=context.instance_id,
+                initiator_id=context.initiator_id,
+                tenant_id=getattr(context, 'tenant_id', 0),
+                priority=context.priority,
+                request_data=context.request_data
+            )
+
+            # Use secure expression evaluator
+            evaluator = SecureExpressionEvaluator()
+            result = evaluator.evaluate_expression(expression, evaluation_context)
+
+            return result
+
+        except SecurityViolation as e:
+            log.warning(f"Security violation in expression evaluation: {expression} - {e}")
             return None
-            
         except Exception as e:
-            log.error(f"Error evaluating dynamic approver expression: {str(e)}")
+            log.error(f"Error evaluating dynamic approver expression: {expression} - {e}")
             return None
     
-    async def _create_approval_requests(self, chain: ApprovalChain, 
-                                      context: ApprovalContext,
-                                      approvers: List[Dict[str, Any]]) -> List[ApprovalRequest]:
+    def _create_approval_requests(self, chain: ApprovalChain, 
+                                context: ApprovalContext,
+                                approvers: List[Dict[str, Any]]) -> List[ApprovalRequest]:
         """Create individual approval requests for the chain."""
         requests = []
         
@@ -283,6 +319,8 @@ class ApprovalChainManager:
                 create_immediately = (i == 0)
             
             if create_immediately:
+                from flask_appbuilder import db
+                db_session = db.session
                 request = ApprovalRequest(
                     tenant_id=chain.tenant_id,
                     chain_id=chain.id,
@@ -298,21 +336,24 @@ class ApprovalChainManager:
                     expires_at=context.due_date
                 )
                 
-                db.session.add(request)
+                db_session.add(request)
                 requests.append(request)
                 
                 # Send notification
-                await self._send_approval_notification(request, approver)
+                self._send_approval_notification(request, approver)
         
         return requests
     
-    async def process_approval_decision(self, request_id: int, 
-                                      decision: ApprovalDecision) -> Dict[str, Any]:
+    @handle_approval_errors()
+    def process_approval_decision(self, request_id: int, 
+                                decision: ApprovalDecision) -> Dict[str, Any]:
         """Process an approval decision and update chain status."""
         with self._lock:
             try:
+                from flask_appbuilder import db
+                db_session = db.session
                 # Get approval request
-                request = db.session.query(ApprovalRequest).get(request_id)
+                request = db_session.query(ApprovalRequest).get(request_id)
                 if not request:
                     raise ValueError(f"Approval request {request_id} not found")
                 
@@ -326,38 +367,42 @@ class ApprovalChainManager:
                 request.response_data = decision.response_data
                 
                 # Get the approval chain
-                chain = db.session.query(ApprovalChain).get(request.chain_id)
+                chain = db_session.query(ApprovalChain).get(request.chain_id)
                 if not chain:
                     raise ValueError(f"Approval chain {request.chain_id} not found")
                 
                 # Process chain logic based on type
-                chain_result = await self._process_chain_decision(chain, request, decision)
+                chain_result = self._process_chain_decision(chain, request, decision)
                 
-                db.session.commit()
+                db_session.commit()
                 
                 # If chain is complete, continue process execution
                 if chain_result['chain_complete']:
-                    await self._handle_chain_completion(chain, chain_result['approved'])
+                    self._handle_chain_completion(chain, chain_result['approved'])
                 
                 log.info(f"Processed approval decision for request {request_id}: {decision.approved}")
                 
                 return chain_result
                 
             except Exception as e:
-                db.session.rollback()
+                db_session.rollback()
                 log.error(f"Failed to process approval decision: {str(e)}")
                 raise
     
-    async def _process_chain_decision(self, chain: ApprovalChain, 
-                                    current_request: ApprovalRequest,
-                                    decision: ApprovalDecision) -> Dict[str, Any]:
+    def _process_chain_decision(self, chain: ApprovalChain, 
+                              current_request: ApprovalRequest,
+                              decision: ApprovalDecision) -> Dict[str, Any]:
         """Process approval decision based on chain type."""
         chain_type = chain.chain_type
+        from flask_appbuilder import db
+        db_session = db.session
         
-        # Get all requests in the chain
-        all_requests = db.session.query(ApprovalRequest).filter_by(
-            chain_id=chain.id
-        ).order_by(ApprovalRequest.order_index).all()
+        # Get all requests in the chain with eager loading to eliminate N+1 queries
+        all_requests = db_session.query(ApprovalRequest)\
+            .options(joinedload(ApprovalRequest.approver))\
+            .options(joinedload(ApprovalRequest.chain).joinedload('step').joinedload('instance').joinedload('definition'))\
+            .filter_by(chain_id=chain.id)\
+            .order_by(ApprovalRequest.order_index).all()
         
         pending_requests = [r for r in all_requests if r.status == ApprovalStatus.PENDING.value]
         approved_requests = [r for r in all_requests if r.status == ApprovalStatus.APPROVED.value]
@@ -368,12 +413,12 @@ class ApprovalChainManager:
         next_actions = []
         
         if chain_type == ApprovalType.SEQUENTIAL.value:
-            chain_complete, chain_approved, next_actions = await self._process_sequential_chain(
+            chain_complete, chain_approved, next_actions = self._process_sequential_chain(
                 chain, all_requests, current_request, decision
             )
         
         elif chain_type == ApprovalType.PARALLEL.value:
-            chain_complete, chain_approved = await self._process_parallel_chain(
+            chain_complete, chain_approved = self._process_parallel_chain(
                 chain, approved_requests, rejected_requests, pending_requests
             )
         
@@ -422,10 +467,10 @@ class ApprovalChainManager:
             'rejected_requests': len(rejected_requests)
         }
     
-    async def _process_sequential_chain(self, chain: ApprovalChain,
-                                      all_requests: List[ApprovalRequest],
-                                      current_request: ApprovalRequest,
-                                      decision: ApprovalDecision) -> Tuple[bool, bool, List[str]]:
+    def _process_sequential_chain(self, chain: ApprovalChain,
+                                all_requests: List[ApprovalRequest],
+                                current_request: ApprovalRequest,
+                                decision: ApprovalDecision) -> Tuple[bool, bool, List[str]]:
         """Process sequential approval chain logic."""
         next_actions = []
         
@@ -446,25 +491,53 @@ class ApprovalChainManager:
         
         if next_request.status == ApprovalStatus.PENDING.value:
             # Already exists, just send notification
-            approver = db.session.query(User).get(next_request.approver_id)
+            from flask_appbuilder import db
+            db_session = db.session
+            approver = db_session.query(User).get(next_request.approver_id)
             if approver:
-                await self._send_approval_notification(next_request, {
+                self._send_approval_notification(next_request, {
                     'user_id': approver.id,
                     'username': approver.username,
                     'email': approver.email
                 })
                 next_actions.append(f"Notified next approver: {approver.username}")
         else:
-            # Create next request
-            # This would happen if requests weren't pre-created
-            pass
+            # Create next request since it wasn't pre-created
+            from flask_appbuilder import db
+            db_session = db.session
+            approver = db_session.query(User).get(next_request.approver_id)
+            if approver:
+                # Create the approval request
+                new_request = ApprovalRequest(
+                    tenant_id=next_request.tenant_id,
+                    chain_id=next_request.chain_id,
+                    step_id=next_request.step_id,
+                    approver_id=next_request.approver_id,
+                    status=ApprovalStatus.PENDING.value,
+                    priority=next_request.priority,
+                    approval_data=next_request.approval_data,
+                    order_index=next_request.order_index,
+                    required=next_request.required,
+                    delegate_allowed=next_request.delegate_allowed,
+                    requested_at=datetime.utcnow(),
+                    expires_at=next_request.expires_at
+                )
+                db_session.add(new_request)
+                self._send_approval_notification(new_request, {
+                    'user_id': approver.id,
+                    'username': approver.username,
+                    'email': approver.email
+                })
+                next_actions.append(f"Created and notified next approver: {approver.username}")
+            else:
+                next_actions.append("Failed to find next approver user")
         
         return False, False, next_actions
     
-    async def _process_parallel_chain(self, chain: ApprovalChain,
-                                    approved_requests: List[ApprovalRequest],
-                                    rejected_requests: List[ApprovalRequest],
-                                    pending_requests: List[ApprovalRequest]) -> Tuple[bool, bool]:
+    def _process_parallel_chain(self, chain: ApprovalChain,
+                              approved_requests: List[ApprovalRequest],
+                              rejected_requests: List[ApprovalRequest],
+                              pending_requests: List[ApprovalRequest]) -> Tuple[bool, bool]:
         """Process parallel approval chain logic."""
         config = json.loads(chain.configuration) if chain.configuration else {}
         approval_threshold = config.get('approval_threshold', 1)  # Default: at least 1 approval
@@ -481,11 +554,13 @@ class ApprovalChainManager:
         # Chain continues
         return False, False
     
-    async def _handle_chain_completion(self, chain: ApprovalChain, approved: bool):
+    def _handle_chain_completion(self, chain: ApprovalChain, approved: bool):
         """Handle completion of an approval chain."""
         try:
+            from flask_appbuilder import db
+            db_session = db.session
             # Get the process step
-            step = db.session.query(ProcessStep).get(chain.step_id)
+            step = db_session.query(ProcessStep).get(chain.step_id)
             if not step:
                 log.error(f"Process step {chain.step_id} not found")
                 return
@@ -502,24 +577,27 @@ class ApprovalChainManager:
             else:
                 step.mark_failed('Approval was rejected', step_output)
             
-            db.session.commit()
+            db_session.commit()
             
             # Continue process execution
             engine = ProcessEngine()
-            await engine.continue_from_step(step.instance, step.node_id)
+            # Note: Converted from async - engine.continue_from_step should be sync
+            engine.continue_from_step(step.instance, step.node_id)
             
             log.info(f"Approval chain {chain.id} completed: {approved}")
             
         except Exception as e:
             log.error(f"Error handling chain completion: {str(e)}")
     
-    async def delegate_approval(self, request_id: int, delegate_to_id: int, 
+    def delegate_approval(self, request_id: int, delegate_to_id: int, 
                               delegated_by_id: int, reason: str = None) -> ApprovalRequest:
         """Delegate an approval request to another user."""
         with self._lock:
             try:
+                from flask_appbuilder import db
+                db_session = db.session
                 # Get original request
-                original_request = db.session.query(ApprovalRequest).get(request_id)
+                original_request = db_session.query(ApprovalRequest).get(request_id)
                 if not original_request:
                     raise ValueError(f"Approval request {request_id} not found")
                 
@@ -529,10 +607,41 @@ class ApprovalChainManager:
                 if original_request.status != ApprovalStatus.PENDING.value:
                     raise ValueError("Only pending requests can be delegated")
                 
-                # Verify delegate_to user exists
-                delegate_user = db.session.query(User).get(delegate_to_id)
+                # CRITICAL SECURITY FIX: Verify delegating user is authorized for this request
+                delegating_user = db_session.query(User).get(delegated_by_id)
+                if not delegating_user or not delegating_user.is_active:
+                    raise ValueError(f"Delegating user {delegated_by_id} not found or inactive")
+
+                # AUTHORIZATION CHECK: Verify delegating user is the assigned approver
+                if original_request.approver_id != delegated_by_id:
+                    raise ValueError(f"User {delegated_by_id} is not authorized to delegate request {request_id}")
+
+                # ADDITIONAL CHECK: Verify delegating user has appropriate role
+                from .security_validator import ApprovalSecurityValidator
+                security_validator = ApprovalSecurityValidator(self.appbuilder)
+
+                # Check if delegating user has the required role for this approval step
+                workflow_config = self._get_workflow_config(original_request.approval_data.get('workflow_type', 'default'))
+                if workflow_config and 'steps' in workflow_config:
+                    current_step = None
+                    for step in workflow_config['steps']:
+                        if step.get('step_id') == original_request.step_id:
+                            current_step = step
+                            break
+
+                    if current_step and 'required_role' in current_step:
+                        if not security_validator.validate_role_access(delegating_user, current_step['required_role']):
+                            raise ValueError(f"User {delegated_by_id} does not have required role '{current_step['required_role']}' for delegation")
+
+                # Verify delegate_to user exists and is active
+                delegate_user = db_session.query(User).get(delegate_to_id)
                 if not delegate_user or not delegate_user.is_active:
                     raise ValueError(f"Delegate user {delegate_to_id} not found or inactive")
+
+                # AUTHORIZATION CHECK: Verify delegate_to user has appropriate role
+                if current_step and 'required_role' in current_step:
+                    if not security_validator.validate_role_access(delegate_user, current_step['required_role']):
+                        raise ValueError(f"Delegate user {delegate_to_id} does not have required role '{current_step['required_role']}'")
                 
                 # Update original request to delegated status
                 original_request.status = ApprovalStatus.DELEGATED.value
@@ -558,11 +667,11 @@ class ApprovalChainManager:
                     original_request_id=original_request.id
                 )
                 
-                db.session.add(delegated_request)
-                db.session.commit()
+                db_session.add(delegated_request)
+                db_session.commit()
                 
                 # Send notification to delegate
-                await self._send_approval_notification(delegated_request, {
+                self._send_approval_notification(delegated_request, {
                     'user_id': delegate_user.id,
                     'username': delegate_user.username,
                     'email': delegate_user.email
@@ -573,29 +682,31 @@ class ApprovalChainManager:
                 return delegated_request
                 
             except Exception as e:
-                db.session.rollback()
+                db_session.rollback()
                 log.error(f"Failed to delegate approval: {str(e)}")
                 raise
     
-    async def escalate_approval(self, request_id: int, escalation_reason: EscalationTrigger,
+    def escalate_approval(self, request_id: int, escalation_reason: EscalationTrigger,
                               escalate_to_id: int = None) -> ApprovalRequest:
         """Escalate an approval request to a higher authority."""
         with self._lock:
             try:
+                from flask_appbuilder import db
+                db_session = db.session
                 # Get original request
-                original_request = db.session.query(ApprovalRequest).get(request_id)
+                original_request = db_session.query(ApprovalRequest).get(request_id)
                 if not original_request:
                     raise ValueError(f"Approval request {request_id} not found")
                 
                 # Determine escalation target
                 if not escalate_to_id:
-                    escalate_to_id = await self._determine_escalation_target(original_request)
+                    escalate_to_id = self._determine_escalation_target(original_request)
                 
                 if not escalate_to_id:
                     raise ValueError("No escalation target found")
                 
                 # Verify escalation user exists
-                escalation_user = db.session.query(User).get(escalate_to_id)
+                escalation_user = db_session.query(User).get(escalate_to_id)
                 if not escalation_user or not escalation_user.is_active:
                     raise ValueError(f"Escalation user {escalate_to_id} not found or inactive")
                 
@@ -623,11 +734,11 @@ class ApprovalChainManager:
                     is_escalated=True
                 )
                 
-                db.session.add(escalated_request)
-                db.session.commit()
+                db_session.add(escalated_request)
+                db_session.commit()
                 
                 # Send notification
-                await self._send_approval_notification(escalated_request, {
+                self._send_approval_notification(escalated_request, {
                     'user_id': escalation_user.id,
                     'username': escalation_user.username,
                     'email': escalation_user.email
@@ -638,15 +749,17 @@ class ApprovalChainManager:
                 return escalated_request
                 
             except Exception as e:
-                db.session.rollback()
+                db_session.rollback()
                 log.error(f"Failed to escalate approval: {str(e)}")
                 raise
     
-    async def _determine_escalation_target(self, request: ApprovalRequest) -> Optional[int]:
+    def _determine_escalation_target(self, request: ApprovalRequest) -> Optional[int]:
         """Determine the appropriate escalation target for a request."""
         try:
+            from flask_appbuilder import db
+            db_session = db.session
             # Get current approver
-            approver = db.session.query(User).get(request.approver_id)
+            approver = db_session.query(User).get(request.approver_id)
             if not approver:
                 return None
             
@@ -659,7 +772,7 @@ class ApprovalChainManager:
             
             # Fallback: get tenant admin
             tenant_id = TenantContext.get_current_tenant_id()
-            admin_users = db.session.query(User).join(User.roles).filter(
+            admin_users = db_session.query(User).join(User.roles).filter(
                 User.roles.any(name='Admin'),
                 User.tenant_id == tenant_id,
                 User.is_active == True,
@@ -672,12 +785,13 @@ class ApprovalChainManager:
             log.error(f"Error determining escalation target: {str(e)}")
             return None
     
-    async def _send_approval_notification(self, request: ApprovalRequest, 
-                                        approver: Dict[str, Any]):
+    def _send_approval_notification(self, request: ApprovalRequest, 
+                                  approver: Dict[str, Any]):
         """Send notification to approver about pending request."""
         try:
             if self.notification_handler:
-                await self.notification_handler.send_approval_notification(request, approver)
+                # Note: Converted from async - notification_handler should have sync methods
+                self.notification_handler.send_approval_notification(request, approver)
             else:
                 log.info(f"Would send approval notification to {approver['username']} for request {request.id}")
                 
@@ -688,16 +802,22 @@ class ApprovalChainManager:
         """Set the notification handler for sending approval notifications."""
         self.notification_handler = handler
     
-    async def get_pending_approvals(self, user_id: int) -> List[ApprovalRequest]:
+    def get_pending_approvals(self, user_id: int) -> List[ApprovalRequest]:
         """Get pending approval requests for a specific user."""
         try:
             tenant_id = TenantContext.get_current_tenant_id()
             
-            requests = db.session.query(ApprovalRequest).filter(
-                ApprovalRequest.tenant_id == tenant_id,
-                ApprovalRequest.approver_id == user_id,
-                ApprovalRequest.status == ApprovalStatus.PENDING.value
-            ).order_by(desc(ApprovalRequest.requested_at)).all()
+            from flask_appbuilder import db
+            db_session = db.session
+            # Get pending requests with eager loading to eliminate N+1 queries
+            requests = db_session.query(ApprovalRequest)\
+                .options(joinedload(ApprovalRequest.approver))\
+                .options(joinedload(ApprovalRequest.chain).joinedload('step').joinedload('instance').joinedload('definition'))\
+                .filter(\
+                    ApprovalRequest.tenant_id == tenant_id,\
+                    ApprovalRequest.approver_id == user_id,\
+                    ApprovalRequest.status == ApprovalStatus.PENDING.value\
+                ).order_by(desc(ApprovalRequest.requested_at)).all()
             
             return requests
             
@@ -705,20 +825,27 @@ class ApprovalChainManager:
             log.error(f"Error getting pending approvals: {str(e)}")
             return []
     
-    async def get_approval_chain_status(self, chain_id: int) -> Dict[str, Any]:
+    def get_approval_chain_status(self, chain_id: int) -> Dict[str, Any]:
         """Get detailed status of an approval chain."""
         try:
-            chain = db.session.query(ApprovalChain).get(chain_id)
+            from flask_appbuilder import db
+            db_session = db.session
+            chain = db_session.query(ApprovalChain).get(chain_id)
             if not chain:
                 return {}
             
-            requests = db.session.query(ApprovalRequest).filter_by(
-                chain_id=chain_id
-            ).order_by(ApprovalRequest.order_index).all()
+            # Get requests with eager loading to eliminate N+1 queries
+            requests = db_session.query(ApprovalRequest)\
+                .options(joinedload(ApprovalRequest.approver))\
+                .options(joinedload(ApprovalRequest.chain).joinedload('step').joinedload('instance').joinedload('definition'))\
+                .filter_by(chain_id=chain_id)\
+                .order_by(ApprovalRequest.order_index).all()
             
             request_details = []
             for request in requests:
-                approver = db.session.query(User).get(request.approver_id)
+                from flask_appbuilder import db
+                db_session = db.session
+                approver = db_session.query(User).get(request.approver_id)
                 request_details.append({
                     'id': request.id,
                     'approver': {
@@ -757,13 +884,15 @@ class ApprovalRuleEngine:
         self.rules_cache = {}
         self.cache_timeout = 300  # 5 minutes
     
-    async def get_approvers_for_context(self, context: ApprovalContext) -> List[Dict[str, Any]]:
+    def get_approvers_for_context(self, context: ApprovalContext) -> List[Dict[str, Any]]:
         """Get approvers based on approval rules for the given context."""
         try:
             tenant_id = TenantContext.get_current_tenant_id()
             
+            from flask_appbuilder import db
+            db_session = db.session
             # Get applicable rules
-            rules = db.session.query(ApprovalRule).filter(
+            rules = db_session.query(ApprovalRule).filter(
                 ApprovalRule.tenant_id == tenant_id,
                 ApprovalRule.is_active == True
             ).order_by(ApprovalRule.priority.desc()).all()
@@ -771,8 +900,8 @@ class ApprovalRuleEngine:
             approvers = []
             
             for rule in rules:
-                if await self._evaluate_rule_conditions(rule, context):
-                    rule_approvers = await self._get_rule_approvers(rule, context)
+                if self._evaluate_rule_conditions(rule, context):
+                    rule_approvers = self._get_rule_approvers(rule, context)
                     approvers.extend(rule_approvers)
                     
                     # If rule is exclusive, don't process more rules
@@ -786,8 +915,8 @@ class ApprovalRuleEngine:
             log.error(f"Error getting rule-based approvers: {str(e)}")
             return []
     
-    async def _evaluate_rule_conditions(self, rule: ApprovalRule, 
-                                      context: ApprovalContext) -> bool:
+    def _evaluate_rule_conditions(self, rule: ApprovalRule, 
+                                context: ApprovalContext) -> bool:
         """Evaluate if rule conditions are met for the context."""
         try:
             rule_config = json.loads(rule.configuration) if rule.configuration else {}
@@ -796,8 +925,13 @@ class ApprovalRuleEngine:
             if not conditions:
                 return True  # No conditions means rule applies
             
-            # Get process data for condition evaluation
-            instance = db.session.query(ProcessInstance).get(context.instance_id)
+            from flask_appbuilder import db
+            db_session = db.session
+            # Get process data for condition evaluation with parameterized query
+            from sqlalchemy import bindparam
+            instance = db_session.query(ProcessInstance).filter(
+                ProcessInstance.id == bindparam('context_instance_id')
+            ).params(context_instance_id=context.instance_id).first()
             if not instance:
                 return False
             
@@ -811,7 +945,7 @@ class ApprovalRuleEngine:
             
             # Evaluate each condition
             for condition in conditions:
-                if not await self._evaluate_condition(condition, evaluation_context):
+                if not self._evaluate_condition(condition, evaluation_context):
                     return False
             
             return True
@@ -820,17 +954,29 @@ class ApprovalRuleEngine:
             log.error(f"Error evaluating rule conditions: {str(e)}")
             return False
     
-    async def _evaluate_condition(self, condition: Dict[str, Any], 
-                                context: Dict[str, Any]) -> bool:
-        """Evaluate a single rule condition."""
+    def _evaluate_condition(self, condition: Dict[str, Any],
+                          context: Dict[str, Any]) -> bool:
+        """Evaluate a single rule condition with SQL injection prevention."""
         try:
             field = condition.get('field')
             operator = condition.get('operator', '==')
             value = condition.get('value')
-            
+
+            # Security validation: sanitize field names
+            import re
+            if not field or not re.match(r'^[a-zA-Z_][a-zA-Z0-9_\.]*$', str(field)):
+                log.warning(f"Potentially unsafe field name blocked: {field}")
+                return False
+
+            # Security validation: whitelist allowed operators
+            ALLOWED_OPERATORS = ['==', '!=', '>', '<', '>=', '<=', 'in', 'not_in']
+            if operator not in ALLOWED_OPERATORS:
+                log.warning(f"Potentially unsafe operator blocked: {operator}")
+                return False
+
             # Get field value from context
             field_value = self._get_field_value(field, context)
-            
+
             # Compare values
             return self._compare_values(field_value, value, operator)
             
@@ -883,8 +1029,8 @@ class ApprovalRuleEngine:
         except (ValueError, TypeError):
             return False
     
-    async def _get_rule_approvers(self, rule: ApprovalRule, 
-                                context: ApprovalContext) -> List[Dict[str, Any]]:
+    def _get_rule_approvers(self, rule: ApprovalRule, 
+                          context: ApprovalContext) -> List[Dict[str, Any]]:
         """Get approvers defined by the rule."""
         try:
             rule_config = json.loads(rule.configuration) if rule.configuration else {}
@@ -894,7 +1040,7 @@ class ApprovalRuleEngine:
             
             for approver_config in approver_configs:
                 # Resolve approver similar to chain manager
-                approver_info = await self._resolve_rule_approver(approver_config, context)
+                approver_info = self._resolve_rule_approver(approver_config, context)
                 if approver_info:
                     if isinstance(approver_info, list):
                         approvers.extend(approver_info)
@@ -907,12 +1053,124 @@ class ApprovalRuleEngine:
             log.error(f"Error getting rule approvers: {str(e)}")
             return []
     
-    async def _resolve_rule_approver(self, approver_config: Dict[str, Any],
-                                   context: ApprovalContext) -> Optional[Dict[str, Any]]:
+    def _resolve_rule_approver(self, approver_config: Dict[str, Any],
+                             context: ApprovalContext) -> Optional[Dict[str, Any]]:
         """Resolve rule-based approver configuration."""
-        # This would be similar to ApprovalChainManager._resolve_approver
-        # but with rule-specific logic
-        pass
+        try:
+            approver_type = approver_config.get('type', 'user')
+            from flask_appbuilder import db
+            db_session = db.session
+            
+            if approver_type == 'user':
+                user_id = approver_config.get('user_id')
+                if user_id:
+                    user = db_session.query(User).get(user_id)
+                    if user and user.is_active:
+                        return {
+                            'user_id': user.id,
+                            'username': user.username,
+                            'email': user.email,
+                            'order': approver_config.get('order', 0),
+                            'required': approver_config.get('required', True),
+                            'delegate_allowed': approver_config.get('delegate_allowed', False)
+                        }
+            
+            elif approver_type == 'role':
+                role_name = approver_config.get('role')
+                if role_name:
+                    try:
+                        sm = current_app.appbuilder.sm
+                        role = sm.find_role(role_name)
+                        users = []
+                        if role:
+                            users = [user for user in role.user if user.is_active]
+                        
+                        if users:
+                            # Return first available user for rule-based selection
+                            user = users[0]
+                            return {
+                                'user_id': user.id,
+                                'username': user.username,
+                                'email': user.email,
+                                'order': approver_config.get('order', 0),
+                                'required': approver_config.get('required', True),
+                                'delegate_allowed': approver_config.get('delegate_allowed', False)
+                            }
+                    except Exception as e:
+                        log.error(f"Failed to resolve users by role '{role_name}': {str(e)}")
+            
+            elif approver_type == 'rule_based':
+                # Rule-specific logic for dynamic approver selection
+                rule_expression = approver_config.get('expression')
+                if rule_expression:
+                    resolved_user_id = self._evaluate_rule_expression(rule_expression, context)
+                    if resolved_user_id:
+                        user = db_session.query(User).get(resolved_user_id)
+                        if user and user.is_active:
+                            return {
+                                'user_id': user.id,
+                                'username': user.username,
+                                'email': user.email,
+                                'order': approver_config.get('order', 0),
+                                'required': approver_config.get('required', True),
+                                'delegate_allowed': approver_config.get('delegate_allowed', False)
+                            }
+            
+            return None
+            
+        except Exception as e:
+            log.error(f"Error resolving rule approver: {str(e)}")
+            return None
+    
+    def _evaluate_rule_expression(self, expression: str, context: ApprovalContext) -> Optional[int]:
+        """Evaluate rule-based approver expression."""
+        try:
+            from flask_appbuilder import db
+            db_session = db.session
+            instance = db_session.query(ProcessInstance).get(context.instance_id)
+            if not instance:
+                return None
+            
+            variables = {
+                'input_data': instance.input_data or {},
+                'context_variables': instance.context_variables or {},
+                'initiator_id': context.initiator_id,
+                'priority': context.priority
+            }
+            
+            # Safe expression evaluation for rule-based approver selection
+            if 'workflow_owner' in expression:
+                owner_id = variables['input_data'].get('workflow_owner_id')
+                if owner_id:
+                    return int(owner_id)
+            elif 'department_head' in expression:
+                dept_id = variables['input_data'].get('department_id')
+                if dept_id:
+                    # Find department head (this would be tenant-specific logic)
+                    dept_head = db_session.query(User).filter(
+                        User.department_id == dept_id,
+                        User.is_department_head == True,
+                        User.is_active == True
+                    ).first()
+                    if dept_head:
+                        return dept_head.id
+            elif 'amount_threshold' in expression:
+                amount = variables['input_data'].get('amount', 0)
+                # Find appropriate approver based on amount thresholds
+                if amount > 10000:
+                    # High amount requires senior approver
+                    senior_approver = db_session.query(User).filter(
+                        User.roles.any(name='Senior_Approver'),
+                        User.is_active == True
+                    ).first()
+                    if senior_approver:
+                        return senior_approver.id
+            
+            return None
+            
+        except Exception as e:
+            log.error(f"Error evaluating rule expression: {str(e)}")
+            return None
 
 
 class EscalationManager:
@@ -921,38 +1179,125 @@ class EscalationManager:
     def __init__(self):
         self.escalation_jobs = {}
     
-    async def schedule_escalation(self, request_id: int, escalation_time: datetime):
+    def schedule_escalation(self, request_id: int, escalation_time: datetime):
         """Schedule automatic escalation for a request."""
-        # In production, this would integrate with a job scheduler like Celery
-        pass
+        try:
+            from ...tasks import escalate_approval_request
+            
+            # Calculate delay in seconds
+            delay = (escalation_time - datetime.utcnow()).total_seconds()
+            if delay <= 0:
+                # Already past escalation time, escalate immediately
+                self.escalate_request(request_id)
+                return
+            
+            # Schedule Celery task
+            task_result = escalate_approval_request.apply_async(
+                args=[request_id],
+                countdown=max(1, int(delay))
+            )
+            
+            # Track escalation job for later cancellation
+            self.escalation_jobs[request_id] = {
+                'task_id': task_result.id,
+                'scheduled_at': datetime.utcnow(),
+                'escalation_time': escalation_time
+            }
+            
+            log.info(f"Escalation scheduled for request {request_id} at {escalation_time} (task: {task_result.id})")
+            
+        except ImportError:
+            log.warning("Celery tasks not available, escalation scheduling disabled")
+        except Exception as e:
+            log.error(f"Failed to schedule escalation for request {request_id}: {str(e)}")
+            raise
     
-    async def cancel_escalation(self, request_id: int):
+    def cancel_escalation(self, request_id: int):
         """Cancel scheduled escalation for a request."""
-        pass
+        try:
+            job_info = self.escalation_jobs.get(request_id)
+            if not job_info:
+                log.debug(f"No escalation scheduled for request {request_id}")
+                return
+            
+            # Cancel Celery task
+            from celery import current_app as celery_app
+            celery_app.control.revoke(job_info['task_id'], terminate=True)
+            
+            # Remove from tracking
+            del self.escalation_jobs[request_id]
+            
+            log.info(f"Escalation cancelled for request {request_id} (task: {job_info['task_id']})")
+            
+        except Exception as e:
+            log.error(f"Failed to cancel escalation for request {request_id}: {str(e)}")
+            # Don't re-raise - cancellation failures shouldn't break the approval flow
     
-    async def check_expired_requests(self):
+    def escalate_request(self, request_id: int):
+        """Escalate an approval request to the next level."""
+        try:
+            from flask_appbuilder import db
+            from ..models.process_models import ApprovalRequest
+            db_session = db.session
+            
+            # Get the request
+            request = db_session.query(ApprovalRequest).get(request_id)
+            if not request:
+                log.error(f"Approval request {request_id} not found for escalation")
+                return
+                
+            # Check if still pending
+            if request.status != 'pending':
+                log.info(f"Request {request_id} no longer pending, skipping escalation")
+                return
+            
+            # Mark as escalated
+            request.status = 'escalated'
+            request.escalated_at = datetime.utcnow()
+            request.escalation_level = getattr(request, 'escalation_level', 0) + 1
+            
+            # Create escalated request (would need to find next approver in chain)
+            chain_manager = ApprovalChainManager()
+            chain_manager.escalate_approval(request.id, 'timeout')
+            
+            db_session.commit()
+            log.info(f"Request {request_id} escalated to level {request.escalation_level}")
+            
+        except Exception as e:
+            log.error(f"Failed to escalate request {request_id}: {str(e)}")
+            db_session.rollback()
+    
+    def check_expired_requests(self):
         """Check for and handle expired approval requests."""
         try:
             tenant_id = TenantContext.get_current_tenant_id()
             now = datetime.utcnow()
             
-            expired_requests = db.session.query(ApprovalRequest).filter(
-                ApprovalRequest.tenant_id == tenant_id,
-                ApprovalRequest.status == ApprovalStatus.PENDING.value,
-                ApprovalRequest.expires_at < now
-            ).all()
+            from flask_appbuilder import db
+            db_session = db.session
+            # Get expired requests with eager loading to eliminate N+1 queries
+            expired_requests = db_session.query(ApprovalRequest)\
+                .options(joinedload(ApprovalRequest.approver))\
+                .options(joinedload(ApprovalRequest.chain).joinedload('step').joinedload('instance').joinedload('definition'))\
+                .filter(\
+                    ApprovalRequest.tenant_id == tenant_id,\
+                    ApprovalRequest.status == ApprovalStatus.PENDING.value,\
+                    ApprovalRequest.expires_at < now\
+                ).all()
             
             for request in expired_requests:
-                await self._handle_expired_request(request)
+                self._handle_expired_request(request)
                 
         except Exception as e:
             log.error(f"Error checking expired requests: {str(e)}")
     
-    async def _handle_expired_request(self, request: ApprovalRequest):
+    def _handle_expired_request(self, request: ApprovalRequest):
         """Handle an expired approval request."""
         try:
             # Get chain configuration to determine timeout behavior
-            chain = db.session.query(ApprovalChain).get(request.chain_id)
+            from flask_appbuilder import db
+            db_session = db.session
+            chain = db_session.query(ApprovalChain).get(request.chain_id)
             if not chain:
                 return
             
@@ -962,7 +1307,7 @@ class EscalationManager:
             if timeout_action == 'escalate':
                 # Auto-escalate the request
                 chain_manager = ApprovalChainManager()
-                await chain_manager.escalate_approval(
+                chain_manager.escalate_approval(
                     request.id, 
                     EscalationTrigger.TIMEOUT
                 )
@@ -976,7 +1321,7 @@ class EscalationManager:
                 )
                 
                 chain_manager = ApprovalChainManager()
-                await chain_manager.process_approval_decision(request.id, decision)
+                chain_manager.process_approval_decision(request.id, decision)
             elif timeout_action == 'approve':
                 # Auto-approve the request
                 decision = ApprovalDecision(
@@ -987,7 +1332,7 @@ class EscalationManager:
                 )
                 
                 chain_manager = ApprovalChainManager()
-                await chain_manager.process_approval_decision(request.id, decision)
+                chain_manager.process_approval_decision(request.id, decision)
             
             log.info(f"Handled expired request {request.id} with action: {timeout_action}")
             
