@@ -2128,14 +2128,21 @@ class LocalSpeechAdapter(AIModelAdapter):
                 )
                 
                 return result["text"].strip()
-                
+
             finally:
                 # Clean up temporary file - ensure cleanup even on exceptions
-                try:
-                    if os.path.exists(temp_path):
-                        os.unlink(temp_path)
-                except OSError as cleanup_error:
-                    self.logger.warning(f"Failed to clean up temporary file {temp_path}: {cleanup_error}")
+                import time
+                cleanup_attempts = 3
+                for attempt in range(cleanup_attempts):
+                    try:
+                        if os.path.exists(temp_path):
+                            os.unlink(temp_path)
+                            break
+                    except OSError as cleanup_error:
+                        if attempt == cleanup_attempts - 1:
+                            self.logger.error(f"Failed to clean up temporary file after {cleanup_attempts} attempts: {cleanup_error}")
+                        else:
+                            time.sleep(0.1)  # Brief delay before retry
                     
         except ImportError as e:
             missing_pkg = str(e).split("'")[1] if "'" in str(e) else "required package"
@@ -2178,14 +2185,21 @@ class LocalSpeechAdapter(AIModelAdapter):
                     audio_data = audio_file.read()
                 
                 return audio_data
-                
+
             finally:
                 # Clean up temporary file - ensure cleanup even on exceptions
-                try:
-                    if os.path.exists(temp_path):
-                        os.unlink(temp_path)
-                except OSError as cleanup_error:
-                    self.logger.warning(f"Failed to clean up temporary file {temp_path}: {cleanup_error}")
+                import time
+                cleanup_attempts = 3
+                for attempt in range(cleanup_attempts):
+                    try:
+                        if os.path.exists(temp_path):
+                            os.unlink(temp_path)
+                            break
+                    except OSError as cleanup_error:
+                        if attempt == cleanup_attempts - 1:
+                            self.logger.error(f"Failed to clean up temporary file after {cleanup_attempts} attempts: {cleanup_error}")
+                        else:
+                            time.sleep(0.1)  # Brief delay before retry
                     
         except Exception as e:
             self.logger.error(f"Local text-to-speech failed: {e}")

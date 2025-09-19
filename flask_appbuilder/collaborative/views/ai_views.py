@@ -1,6 +1,7 @@
 """
 AI Chat Views for Flask-AppBuilder Collaborative Features
 """
+import time
 from flask import request, render_template, jsonify, flash, redirect, url_for, g
 from flask_appbuilder import expose, BaseView, has_access
 from flask_appbuilder.security.decorators import protect
@@ -310,9 +311,17 @@ class AIKnowledgeBaseView(BaseView):
                 try:
                     content_id = f"manual_{g.user.id}_{int(time.time())}"
                     
-                    # Use async_to_sync or similar for async method
-                    # For now, we'll need to handle this properly
-                    success = True  # Placeholder
+                    # Use async bridge to handle async method properly
+                    from ..utils.async_bridge import AsyncBridge
+
+                    success = AsyncBridge.run_async(
+                        manager.index_content(
+                            content_id=content_id,
+                            content=content_text,
+                            source=content_source,
+                            metadata=metadata
+                        )
+                    )
                     
                     if success:
                         flash("Content indexed successfully!", 'success')
@@ -341,11 +350,6 @@ class AIAdminView(BaseView):
     @protect()
     def index(self):
         """AI system administration dashboard"""
-        # Only allow admins
-        if not g.user.is_admin:
-            flash("Admin access required", 'error')
-            return redirect(url_for('AIChatView.index'))
-        
         try:
             model_manager = ModelManager(app=self.appbuilder.app)
             available_models = model_manager.get_available_models()
@@ -397,10 +401,6 @@ class AIAdminView(BaseView):
     @protect()
     def models(self):
         """Model configuration"""
-        if not g.user.is_admin:
-            flash("Admin access required", 'error')
-            return redirect(url_for('AIChatView.index'))
-        
         try:
             model_manager = ModelManager(app=self.appbuilder.app)
             models = model_manager.get_available_models()
@@ -420,10 +420,6 @@ class AIAdminView(BaseView):
     @protect()
     def system_config(self):
         """System configuration"""
-        if not g.user.is_admin:
-            flash("Admin access required", 'error')
-            return redirect(url_for('AIChatView.index'))
-        
         if request.method == 'POST':
             # Handle configuration updates
             try:
