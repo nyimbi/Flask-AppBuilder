@@ -9,6 +9,7 @@ import logging
 from flask.globals import _request_ctx_stack
 
 from flask_appbuilder._compat import as_unicode
+from .xss_security import XSSProtection
 
 
 log = logging.getLogger(__name__)
@@ -388,7 +389,7 @@ class ApprovalWidget(FormWidget):
             template = jinja_env.get_template('appbuilder/widgets/approval_buttons.html')
             return template.render(
                 object_id=getattr(obj, 'id', None),
-                object_name=getattr(obj, 'name', str(obj)),
+                object_name=XSSProtection.escape_html(getattr(obj, 'name', str(obj))),
                 can_approve=True,
                 csrf_token=self._get_csrf_token()
             )
@@ -423,13 +424,13 @@ class ApprovalWidget(FormWidget):
     def get_approval_status_badge(self, obj):
         """
         Get HTML badge for approval status.
-        
+
         :param obj: Object to get status for
         :return: HTML badge showing approval status
         """
         if not hasattr(obj, 'status'):
             return ''
-        
+
         status_classes = {
             'draft': 'badge-secondary',
             'pending_approval': 'badge-warning',
@@ -437,11 +438,16 @@ class ApprovalWidget(FormWidget):
             'rejected': 'badge-danger',
             'archived': 'badge-dark'
         }
-        
+
         css_class = status_classes.get(obj.status, 'badge-secondary')
-        status_text = obj.status.replace('_', ' ').title()
-        
-        return f'<span class="badge {css_class}">{status_text}</span>'
+        status_text = XSSProtection.escape_html(obj.status.replace('_', ' ').title())
+
+        # Use safe HTML generation instead of f-string formatting
+        return XSSProtection.create_safe_html(
+            'span',
+            content=status_text,
+            attributes={'class': f'badge {css_class}'}
+        )
 
 
 class MenuWidget(RenderTemplateWidget):

@@ -17,8 +17,18 @@ from typing import (
 )
 import urllib.parse
 
-from apispec import APISpec, yaml_utils
-from apispec.exceptions import DuplicateComponentNameError
+try:
+    from apispec import APISpec, yaml_utils
+    from apispec.exceptions import DuplicateComponentNameError
+    APISPEC_AVAILABLE = True
+except ImportError:
+    APISPEC_AVAILABLE = False
+    # Provide dummy classes for type hints
+    class APISpec:
+        pass
+    class DuplicateComponentNameError(Exception):
+        pass
+    yaml_utils = None
 from flask import Blueprint, current_app, jsonify, make_response, request, Response
 from flask_appbuilder.models.sqla import Model
 from flask_appbuilder.models.sqla.interface import SQLAInterface
@@ -30,7 +40,12 @@ from marshmallow_sqlalchemy.fields import Related, RelatedList
 import prison
 from sqlalchemy.exc import IntegrityError
 from werkzeug.exceptions import BadRequest
-import yaml
+try:
+    import yaml
+    YAML_AVAILABLE = True
+except ImportError:
+    YAML_AVAILABLE = False
+    yaml = None
 
 from .convert import Model2SchemaConverter
 from .schemas import get_info_schema, get_item_schema, get_list_schema
@@ -455,6 +470,10 @@ class BaseApi(AbstractViewApi):
         
         :param api_spec: APISpec instance to add specifications to
         """
+        if not APISPEC_AVAILABLE:
+            log.warning("APISpec not available, skipping API spec generation")
+            return
+            
         self.add_apispec_components(api_spec)
         for attr_name in dir(self):
             attr = getattr(self, attr_name)
@@ -487,6 +506,10 @@ class BaseApi(AbstractViewApi):
         
         :param api_spec: APISpec instance to add components to
         """
+        if not APISPEC_AVAILABLE:
+            log.warning("APISpec not available, skipping component registration")
+            return
+            
         for k, v in self.responses.items():
             try:
                 api_spec.components.response(k, v)
@@ -576,19 +599,23 @@ class BaseApi(AbstractViewApi):
                 override_method_spec = self.openapi_spec_methods[func.__name__]
             except KeyError:
                 override_method_spec = {}
-            yaml_doc_string = yaml_utils.load_operations_from_docstring(func.__doc__)
-            yaml_doc_string = yaml.safe_load(
-                str(yaml_doc_string).replace(
-                    "{{self.__class__.__name__}}", self.__class__.__name__
+            
+            if APISPEC_AVAILABLE and yaml_utils and YAML_AVAILABLE:
+                yaml_doc_string = yaml_utils.load_operations_from_docstring(func.__doc__)
+                yaml_doc_string = yaml.safe_load(
+                    str(yaml_doc_string).replace(
+                        "{{self.__class__.__name__}}", self.__class__.__name__
+                    )
                 )
-            )
-            if yaml_doc_string:
-                operation_spec = yaml_doc_string.get(method.lower(), {})
-                # Merge docs spec and override spec
-                operation_spec.update(override_method_spec.get(method.lower(), {}))
-                if self.get_method_permission(func.__name__):
-                    operation_spec["security"] = [{"jwt": []}]
-                operations[method.lower()] = operation_spec
+                if yaml_doc_string:
+                    operation_spec = yaml_doc_string.get(method.lower(), {})
+                    # Merge docs spec and override spec
+                    operation_spec.update(override_method_spec.get(method.lower(), {}))
+                    if self.get_method_permission(func.__name__):
+                        operation_spec["security"] = [{"jwt": []}]
+                    operations[method.lower()] = operation_spec
+                else:
+                    operations[method.lower()] = {}
             else:
                 operations[method.lower()] = {}
 
@@ -978,6 +1005,10 @@ class ModelRestApi(BaseModelApi):
         return f"{self.__class__.__name__}.put"
 
     def add_apispec_components(self, api_spec: APISpec) -> None:
+        if not APISPEC_AVAILABLE:
+            log.warning("APISpec not available, skipping model API spec components")
+            return
+            
         super(ModelRestApi, self).add_apispec_components(api_spec)
         api_spec.components.schema(
             self.list_model_schema_name, schema=self.list_model_schema

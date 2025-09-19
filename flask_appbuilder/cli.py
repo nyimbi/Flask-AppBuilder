@@ -347,6 +347,14 @@ except ImportError:
     pass
 
 
+# Import and register generation commands
+try:
+    from .cli.generators.cli_commands import gen
+    fab.add_command(gen)
+except ImportError:
+    # Generation tools not available
+    pass
+
 # Register all commands with the fab group
 fab.add_command(create_app)
 fab.add_command(create_addon)

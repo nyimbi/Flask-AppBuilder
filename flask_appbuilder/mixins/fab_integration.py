@@ -152,36 +152,205 @@ class PermissionAwareMixin:
     def can_create(cls, user=None):
         """Check if user can create records of this type."""
         if not user:
-            user = current_user
+            try:
+                from flask_login import current_user
+                user = current_user
+            except ImportError:
+                return False
+
         # Integrate with Flask-AppBuilder permission system
-        return True  # Placeholder - implement based on FAB permissions
-    
-    @classmethod  
+        try:
+            from flask_appbuilder import appbuilder
+            if not appbuilder or not appbuilder.sm:
+                return False
+
+            # Check create permission for this model
+            model_name = cls.__name__
+            permission_name = f"can_add"
+            view_menu_name = f"{model_name}View"
+
+            return appbuilder.sm.has_access(permission_name, view_menu_name, user)
+
+        except (ImportError, AttributeError):
+            # Fall back to checking if user is authenticated
+            return user.is_authenticated if hasattr(user, 'is_authenticated') else False
+
+    @classmethod
     def can_read(cls, user=None):
         """Check if user can read records of this type."""
         if not user:
-            user = current_user
-        return True  # Placeholder - implement based on FAB permissions
-    
+            try:
+                from flask_login import current_user
+                user = current_user
+            except ImportError:
+                return False
+
+        try:
+            from flask_appbuilder import appbuilder
+            if not appbuilder or not appbuilder.sm:
+                return False
+
+            # Check read permission for this model
+            model_name = cls.__name__
+            permission_name = f"can_list"
+            view_menu_name = f"{model_name}View"
+
+            return appbuilder.sm.has_access(permission_name, view_menu_name, user)
+
+        except (ImportError, AttributeError):
+            # Fall back to checking if user is authenticated
+            return user.is_authenticated if hasattr(user, 'is_authenticated') else False
+
     def can_edit(self, user=None):
         """Check if user can edit this specific record."""
         if not user:
-            user = current_user
-        return True  # Placeholder - implement based on FAB permissions
-    
+            try:
+                from flask_login import current_user
+                user = current_user
+            except ImportError:
+                return False
+
+        try:
+            from flask_appbuilder import appbuilder
+            if not appbuilder or not appbuilder.sm:
+                return False
+
+            # Check edit permission for this model
+            model_name = self.__class__.__name__
+            permission_name = f"can_edit"
+            view_menu_name = f"{model_name}View"
+
+            has_general_permission = appbuilder.sm.has_access(permission_name, view_menu_name, user)
+
+            if not has_general_permission:
+                return False
+
+            # Apply row-level security checks
+            # If record has an owner field, check ownership
+            if hasattr(self, 'created_by_fk') and self.created_by_fk:
+                if user.id != self.created_by_fk:
+                    # Check if user is admin or has override permission
+                    return appbuilder.sm.is_admin(user)
+
+            # If multi-tenant, check tenant access
+            if hasattr(self, 'tenant_id') and hasattr(user, 'tenant_id'):
+                return self.tenant_id == user.tenant_id or appbuilder.sm.is_admin(user)
+
+            return True
+
+        except (ImportError, AttributeError):
+            # Fall back to basic ownership check
+            if hasattr(self, 'created_by_fk') and hasattr(user, 'id'):
+                return self.created_by_fk == user.id
+            return user.is_authenticated if hasattr(user, 'is_authenticated') else False
+
     def can_delete(self, user=None):
         """Check if user can delete this specific record."""
         if not user:
-            user = current_user
-        return True  # Placeholder - implement based on FAB permissions
-    
+            try:
+                from flask_login import current_user
+                user = current_user
+            except ImportError:
+                return False
+
+        try:
+            from flask_appbuilder import appbuilder
+            if not appbuilder or not appbuilder.sm:
+                return False
+
+            # Check delete permission for this model
+            model_name = self.__class__.__name__
+            permission_name = f"can_delete"
+            view_menu_name = f"{model_name}View"
+
+            has_general_permission = appbuilder.sm.has_access(permission_name, view_menu_name, user)
+
+            if not has_general_permission:
+                return False
+
+            # Apply stricter row-level security for deletion
+            # If record has an owner field, only owner or admin can delete
+            if hasattr(self, 'created_by_fk') and self.created_by_fk:
+                return user.id == self.created_by_fk or appbuilder.sm.is_admin(user)
+
+            # If multi-tenant, check tenant access
+            if hasattr(self, 'tenant_id') and hasattr(user, 'tenant_id'):
+                return self.tenant_id == user.tenant_id or appbuilder.sm.is_admin(user)
+
+            return True
+
+        except (ImportError, AttributeError):
+            # Fall back to basic ownership check
+            if hasattr(self, 'created_by_fk') and hasattr(user, 'id'):
+                return self.created_by_fk == user.id
+            return False  # Deletion requires explicit permission
+
     @classmethod
     def filter_by_permissions(cls, query, user=None):
         """Filter query based on user permissions."""
         if not user:
-            user = current_user
-        # Apply row-level security based on user permissions
-        return query  # Placeholder - implement permission filtering
+            try:
+                from flask_login import current_user
+                user = current_user
+            except ImportError:
+                # No user context, return empty query for security
+                return query.filter(False)
+
+        try:
+            from flask_appbuilder import appbuilder
+            if not appbuilder or not appbuilder.sm:
+                # No security manager, apply basic filtering
+                if not user.is_authenticated:
+                    return query.filter(False)
+            else:
+                # Check if user has read permission
+                if not cls.can_read(user):
+                    return query.filter(False)
+
+                # If user is admin, no filtering needed
+                if appbuilder.sm.is_admin(user):
+                    return query
+
+            # Apply row-level security filters
+            filters = []
+
+            # Filter by tenant if multi-tenant
+            if hasattr(cls, 'tenant_id') and hasattr(user, 'tenant_id'):
+                filters.append(cls.tenant_id == user.tenant_id)
+
+            # Filter by ownership if applicable (unless admin)
+            if hasattr(cls, 'created_by_fk') and hasattr(user, 'id'):
+                try:
+                    if not appbuilder.sm.is_admin(user):
+                        filters.append(cls.created_by_fk == user.id)
+                except:
+                    # If admin check fails, apply ownership filter
+                    filters.append(cls.created_by_fk == user.id)
+
+            # Filter by active status if applicable
+            if hasattr(cls, 'active'):
+                filters.append(cls.active == True)
+
+            # Apply all filters
+            for filter_condition in filters:
+                query = query.filter(filter_condition)
+
+            return query
+
+        except Exception as e:
+            # On any error, return restricted query for security
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Error in permission filtering for {cls.__name__}: {e}")
+
+            # Return minimal safe query
+            if hasattr(user, 'is_authenticated') and user.is_authenticated:
+                # Apply basic ownership filter if possible
+                if hasattr(cls, 'created_by_fk') and hasattr(user, 'id'):
+                    return query.filter(cls.created_by_fk == user.id)
+                return query
+            else:
+                return query.filter(False)  # No access for unauthenticated users
 
 
 class TenantAwareMixin:

@@ -1,0 +1,227 @@
+{% extends "appbuilder/base.html" %}
+
+{% block head_css %}
+{{ super() }}
+<style>
+.passkey-card {
+    max-width: 800px;
+    margin: 2rem auto;
+}
+
+.credential-item {
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    transition: border-color 0.15s ease-in-out;
+}
+
+.credential-item:hover {
+    border-color: #0d6efd;
+}
+
+.credential-icon {
+    font-size: 2rem;
+    color: #0d6efd;
+}
+
+.credential-name {
+    font-weight: 600;
+    color: #212529;
+}
+
+.credential-meta {
+    color: #6c757d;
+    font-size: 0.875rem;
+}
+
+.no-credentials {
+    text-align: center;
+    padding: 3rem 2rem;
+}
+
+.no-credentials-icon {
+    font-size: 4rem;
+    color: #dee2e6;
+    margin-bottom: 1rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card passkey-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3><i class="fa fa-key"></i> {{ _('Manage Passkeys') }}</h3>
+                    <a href="{{ url_for('PasskeyView.register') }}" class="btn btn-primary">
+                        <i class="fa fa-plus"></i> {{ _('Add New Passkey') }}
+                    </a>
+                </div>
+                
+                <div class="card-body">
+                    {% if credentials %}
+                        <p class="text-muted mb-4">
+                            {{ _('Passkeys provide secure, passwordless authentication using your device\'s built-in security features like fingerprint, face recognition, or security keys.') }}
+                        </p>
+                        
+                        {% for credential in credentials %}
+                        <div class="credential-item" data-credential-id="{{ credential.credential_id }}">
+                            <div class="row align-items-center">
+                                <div class="col-auto">
+                                    <i class="fa fa-fingerprint credential-icon"></i>
+                                </div>
+                                <div class="col">
+                                    <div class="credential-name">{{ credential.credential_name }}</div>
+                                    <div class="credential-meta">
+                                        {{ _('Created') }}: {{ credential.created_on }}
+                                        {% if credential.last_used %}
+                                            | {{ _('Last used') }}: {{ credential.last_used }}
+                                        {% endif %}
+                                        {% if credential.transports %}
+                                            | {{ _('Transport') }}: {{ credential.transports|join(', ') }}
+                                        {% endif %}
+                                    </div>
+                                    <div class="credential-meta">
+                                        {{ _('Uses') }}: {{ credential.sign_count }}
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <div class="btn-group">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" 
+                                                onclick="renameCredential('{{ credential.credential_id }}', '{{ credential.credential_name }}')">
+                                            <i class="fa fa-edit"></i> {{ _('Rename') }}
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                onclick="revokeCredential('{{ credential.credential_id }}', '{{ credential.credential_name }}')">
+                                            <i class="fa fa-trash"></i> {{ _('Remove') }}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        
+                        <div class="mt-4">
+                            <div class="alert alert-info">
+                                <h6><i class="fa fa-info-circle"></i> {{ _('About Passkeys') }}</h6>
+                                <ul class="mb-0">
+                                    <li>{{ _('Passkeys are more secure than passwords and resistant to phishing attacks') }}</li>
+                                    <li>{{ _('Each passkey is unique to this website and cannot be used elsewhere') }}</li>
+                                    <li>{{ _('You can use the same device to create multiple passkeys') }}</li>
+                                    <li>{{ _('Passkeys work across your devices when synced with your account (iCloud, Google, etc.)') }}</li>
+                                </ul>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="no-credentials">
+                            <div class="no-credentials-icon">
+                                <i class="fa fa-key"></i>
+                            </div>
+                            <h4>{{ _('No Passkeys Registered') }}</h4>
+                            <p class="text-muted mb-4">
+                                {{ _('Passkeys provide a secure, convenient way to sign in without passwords. Get started by registering your first passkey.') }}
+                            </p>
+                            <a href="{{ url_for('PasskeyView.register') }}" class="btn btn-primary btn-lg">
+                                <i class="fa fa-plus"></i> {{ _('Register Your First Passkey') }}
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Rename Modal -->
+<div class="modal fade" id="renameModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">{{ _('Rename Passkey') }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="renameForm">
+                    <div class="mb-3">
+                        <label for="newCredentialName" class="form-label">{{ _('New Name') }}</label>
+                        <input type="text" class="form-control" id="newCredentialName" 
+                               maxlength="64" required>
+                        <div class="form-text">{{ _('Choose a memorable name for this passkey') }}</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+                <button type="button" class="btn btn-primary" onclick="submitRename()">{{ _('Save') }}</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentCredentialId = null;
+
+function renameCredential(credentialId, currentName) {
+    currentCredentialId = credentialId;
+    document.getElementById('newCredentialName').value = currentName;
+    new bootstrap.Modal(document.getElementById('renameModal')).show();
+}
+
+function submitRename() {
+    const newName = document.getElementById('newCredentialName').value.trim();
+    if (!newName) {
+        alert('{{ _("Please enter a name") }}');
+        return;
+    }
+    
+    fetch(`{{ url_for('PasskeyView.rename', credential_id='') }}${currentCredentialId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({ name: newName })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.message || '{{ _("Failed to rename passkey") }}');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('{{ _("An error occurred") }}');
+    });
+}
+
+function revokeCredential(credentialId, credentialName) {
+    if (!confirm(`{{ _('Are you sure you want to remove the passkey') }} "${credentialName}"? {{ _('This action cannot be undone.') }}`)) {
+        return;
+    }
+    
+    fetch(`{{ url_for('PasskeyView.revoke', credential_id='') }}${credentialId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.message || '{{ _("Failed to remove passkey") }}');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('{{ _("An error occurred") }}');
+    });
+}
+</script>
+{% endblock %}

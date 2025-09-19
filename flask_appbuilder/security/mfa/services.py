@@ -27,6 +27,7 @@ Circuit Breaker Pattern:
 """
 
 import io
+import json
 import base64
 import logging
 import secrets
@@ -66,7 +67,19 @@ try:
 except ImportError:
     HAS_AWS_SNS = False
 
-from .models import UserMFA, MFABackupCode, MFAVerification, MFAPolicy
+try:
+    from webauthn import generate_registration_options, verify_registration_response
+    from webauthn import generate_authentication_options, verify_authentication_response
+    from webauthn.helpers.structs import (
+        RegistrationCredential, AuthenticationCredential, 
+        PublicKeyCredentialCreationOptions, PublicKeyCredentialRequestOptions
+    )
+    from webauthn.helpers.cose import COSEAlgorithmIdentifier
+    HAS_WEBAUTHN = True
+except ImportError:
+    HAS_WEBAUTHN = False
+
+from .models import UserMFA, MFABackupCode, MFAVerification, MFAPolicy, WebAuthnCredential, MFAChallenge
 
 log = logging.getLogger(__name__)
 
@@ -1054,6 +1067,272 @@ class MFAPolicyService:
         }
 
 
+class TokenGenerationService:
+    """
+    Centralized token generation and validation service.
+    
+    Provides unified interface for generating and validating various types of
+    MFA tokens including time-based codes, SMS codes, email codes, and one-time
+    tokens with proper rate limiting and security controls.
+    
+    Features:
+        - Multiple token type support (numeric, alphanumeric, custom patterns)
+        - Configurable token length and validity periods
+        - Rate limiting and abuse prevention
+        - Token lifecycle management
+        - Cryptographically secure generation
+        - Replay attack prevention
+    """
+    
+    def __init__(self):
+        """Initialize token generation service."""
+        self.default_length = current_app.config.get('MFA_TOKEN_LENGTH', 6)
+        self.default_validity = current_app.config.get('MFA_TOKEN_VALIDITY_SECONDS', 300)
+        self.max_attempts = current_app.config.get('MFA_TOKEN_MAX_ATTEMPTS', 3)
+        
+    def generate_numeric_token(self, length: int = None) -> str:
+        """
+        Generate a cryptographically secure numeric token.
+        
+        Args:
+            length: Token length (default from config)
+            
+        Returns:
+            str: Numeric token
+            
+        Example:
+            >>> service = TokenGenerationService()
+            >>> token = service.generate_numeric_token(6)
+            >>> len(token) == 6 and token.isdigit()
+            True
+        """
+        length = length or self.default_length
+        
+        # Use cryptographically secure random number generation
+        token_range = 10 ** length
+        random_number = secrets.randbelow(token_range)
+        
+        # Format with leading zeros
+        return f"{random_number:0{length}d}"
+    
+    def generate_alphanumeric_token(self, length: int = 8, 
+                                  exclude_ambiguous: bool = True) -> str:
+        """
+        Generate a cryptographically secure alphanumeric token.
+        
+        Args:
+            length: Token length (default 8)
+            exclude_ambiguous: Exclude confusing characters (0, O, 1, I, l)
+            
+        Returns:
+            str: Alphanumeric token
+        """
+        if exclude_ambiguous:
+            # Exclude ambiguous characters: 0, O, 1, I, l
+            alphabet = "23456789ABCDEFGHJKMNPQRSTUVWXYZ"
+        else:
+            alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        
+        return ''.join(secrets.choice(alphabet) for _ in range(length))
+    
+    def generate_email_token(self, user_email: str, token_type: str = 'login') -> str:
+        """
+        Generate email verification token with expiration.
+        
+        Args:
+            user_email: Email address for token
+            token_type: Type of verification (login, reset, etc.)
+            
+        Returns:
+            str: Email verification token
+        """
+        from flask_appbuilder import db
+        
+        # Generate secure token
+        token = self.generate_alphanumeric_token(32, exclude_ambiguous=False)
+        
+        # Store token with metadata
+        verification_record = MFAVerification(
+            method='email_token',
+            otp_used=token,
+            ip_address=None,
+            additional_data={
+                'email': user_email,
+                'token_type': token_type,
+                'expires_at': (datetime.utcnow() + timedelta(seconds=self.default_validity)).isoformat()
+            }
+        )
+        
+        db.session.add(verification_record)
+        db.session.commit()
+        
+        return token
+    
+    def generate_sms_token(self, phone_number: str) -> str:
+        """
+        Generate SMS verification token.
+        
+        Args:
+            phone_number: Phone number for token delivery
+            
+        Returns:
+            str: SMS verification token
+        """
+        return self.generate_numeric_token()
+    
+    def validate_token(self, token: str, user_id: int = None, 
+                      method: str = None, max_age_seconds: int = None) -> Dict[str, Any]:
+        """
+        Validate a token with security checks.
+        
+        Args:
+            token: Token to validate
+            user_id: Optional user ID for scoping
+            method: Token method for validation
+            max_age_seconds: Maximum token age
+            
+        Returns:
+            Dict[str, Any]: Validation result with metadata
+        """
+        from flask_appbuilder import db
+        
+        try:
+            max_age = max_age_seconds or self.default_validity
+            cutoff_time = datetime.utcnow() - timedelta(seconds=max_age)
+            
+            # Query for token with constraints
+            query = db.session.query(MFAVerification).filter(
+                MFAVerification.otp_used == token,
+                MFAVerification.timestamp >= cutoff_time,
+                MFAVerification.success == True
+            )
+            
+            if user_id:
+                # Filter by user through UserMFA relationship
+                query = query.join(UserMFA).filter(UserMFA.user_id == user_id)
+            
+            if method:
+                query = query.filter(MFAVerification.method == method)
+            
+            verification = query.first()
+            
+            if not verification:
+                return {
+                    'valid': False,
+                    'reason': 'Token not found or expired',
+                    'remaining_attempts': None
+                }
+            
+            # Check if token was already consumed
+            if hasattr(verification, 'consumed_at') and verification.consumed_at:
+                return {
+                    'valid': False,
+                    'reason': 'Token already used',
+                    'remaining_attempts': None
+                }
+            
+            # Mark token as consumed
+            verification.consumed_at = datetime.utcnow()
+            db.session.commit()
+            
+            return {
+                'valid': True,
+                'verification_id': verification.id,
+                'method': verification.method,
+                'timestamp': verification.timestamp,
+                'additional_data': verification.additional_data
+            }
+            
+        except Exception as e:
+            log.error(f"Token validation failed: {str(e)}")
+            return {
+                'valid': False,
+                'reason': f'Validation error: {str(e)}',
+                'remaining_attempts': None
+            }
+    
+    def cleanup_expired_tokens(self, max_age_days: int = 7) -> int:
+        """
+        Clean up expired verification tokens.
+        
+        Args:
+            max_age_days: Maximum age for token retention
+            
+        Returns:
+            int: Number of tokens cleaned up
+        """
+        from flask_appbuilder import db
+        
+        try:
+            cutoff_time = datetime.utcnow() - timedelta(days=max_age_days)
+            
+            deleted_count = db.session.query(MFAVerification).filter(
+                MFAVerification.timestamp < cutoff_time
+            ).delete()
+            
+            db.session.commit()
+            
+            log.info(f"Cleaned up {deleted_count} expired MFA verification tokens")
+            return deleted_count
+            
+        except Exception as e:
+            db.session.rollback()
+            log.error(f"Token cleanup failed: {str(e)}")
+            return 0
+    
+    def get_token_stats(self, user_id: int = None, 
+                       hours: int = 24) -> Dict[str, Any]:
+        """
+        Get token generation and validation statistics.
+        
+        Args:
+            user_id: Optional user ID for filtering
+            hours: Time window for statistics
+            
+        Returns:
+            Dict[str, Any]: Token usage statistics
+        """
+        from flask_appbuilder import db
+        
+        try:
+            since_time = datetime.utcnow() - timedelta(hours=hours)
+            
+            query = db.session.query(MFAVerification).filter(
+                MFAVerification.timestamp >= since_time
+            )
+            
+            if user_id:
+                query = query.join(UserMFA).filter(UserMFA.user_id == user_id)
+            
+            all_attempts = query.all()
+            
+            stats = {
+                'total_attempts': len(all_attempts),
+                'successful_attempts': len([a for a in all_attempts if a.success]),
+                'failed_attempts': len([a for a in all_attempts if not a.success]),
+                'methods': {},
+                'time_window_hours': hours
+            }
+            
+            # Method breakdown
+            for attempt in all_attempts:
+                method = attempt.method
+                if method not in stats['methods']:
+                    stats['methods'][method] = {'total': 0, 'success': 0, 'failed': 0}
+                
+                stats['methods'][method]['total'] += 1
+                if attempt.success:
+                    stats['methods'][method]['success'] += 1
+                else:
+                    stats['methods'][method]['failed'] += 1
+            
+            return stats
+            
+        except Exception as e:
+            log.error(f"Failed to get token stats: {str(e)}")
+            return {'error': str(e)}
+
+
 class MFAOrchestrationService:
     """
     High-level MFA workflow orchestration service.
@@ -1076,6 +1355,7 @@ class MFAOrchestrationService:
         self.email_service = EmailService()
         self.backup_service = BackupCodeService()
         self.policy_service = MFAPolicyService()
+        self.token_service = TokenGenerationService()
     
     def initiate_mfa_setup(self, user) -> Dict[str, Any]:
         """
@@ -1318,13 +1598,526 @@ class MFAOrchestrationService:
             raise
 
 
+class WebAuthnService:
+    """
+    WebAuthn/FIDO2 passkey service for passwordless authentication.
+    
+    Provides complete WebAuthn credential lifecycle management including
+    registration, authentication, and credential management following
+    FIDO2 and WebAuthn W3C standards.
+    
+    Features:
+        - FIDO2/WebAuthn credential registration
+        - Passwordless authentication flows
+        - Multi-credential management per user
+        - Platform and roaming authenticator support
+        - Attestation and assertion verification
+        - Cross-platform compatibility
+    """
+    
+    def __init__(self):
+        """Initialize WebAuthn service with configuration."""
+        if not HAS_WEBAUTHN:
+            raise RuntimeError(
+                "WebAuthn support requires py-webauthn library. "
+                "Install with: pip install 'Flask-AppBuilder[mfa]'"
+            )
+        
+        self.rp_id = current_app.config.get('WEBAUTHN_RP_ID', 'localhost')
+        self.rp_name = current_app.config.get('WEBAUTHN_RP_NAME', 'Flask AppBuilder')
+        self.origin = current_app.config.get('WEBAUTHN_ORIGIN', f'https://{self.rp_id}')
+        self.timeout = current_app.config.get('WEBAUTHN_TIMEOUT', 300000)  # 5 minutes
+        
+        # Supported algorithms (ES256, PS256, RS256)
+        self.supported_algorithms = [
+            COSEAlgorithmIdentifier.ECDSA_SHA_256,
+            COSEAlgorithmIdentifier.RSASSA_PSS_SHA_256,
+            COSEAlgorithmIdentifier.RSASSA_PKCS1_v1_5_SHA_256,
+        ]
+        
+        log.info(f"WebAuthn service initialized: RP={self.rp_id}, Origin={self.origin}")
+    
+    def generate_registration_options(self, user, exclude_existing: bool = True) -> Dict[str, Any]:
+        """
+        Generate WebAuthn registration options for credential creation.
+        
+        Args:
+            user: Flask-AppBuilder User object
+            exclude_existing: Whether to exclude existing credentials
+            
+        Returns:
+            Dict[str, Any]: Registration options and challenge data
+            
+        Raises:
+            ValidationError: If user is invalid or registration blocked
+            
+        Example:
+            >>> service = WebAuthnService()
+            >>> options = service.generate_registration_options(user)
+            >>> 'challenge' in options
+            True
+            >>> 'publicKey' in options
+            True
+        """
+        from flask_appbuilder import db
+        
+        try:
+            # Get existing credentials for exclusion
+            excluded_credentials = []
+            if exclude_existing:
+                existing_creds = db.session.query(WebAuthnCredential).filter_by(
+                    user_id=user.id,
+                    is_active=True
+                ).all()
+                
+                excluded_credentials = [
+                    {
+                        "id": cred.credential_id,
+                        "transports": cred.transports or [],
+                        "type": "public-key"
+                    }
+                    for cred in existing_creds
+                ]
+            
+            # Generate registration options
+            registration_options = generate_registration_options(
+                rp_id=self.rp_id,
+                rp_name=self.rp_name,
+                user_id=str(user.id).encode('utf-8'),
+                user_name=user.username,
+                user_display_name=user.first_name + ' ' + user.last_name if user.first_name else user.username,
+                exclude_credentials=excluded_credentials,
+                supported_pub_key_algs=self.supported_algorithms,
+                timeout=self.timeout
+            )
+            
+            # Store challenge for verification
+            challenge_record = MFAChallenge.create_challenge(
+                user_id=user.id,
+                challenge_type='webauthn_registration',
+                challenge_data=registration_options.challenge,
+                expires_at=datetime.utcnow() + timedelta(milliseconds=self.timeout)
+            )
+            
+            db.session.add(challenge_record)
+            db.session.commit()
+            
+            # Convert to dict for JSON serialization
+            options_dict = {
+                "publicKey": {
+                    "rp": {"id": registration_options.rp.id, "name": registration_options.rp.name},
+                    "user": {
+                        "id": registration_options.user.id.decode('latin-1'),
+                        "name": registration_options.user.name,
+                        "displayName": registration_options.user.display_name
+                    },
+                    "challenge": registration_options.challenge.decode('latin-1'),
+                    "pubKeyCredParams": [
+                        {"type": param.type, "alg": param.alg}
+                        for param in registration_options.pub_key_cred_params
+                    ],
+                    "timeout": registration_options.timeout,
+                    "excludeCredentials": excluded_credentials,
+                    "authenticatorSelection": {
+                        "authenticatorAttachment": "platform",
+                        "userVerification": "preferred",
+                        "residentKey": "preferred"
+                    },
+                    "attestation": "none"
+                },
+                "challenge_id": challenge_record.id
+            }
+            
+            log.info(f"WebAuthn registration options generated for user {user.id}")
+            return options_dict
+            
+        except Exception as e:
+            db.session.rollback()
+            log.error(f"WebAuthn registration options generation failed: {str(e)}")
+            raise ValidationError(f"Failed to generate registration options: {str(e)}")
+    
+    def verify_registration_response(self, user, credential_response: Dict[str, Any], 
+                                   challenge_id: int, credential_name: str = None) -> Dict[str, Any]:
+        """
+        Verify WebAuthn registration response and store credential.
+        
+        Args:
+            user: Flask-AppBuilder User object
+            credential_response: WebAuthn credential creation response
+            challenge_id: ID of the challenge record
+            credential_name: Optional name for the credential
+            
+        Returns:
+            Dict[str, Any]: Verification result and credential info
+            
+        Raises:
+            ValidationError: If verification fails
+        """
+        from flask_appbuilder import db
+        
+        try:
+            # Retrieve and verify challenge
+            challenge = db.session.query(MFAChallenge).get(challenge_id)
+            if not challenge or challenge.user_id != user.id:
+                raise ValidationError("Invalid challenge")
+            
+            if challenge.is_expired or challenge.is_used:
+                raise ValidationError("Challenge expired or already used")
+            
+            if challenge.challenge_type != 'webauthn_registration':
+                raise ValidationError("Invalid challenge type")
+            
+            # Create registration credential object
+            registration_credential = RegistrationCredential.parse_raw(
+                json.dumps(credential_response)
+            )
+            
+            # Verify registration response
+            verification = verify_registration_response(
+                credential=registration_credential,
+                expected_challenge=challenge.challenge_data.encode('utf-8'),
+                expected_origin=self.origin,
+                expected_rp_id=self.rp_id
+            )
+            
+            if not verification.verified:
+                raise ValidationError("WebAuthn registration verification failed")
+            
+            # Store credential
+            webauthn_cred = WebAuthnCredential(
+                user_id=user.id,
+                credential_id=base64.urlsafe_b64encode(verification.credential_id).decode('utf-8'),
+                public_key=base64.urlsafe_b64encode(verification.credential_public_key).decode('utf-8'),
+                sign_count=verification.sign_count,
+                credential_name=credential_name or f"Passkey {datetime.utcnow().strftime('%Y-%m-%d %H:%M')}",
+                transports=getattr(registration_credential.response, 'transports', []),
+                is_active=True
+            )
+            
+            db.session.add(webauthn_cred)
+            
+            # Mark challenge as used
+            challenge.mark_as_used()
+            
+            db.session.commit()
+            
+            result = {
+                'registration_verified': True,
+                'credential_id': webauthn_cred.credential_id,
+                'credential_name': webauthn_cred.credential_name,
+                'transports': webauthn_cred.transports,
+                'message': 'Passkey registered successfully'
+            }
+            
+            log.info(f"WebAuthn credential registered for user {user.id}: {webauthn_cred.credential_id}")
+            return result
+            
+        except Exception as e:
+            db.session.rollback()
+            log.error(f"WebAuthn registration verification failed: {str(e)}")
+            raise ValidationError(f"Registration verification failed: {str(e)}")
+    
+    def generate_authentication_options(self, user_id: int = None) -> Dict[str, Any]:
+        """
+        Generate WebAuthn authentication options for credential assertion.
+        
+        Args:
+            user_id: Optional user ID to filter credentials (for user verification)
+            
+        Returns:
+            Dict[str, Any]: Authentication options and challenge data
+            
+        Raises:
+            ValidationError: If no credentials available
+        """
+        from flask_appbuilder import db
+        
+        try:
+            # Get allowed credentials
+            credential_query = db.session.query(WebAuthnCredential).filter_by(is_active=True)
+            
+            if user_id:
+                credential_query = credential_query.filter_by(user_id=user_id)
+            
+            credentials = credential_query.all()
+            
+            if not credentials:
+                if user_id:
+                    raise ValidationError("No active passkeys found for user")
+                else:
+                    raise ValidationError("No active passkeys found")
+            
+            # Prepare credential descriptors
+            allowed_credentials = [
+                {
+                    "id": cred.credential_id,
+                    "type": "public-key",
+                    "transports": cred.transports or ["internal", "hybrid"]
+                }
+                for cred in credentials
+            ]
+            
+            # Generate authentication options
+            authentication_options = generate_authentication_options(
+                rp_id=self.rp_id,
+                allow_credentials=allowed_credentials,
+                timeout=self.timeout,
+                user_verification="preferred"
+            )
+            
+            # Store challenge for verification
+            challenge_record = MFAChallenge.create_challenge(
+                user_id=user_id,  # May be None for usernameless flow
+                challenge_type='webauthn_authentication',
+                challenge_data=authentication_options.challenge,
+                expires_at=datetime.utcnow() + timedelta(milliseconds=self.timeout)
+            )
+            
+            db.session.add(challenge_record)
+            db.session.commit()
+            
+            # Convert to dict for JSON serialization
+            options_dict = {
+                "publicKey": {
+                    "challenge": authentication_options.challenge.decode('latin-1'),
+                    "timeout": authentication_options.timeout,
+                    "rpId": authentication_options.rp_id,
+                    "allowCredentials": allowed_credentials,
+                    "userVerification": authentication_options.user_verification
+                },
+                "challenge_id": challenge_record.id
+            }
+            
+            log.info(f"WebAuthn authentication options generated for user {user_id or 'any'}")
+            return options_dict
+            
+        except Exception as e:
+            db.session.rollback()
+            log.error(f"WebAuthn authentication options generation failed: {str(e)}")
+            raise ValidationError(f"Failed to generate authentication options: {str(e)}")
+    
+    def verify_authentication_response(self, credential_response: Dict[str, Any], 
+                                     challenge_id: int, ip_address: str = None) -> Dict[str, Any]:
+        """
+        Verify WebAuthn authentication response.
+        
+        Args:
+            credential_response: WebAuthn authentication assertion response
+            challenge_id: ID of the challenge record
+            ip_address: Client IP address for audit
+            
+        Returns:
+            Dict[str, Any]: Verification result and user info
+            
+        Raises:
+            ValidationError: If verification fails
+        """
+        from flask_appbuilder import db
+        
+        try:
+            # Retrieve and verify challenge
+            challenge = db.session.query(MFAChallenge).get(challenge_id)
+            if not challenge:
+                raise ValidationError("Invalid challenge")
+            
+            if challenge.is_expired or challenge.is_used:
+                raise ValidationError("Challenge expired or already used")
+            
+            if challenge.challenge_type != 'webauthn_authentication':
+                raise ValidationError("Invalid challenge type")
+            
+            # Parse authentication credential
+            authentication_credential = AuthenticationCredential.parse_raw(
+                json.dumps(credential_response)
+            )
+            
+            # Find the credential in database
+            credential_id = base64.urlsafe_b64encode(
+                base64.urlsafe_b64decode(authentication_credential.raw_id + "==")
+            ).decode('utf-8').rstrip('=')
+            
+            webauthn_cred = db.session.query(WebAuthnCredential).filter_by(
+                credential_id=credential_id,
+                is_active=True
+            ).first()
+            
+            if not webauthn_cred:
+                raise ValidationError("Credential not found or inactive")
+            
+            # Verify authentication response
+            verification = verify_authentication_response(
+                credential=authentication_credential,
+                expected_challenge=challenge.challenge_data.encode('utf-8'),
+                expected_origin=self.origin,
+                expected_rp_id=self.rp_id,
+                credential_public_key=base64.urlsafe_b64decode(
+                    webauthn_cred.public_key + "=="
+                ),
+                credential_current_sign_count=webauthn_cred.sign_count
+            )
+            
+            if not verification.verified:
+                raise ValidationError("WebAuthn authentication verification failed")
+            
+            # Update credential sign count
+            webauthn_cred.sign_count = verification.new_sign_count
+            webauthn_cred.last_used = datetime.utcnow()
+            
+            # Mark challenge as used
+            challenge.mark_as_used()
+            
+            # Get user information
+            from flask_appbuilder.security.sqla.models import User
+            user = db.session.query(User).get(webauthn_cred.user_id)
+            
+            # Record verification attempt
+            if challenge.user_id:  # User-specific challenge
+                user_mfa = db.session.query(UserMFA).filter_by(user_id=user.id).first()
+                if user_mfa:
+                    MFAVerification.record_attempt(
+                        user_mfa_id=user_mfa.id,
+                        method='webauthn',
+                        success=True,
+                        ip_address=ip_address
+                    )
+            
+            db.session.commit()
+            
+            result = {
+                'authentication_verified': True,
+                'user_id': user.id,
+                'username': user.username,
+                'credential_id': webauthn_cred.credential_id,
+                'credential_name': webauthn_cred.credential_name,
+                'sign_count': verification.new_sign_count,
+                'message': 'Passkey authentication successful'
+            }
+            
+            log.info(f"WebAuthn authentication verified for user {user.id} with credential {webauthn_cred.credential_id}")
+            return result
+            
+        except Exception as e:
+            db.session.rollback()
+            log.error(f"WebAuthn authentication verification failed: {str(e)}")
+            raise ValidationError(f"Authentication verification failed: {str(e)}")
+    
+    def get_user_credentials(self, user_id: int) -> List[Dict[str, Any]]:
+        """
+        Get all active WebAuthn credentials for a user.
+        
+        Args:
+            user_id: User ID to query
+            
+        Returns:
+            List[Dict]: List of credential information
+        """
+        from flask_appbuilder import db
+        
+        try:
+            credentials = db.session.query(WebAuthnCredential).filter_by(
+                user_id=user_id,
+                is_active=True
+            ).order_by(WebAuthnCredential.created_on.desc()).all()
+            
+            credential_list = []
+            for cred in credentials:
+                credential_list.append({
+                    'id': cred.id,
+                    'credential_id': cred.credential_id,
+                    'credential_name': cred.credential_name,
+                    'transports': cred.transports,
+                    'created_on': cred.created_on.isoformat(),
+                    'last_used': cred.last_used.isoformat() if cred.last_used else None,
+                    'sign_count': cred.sign_count
+                })
+            
+            return credential_list
+            
+        except Exception as e:
+            log.error(f"Failed to get user credentials: {str(e)}")
+            return []
+    
+    def revoke_credential(self, user_id: int, credential_id: str) -> bool:
+        """
+        Revoke (deactivate) a WebAuthn credential.
+        
+        Args:
+            user_id: Owner user ID
+            credential_id: Credential ID to revoke
+            
+        Returns:
+            bool: True if credential was revoked successfully
+        """
+        from flask_appbuilder import db
+        
+        try:
+            credential = db.session.query(WebAuthnCredential).filter_by(
+                user_id=user_id,
+                credential_id=credential_id,
+                is_active=True
+            ).first()
+            
+            if not credential:
+                return False
+            
+            credential.is_active = False
+            credential.revoked_at = datetime.utcnow()
+            
+            db.session.commit()
+            
+            log.info(f"WebAuthn credential {credential_id} revoked for user {user_id}")
+            return True
+            
+        except Exception as e:
+            db.session.rollback()
+            log.error(f"Failed to revoke credential: {str(e)}")
+            return False
+    
+    def rename_credential(self, user_id: int, credential_id: str, new_name: str) -> bool:
+        """
+        Rename a WebAuthn credential.
+        
+        Args:
+            user_id: Owner user ID
+            credential_id: Credential ID to rename
+            new_name: New credential name
+            
+        Returns:
+            bool: True if credential was renamed successfully
+        """
+        from flask_appbuilder import db
+        
+        try:
+            credential = db.session.query(WebAuthnCredential).filter_by(
+                user_id=user_id,
+                credential_id=credential_id,
+                is_active=True
+            ).first()
+            
+            if not credential:
+                return False
+            
+            credential.credential_name = new_name
+            db.session.commit()
+            
+            log.info(f"WebAuthn credential {credential_id} renamed to '{new_name}' for user {user_id}")
+            return True
+            
+        except Exception as e:
+            db.session.rollback()
+            log.error(f"Failed to rename credential: {str(e)}")
+            return False
+
+
 __all__ = [
     'TOTPService',
     'SMSService', 
     'EmailService',
     'BackupCodeService',
     'MFAPolicyService',
+    'TokenGenerationService',
     'MFAOrchestrationService',
+    'WebAuthnService',
     'MFAServiceError',
     'ServiceUnavailableError',
     'ValidationError',

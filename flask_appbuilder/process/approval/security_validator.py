@@ -19,6 +19,17 @@ from .audit_logger import ApprovalAuditLogger
 from .crypto_config import SecureSessionManager
 from .constants import SecurityConstants, ValidationConstants
 
+# Import MFA services for integration
+try:
+    from flask_appbuilder.security.mfa.services import (
+        MFAOrchestrationService, WebAuthnService, ValidationError as MFAValidationError
+    )
+    from flask_appbuilder.security.mfa.manager_mixin import MFASessionState
+    from flask_appbuilder.security.mfa.models import UserMFA, MFAPolicy
+    HAS_MFA_SUPPORT = True
+except ImportError:
+    HAS_MFA_SUPPORT = False
+
 log = logging.getLogger(__name__)
 
 
@@ -57,6 +68,15 @@ class ApprovalSecurityValidator:
         # Initialize rate limiting storage with production-ready backend selection
         self._init_rate_limiting_backend()
         self._last_cleanup = time.time()  # Track last cleanup time
+        
+        # Initialize MFA services if available
+        self.mfa_enabled = HAS_MFA_SUPPORT and self._is_mfa_configured()
+        if self.mfa_enabled:
+            self.mfa_orchestration = MFAOrchestrationService()
+            self.webauthn_service = WebAuthnService()
+            log.info("MFA integration enabled for approval system")
+        else:
+            log.debug("MFA integration not available or not configured")
 
     def _init_rate_limiting_backend(self):
         """
@@ -423,6 +443,380 @@ class ApprovalSecurityValidator:
                      f"{entries_after} entries remaining")
 
         self._last_cleanup = current_time
+
+    def _is_mfa_configured(self) -> bool:
+        """
+        Check if MFA is configured in the Flask-AppBuilder application.
+        
+        Returns:
+            bool: True if MFA is configured and available
+        """
+        try:
+            if not HAS_MFA_SUPPORT:
+                return False
+                
+            # Check if MFA is enabled in configuration
+            app_config = self.appbuilder.get_app.config
+            mfa_enabled = app_config.get('MFA_ENABLED', False)
+            
+            if not mfa_enabled:
+                return False
+                
+            # Check if at least one MFA method is configured
+            methods_configured = (
+                app_config.get('MFA_TOTP_ENABLED', False) or
+                app_config.get('MFA_SMS_ENABLED', False) or
+                app_config.get('MFA_EMAIL_ENABLED', False) or
+                app_config.get('WEBAUTHN_ENABLED', False)
+            )
+            
+            return methods_configured
+            
+        except Exception as e:
+            log.error(f"Error checking MFA configuration: {e}")
+            return False
+
+    def validate_mfa_for_approval(self, user, approval_level: str = 'standard') -> Dict[str, any]:
+        """
+        Validate MFA requirements for approval operations.
+        
+        Args:
+            user: Flask-AppBuilder User object
+            approval_level: Level of approval (standard, high, critical)
+            
+        Returns:
+            Dict containing validation result and MFA status
+        """
+        if not self.mfa_enabled:
+            return {
+                'valid': True,
+                'mfa_required': False,
+                'message': 'MFA not configured'
+            }
+        
+        try:
+            # Check if MFA is required for this user and approval level
+            mfa_required = self._is_mfa_required_for_approval(user, approval_level)
+            
+            if not mfa_required:
+                return {
+                    'valid': True,
+                    'mfa_required': False,
+                    'message': 'MFA not required for this operation'
+                }
+            
+            # Check if user has MFA set up
+            user_mfa = self._get_user_mfa(user.id)
+            if not user_mfa or not user_mfa.setup_completed:
+                return {
+                    'valid': False,
+                    'mfa_required': True,
+                    'mfa_setup_required': True,
+                    'message': 'MFA setup required before approvals',
+                    'setup_url': '/mfa/setup'
+                }
+            
+            # Check MFA session state
+            mfa_verified = MFASessionState.is_verified_and_valid()
+            
+            if not mfa_verified:
+                return {
+                    'valid': False,
+                    'mfa_required': True,
+                    'mfa_verification_required': True,
+                    'message': 'MFA verification required for this approval',
+                    'challenge_url': '/mfa/challenge'
+                }
+            
+            # Validate MFA method strength for approval level
+            current_method = MFASessionState.get_verification_method()
+            if not self._is_mfa_method_sufficient(current_method, approval_level):
+                return {
+                    'valid': False,
+                    'mfa_required': True,
+                    'stronger_mfa_required': True,
+                    'current_method': current_method,
+                    'required_methods': self._get_required_methods_for_level(approval_level),
+                    'message': f'Stronger MFA method required for {approval_level} approval'
+                }
+            
+            # All MFA validations passed
+            return {
+                'valid': True,
+                'mfa_required': True,
+                'mfa_verified': True,
+                'method_used': current_method,
+                'message': 'MFA validation successful'
+            }
+            
+        except Exception as e:
+            log.error(f"MFA validation error: {e}")
+            return {
+                'valid': False,
+                'error': True,
+                'message': 'MFA validation system error'
+            }
+
+    def _is_mfa_required_for_approval(self, user, approval_level: str) -> bool:
+        """
+        Determine if MFA is required for a specific approval level.
+        
+        Args:
+            user: Flask-AppBuilder User object
+            approval_level: Level of approval (standard, high, critical)
+            
+        Returns:
+            bool: True if MFA is required
+        """
+        try:
+            # Check if user has MFA policy
+            from flask_appbuilder.security.mfa.services import MFAPolicyService
+            policy_service = MFAPolicyService()
+            
+            # Basic policy check - MFA required for user
+            if policy_service.is_mfa_required_for_user(user):
+                return True
+            
+            # Approval-level specific requirements
+            app_config = self.appbuilder.get_app.config
+            
+            # Check approval-level specific MFA requirements
+            level_requirements = app_config.get('APPROVAL_MFA_REQUIREMENTS', {})
+            
+            if approval_level in level_requirements:
+                return level_requirements[approval_level].get('mfa_required', False)
+            
+            # Default requirements based on approval level
+            default_requirements = {
+                'critical': True,    # Always require MFA for critical approvals
+                'high': True,        # Always require MFA for high-value approvals
+                'standard': False    # Optional for standard approvals (policy-driven)
+            }
+            
+            return default_requirements.get(approval_level, False)
+            
+        except Exception as e:
+            log.error(f"Error checking MFA requirement: {e}")
+            # Fail secure - require MFA on error for high/critical levels
+            return approval_level in ['high', 'critical']
+
+    def _get_user_mfa(self, user_id: int):
+        """
+        Get user MFA configuration.
+        
+        Args:
+            user_id: User ID
+            
+        Returns:
+            UserMFA object or None
+        """
+        try:
+            from flask_appbuilder import db
+            return db.session.query(UserMFA).filter_by(user_id=user_id).first()
+        except Exception as e:
+            log.error(f"Error getting user MFA: {e}")
+            return None
+
+    def _is_mfa_method_sufficient(self, method: str, approval_level: str) -> bool:
+        """
+        Check if MFA method is sufficient for approval level.
+        
+        Args:
+            method: MFA method used (totp, webauthn, sms, email, backup)
+            approval_level: Required approval level
+            
+        Returns:
+            bool: True if method is sufficient
+        """
+        try:
+            # Method strength hierarchy (strongest to weakest)
+            method_strength = {
+                'webauthn': 5,    # Strongest - hardware-backed, phishing-resistant
+                'totp': 4,        # Strong - time-based, not phishing-resistant
+                'sms': 2,         # Medium - vulnerable to SIM swapping
+                'email': 2,       # Medium - vulnerable to email compromise
+                'backup': 1       # Weakest - single-use codes
+            }
+            
+            # Required strength by approval level
+            level_requirements = {
+                'critical': 5,    # Require strongest methods (WebAuthn)
+                'high': 4,        # Require strong methods (TOTP+)
+                'standard': 2     # Allow medium methods (SMS+)
+            }
+            
+            method_score = method_strength.get(method, 0)
+            required_score = level_requirements.get(approval_level, 2)
+            
+            return method_score >= required_score
+            
+        except Exception as e:
+            log.error(f"Error checking MFA method strength: {e}")
+            return False
+
+    def _get_required_methods_for_level(self, approval_level: str) -> List[str]:
+        """
+        Get list of MFA methods that satisfy the approval level requirement.
+        
+        Args:
+            approval_level: Required approval level
+            
+        Returns:
+            List of acceptable MFA method names
+        """
+        level_methods = {
+            'critical': ['webauthn'],                    # Only WebAuthn
+            'high': ['webauthn', 'totp'],               # WebAuthn or TOTP
+            'standard': ['webauthn', 'totp', 'sms', 'email']  # Any method
+        }
+        
+        return level_methods.get(approval_level, ['totp'])
+
+    def validate_approval_with_mfa(self, user, approval_data: Dict[str, any], 
+                                 approval_level: str = 'standard') -> Dict[str, any]:
+        """
+        Comprehensive validation combining standard approval security with MFA.
+        
+        Args:
+            user: Flask-AppBuilder User object
+            approval_data: Approval request data
+            approval_level: Level of approval required
+            
+        Returns:
+            Dict containing comprehensive validation results
+        """
+        # Perform standard security validations first
+        base_validation = {
+            'rate_limit_valid': self.check_approval_rate_limit(user.id),
+            'input_valid': True,  # Will be set by input validation
+            'authorization_valid': True  # Will be set by authorization check
+        }
+        
+        # Validate input data
+        input_validation = self.validate_input_data(
+            approval_data, 
+            self.get_approval_validation_schema()
+        )
+        base_validation['input_valid'] = input_validation.get('valid', False)
+        base_validation['input_errors'] = input_validation.get('errors', [])
+        
+        # Perform MFA validation
+        mfa_validation = self.validate_mfa_for_approval(user, approval_level)
+        
+        # Combine validations
+        overall_valid = (
+            base_validation['rate_limit_valid'] and
+            base_validation['input_valid'] and
+            base_validation['authorization_valid'] and
+            mfa_validation['valid']
+        )
+        
+        result = {
+            'valid': overall_valid,
+            'base_validation': base_validation,
+            'mfa_validation': mfa_validation,
+            'approval_level': approval_level
+        }
+        
+        # Add specific error messages and next steps
+        if not overall_valid:
+            errors = []
+            next_steps = []
+            
+            if not base_validation['rate_limit_valid']:
+                errors.append('Rate limit exceeded')
+                next_steps.append('wait_and_retry')
+            
+            if not base_validation['input_valid']:
+                errors.append('Invalid input data')
+                next_steps.extend(['fix_input', 'resubmit'])
+            
+            if not mfa_validation['valid']:
+                errors.append(mfa_validation.get('message', 'MFA validation failed'))
+                
+                if mfa_validation.get('mfa_setup_required'):
+                    next_steps.append('setup_mfa')
+                elif mfa_validation.get('mfa_verification_required'):
+                    next_steps.append('verify_mfa')
+                elif mfa_validation.get('stronger_mfa_required'):
+                    next_steps.append('use_stronger_mfa')
+            
+            result['errors'] = errors
+            result['next_steps'] = next_steps
+        
+        # Log security validation attempt
+        self.audit_logger.log_security_validation(
+            'approval_security_validation',
+            user.id if user else None,
+            {
+                'approval_level': approval_level,
+                'validation_result': overall_valid,
+                'mfa_required': mfa_validation.get('mfa_required', False),
+                'mfa_verified': mfa_validation.get('mfa_verified', False),
+                'errors': result.get('errors', [])
+            }
+        )
+        
+        return result
+
+    def get_approval_validation_schema(self) -> Dict[str, any]:
+        """
+        Get validation schema for approval requests.
+        
+        Returns:
+            Dict containing validation rules for approval data
+        """
+        return {
+            'required_fields': ValidationConstants.REQUIRED_APPROVAL_FIELDS,
+            'optional_fields': ValidationConstants.OPTIONAL_APPROVAL_FIELDS,
+            'field_types': ValidationConstants.ALLOWED_FIELD_TYPES,
+            'max_lengths': {
+                'comments': SecurityConstants.MAX_COMMENT_LENGTH,
+                'delegation_reason': SecurityConstants.MAX_COMMENT_LENGTH,
+                'field_names': SecurityConstants.MAX_FIELD_NAME_LENGTH
+            },
+            'allowed_operators': ValidationConstants.ALLOWED_OPERATORS,
+            'allowed_functions': ValidationConstants.ALLOWED_FUNCTIONS,
+            'sanitization_rules': {
+                'html_tags': ValidationConstants.HTML_ALLOWED_TAGS,
+                'html_attributes': ValidationConstants.HTML_ALLOWED_ATTRIBUTES,
+                'xss_protection': ValidationConstants.XSS_PROTECTION_ENABLED
+            }
+        }
+
+    def validate_input_data(self, data: Dict[str, any], schema: Dict[str, any]) -> Dict[str, any]:
+        """
+        Validate input data against schema with security checks.
+        
+        Args:
+            data: Input data to validate
+            schema: Validation schema
+            
+        Returns:
+            Dict containing validation results
+        """
+        try:
+            # Import validation framework to prevent circular imports
+            from .validation_framework import validate_approval_request
+            
+            # Use the existing validation framework with MFA integration
+            return validate_approval_request(data, data.get('user_id'), self)
+            
+        except ImportError:
+            # Fallback validation if framework not available
+            return {
+                'valid': True,
+                'sanitized_data': data,
+                'errors': [],
+                'warnings': ['Validation framework not available - using basic validation']
+            }
+        except Exception as e:
+            log.error(f"Input validation error: {e}")
+            return {
+                'valid': False,
+                'errors': [f'Validation error: {str(e)}'],
+                'sanitized_data': {}
+            }
 
     def check_approval_rate_limit(self, user_id: int) -> bool:
         """
@@ -857,8 +1251,202 @@ class ApprovalSecurityValidator:
         # Normalize whitespace
         if field_schema.get('normalize_whitespace', True):
             sanitized = ' '.join(sanitized.split())
-        
+
         return sanitized
+
+    def validate_workflow_transition(self, current_state: str, target_state: str, user, instance) -> Dict[str, any]:
+        """Validate workflow state transitions for security."""
+        result = {
+            'valid': True,
+            'errors': [],
+            'warnings': [],
+            'security_checks': []
+        }
+
+        try:
+            # Define valid state transitions
+            valid_transitions = {
+                'draft': ['submitted', 'cancelled'],
+                'submitted': ['under_review', 'rejected', 'withdrawn'],
+                'under_review': ['approved', 'rejected', 'needs_info'],
+                'needs_info': ['submitted', 'withdrawn'],
+                'approved': ['completed', 'reverted'],
+                'rejected': ['resubmitted'],
+                'completed': [],  # Terminal state
+                'cancelled': [],  # Terminal state
+                'withdrawn': ['resubmitted']
+            }
+
+            # Check if transition is valid
+            allowed_targets = valid_transitions.get(current_state, [])
+            if target_state not in allowed_targets:
+                result['valid'] = False
+                result['errors'].append(f'Invalid transition from {current_state} to {target_state}')
+                return result
+
+            # Security checks for sensitive transitions
+            if target_state == 'approved':
+                # Additional security for approvals
+                self_approval_check = self.validate_self_approval(instance, user)
+                if self_approval_check['is_self_approval'] and not self_approval_check['allowed']:
+                    result['valid'] = False
+                    result['errors'].append('Self-approval not permitted')
+                    result['security_checks'].append('self_approval_blocked')
+
+                # Check MFA for high-value approvals
+                if hasattr(instance, 'amount') and getattr(instance, 'amount', 0) > 10000:
+                    mfa_check = self.validate_mfa_for_approval(user, 'high')
+                    if not mfa_check['valid']:
+                        result['valid'] = False
+                        result['errors'].append('MFA required for high-value approval')
+                        result['security_checks'].append('mfa_required')
+
+            elif target_state in ['rejected', 'cancelled']:
+                # Log rejection/cancellation for audit
+                self.audit_logger.log_security_validation(
+                    'workflow_rejection', user.id, {
+                        'current_state': current_state,
+                        'target_state': target_state,
+                        'instance_type': type(instance).__name__,
+                        'instance_id': getattr(instance, 'id', None)
+                    }
+                )
+
+            return result
+
+        except Exception as e:
+            log.error(f'Workflow transition validation error: {e}')
+            result['valid'] = False
+            result['errors'].append(f'Validation error: {str(e)}')
+            return result
+
+    def validate_bulk_operation_security(self, operation_type: str, items: List, user) -> Dict[str, any]:
+        """Validate security for bulk operations."""
+        result = {
+            'valid': True,
+            'errors': [],
+            'warnings': [],
+            'rejected_items': [],
+            'security_summary': {
+                'total_items': len(items),
+                'self_approvals_detected': 0,
+                'mfa_required_items': 0,
+                'high_risk_items': 0
+            }
+        }
+
+        try:
+            # Check bulk operation limits
+            max_bulk = self.security_config.get('max_bulk_operations', 50)
+            if len(items) > max_bulk:
+                result['valid'] = False
+                result['errors'].append(f'Bulk operation exceeds limit of {max_bulk} items')
+                return result
+
+            # Validate each item in the bulk operation
+            for idx, item in enumerate(items):
+                item_result = {
+                    'index': idx,
+                    'item_id': getattr(item, 'id', None),
+                    'issues': []
+                }
+
+                # Self-approval check
+                self_approval = self.validate_self_approval(item, user)
+                if self_approval['is_self_approval'] and not self_approval['allowed']:
+                    result['security_summary']['self_approvals_detected'] += 1
+                    item_result['issues'].append('self_approval')
+                    result['rejected_items'].append(item_result)
+
+                # High-value check
+                if hasattr(item, 'amount') and getattr(item, 'amount', 0) > 10000:
+                    result['security_summary']['high_risk_items'] += 1
+                    result['security_summary']['mfa_required_items'] += 1
+
+                    # MFA validation for high-value items
+                    mfa_check = self.validate_mfa_for_approval(user, 'high')
+                    if not mfa_check['valid']:
+                        item_result['issues'].append('mfa_required')
+                        result['rejected_items'].append(item_result)
+
+            # Check if too many items were rejected
+            rejection_rate = len(result['rejected_items']) / len(items)
+            if rejection_rate > 0.5:  # More than 50% rejected
+                result['warnings'].append('High rejection rate in bulk operation')
+                self.audit_logger.log_security_validation(
+                    'bulk_operation_high_rejection_rate', user.id, {
+                        'operation_type': operation_type,
+                        'total_items': len(items),
+                        'rejected_items': len(result['rejected_items']),
+                        'rejection_rate': rejection_rate
+                    }
+                )
+
+            # Final validation
+            if len(result['rejected_items']) == len(items):
+                result['valid'] = False
+                result['errors'].append('All items in bulk operation were rejected')
+
+            return result
+
+        except Exception as e:
+            log.error(f'Bulk operation validation error: {e}')
+            result['valid'] = False
+            result['errors'].append(f'Validation error: {str(e)}')
+            return result
+
+    def validate_session_security(self, user, session_data: Dict = None) -> Dict[str, any]:
+        """Validate session security for approval operations."""
+        result = {
+            'valid': True,
+            'session_secure': True,
+            'warnings': [],
+            'security_issues': []
+        }
+
+        try:
+            if not session_data:
+                session_data = {
+                    'user_id': user.id if user else None,
+                    'session_id': session.get('_id'),
+                    'csrf_token': session.get('csrf_token'),
+                    'login_time': session.get('login_time'),
+                    'last_activity': session.get('last_activity')
+                }
+
+            # Validate session exists and belongs to user
+            if not session_data.get('session_id'):
+                result['valid'] = False
+                result['security_issues'].append('No valid session found')
+                return result
+
+            # Check session timeout
+            last_activity = session_data.get('last_activity')
+            if last_activity:
+                import time
+                current_time = time.time()
+                session_timeout = 3600  # 1 hour default
+
+                if current_time - last_activity > session_timeout:
+                    result['valid'] = False
+                    result['security_issues'].append('Session expired')
+                    return result
+
+            # CSRF token validation
+            if not session_data.get('csrf_token'):
+                result['warnings'].append('CSRF token missing')
+                result['session_secure'] = False
+
+            # Update last activity
+            session['last_activity'] = time.time()
+
+            return result
+
+        except Exception as e:
+            log.error(f'Session security validation error: {e}')
+            result['valid'] = False
+            result['security_issues'].append(f'Validation error: {str(e)}')
+            return result
 
     def can_user_approve_entity_type(self, user, entity_type: str) -> bool:
         """

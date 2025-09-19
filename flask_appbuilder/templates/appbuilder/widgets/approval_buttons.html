@@ -5,8 +5,8 @@
             {% if csrf_token %}
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             {% endif %}
-            <button type="submit" class="btn btn-success btn-sm" 
-                    onclick="return confirm('Approve {{ object_name }}?')">
+            <button type="submit" class="btn btn-success btn-sm"
+                    onclick="return confirm('Approve {{ object_name|e }}?')">
                 <i class="fa fa-check"></i> Approve
             </button>
         </form>
@@ -15,8 +15,8 @@
             {% if csrf_token %}
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             {% endif %}
-            <button type="submit" class="btn btn-danger btn-sm" 
-                    onclick="return confirm('Reject {{ object_name }}?')">
+            <button type="submit" class="btn btn-danger btn-sm"
+                    onclick="return confirm('Reject {{ object_name|e }}?')">
                 <i class="fa fa-times"></i> Reject
             </button>
         </form>

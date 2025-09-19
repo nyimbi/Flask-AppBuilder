@@ -1,5 +1,14 @@
 from flask import request, Response
-from flask_appbuilder.api import BaseApi, safe
+from typing import TYPE_CHECKING
+
+# Use lazy import to avoid circular dependency with flask_appbuilder.api
+if TYPE_CHECKING:
+    from flask_appbuilder.api import BaseApi, safe
+else:
+    # Import BaseApi and safe at runtime to break circular import
+    BaseApi = None
+    safe = None
+
 from flask_appbuilder.const import (
     API_SECURITY_ACCESS_TOKEN_KEY,
     API_SECURITY_PROVIDER_DB,
@@ -18,10 +27,41 @@ from flask_jwt_extended import (
 from marshmallow import ValidationError
 
 
-class SecurityApi(BaseApi):
+def _get_base_api_class():
+    """Get BaseApi class via lazy import to avoid circular dependency."""
+    global BaseApi
+    if BaseApi is None:
+        from flask_appbuilder.api import BaseApi as _BaseApi
+        BaseApi = _BaseApi
+    return BaseApi
+
+
+def _get_safe_decorator():
+    """Get safe decorator via lazy import to avoid circular dependency."""
+    global safe
+    if safe is None:
+        from flask_appbuilder.api import safe as _safe
+        safe = _safe
+    return safe
+
+
+class SecurityApi:
+    """Security API for authentication endpoints."""
     resource_name = "security"
     version = API_SECURITY_VERSION
     openapi_spec_tag = "Security"
+
+    def __init__(self):
+        # Dynamically inherit from BaseApi at runtime
+        base_class = _get_base_api_class()
+        self.__class__ = type(
+            self.__class__.__name__,
+            (base_class,),
+            dict(self.__class__.__dict__)
+        )
+        # Initialize the base class
+        if hasattr(base_class, '__init__'):
+            base_class.__init__(self)
 
     def add_apispec_components(self, api_spec):
         super(SecurityApi, self).add_apispec_components(api_spec)
@@ -30,7 +70,6 @@ class SecurityApi(BaseApi):
         api_spec.components.security_scheme("jwt_refresh", jwt_scheme)
 
     @expose("/login", methods=["POST"])
-    @safe
     def login(self) -> Response:
         """Login endpoint for the API returns a JWT and optionally a refresh token
         ---
@@ -82,6 +121,13 @@ class SecurityApi(BaseApi):
             500:
               $ref: '#/components/responses/500'
         """
+        # Apply safe decorator at runtime
+        safe_decorator = _get_safe_decorator()
+        actual_login = safe_decorator(self._login_impl)
+        return actual_login()
+
+    def _login_impl(self) -> Response:
+        """Implementation of login functionality."""
         if not request.is_json:
             return self.response_400(message="Request payload is not JSON")
         try:
@@ -115,7 +161,6 @@ class SecurityApi(BaseApi):
 
     @expose("/refresh", methods=["POST"])
     @jwt_required(refresh=True)
-    @safe
     def refresh(self) -> Response:
         """
             Security endpoint for the refresh token, so we can obtain a new
@@ -142,6 +187,13 @@ class SecurityApi(BaseApi):
           security:
             - jwt_refresh: []
         """
+        # Apply safe decorator at runtime
+        safe_decorator = _get_safe_decorator()
+        actual_refresh = safe_decorator(self._refresh_impl)
+        return actual_refresh()
+
+    def _refresh_impl(self) -> Response:
+        """Implementation of refresh functionality."""
         resp = {
             API_SECURITY_ACCESS_TOKEN_KEY: create_access_token(
                 identity=get_jwt_identity(), fresh=False

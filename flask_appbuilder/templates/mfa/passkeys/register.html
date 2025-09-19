@@ -1,0 +1,402 @@
+{% extends "appbuilder/base.html" %}
+
+{% block head_css %}
+{{ super() }}
+<style>
+.passkey-register-card {
+    max-width: 600px;
+    margin: 2rem auto;
+}
+
+.setup-step {
+    padding: 1.5rem;
+    border-radius: 0.375rem;
+    margin-bottom: 1rem;
+}
+
+.step-inactive {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+}
+
+.step-active {
+    background-color: #e7f3ff;
+    border: 1px solid #0d6efd;
+}
+
+.step-completed {
+    background-color: #d1e7dd;
+    border: 1px solid #198754;
+}
+
+.step-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    font-weight: bold;
+    margin-right: 0.75rem;
+}
+
+.step-number-inactive {
+    background-color: #dee2e6;
+    color: #6c757d;
+}
+
+.step-number-active {
+    background-color: #0d6efd;
+    color: white;
+}
+
+.step-number-completed {
+    background-color: #198754;
+    color: white;
+}
+
+.passkey-icon {
+    font-size: 3rem;
+    color: #0d6efd;
+    margin-bottom: 1rem;
+}
+
+.browser-support {
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+#registrationProgress {
+    display: none;
+}
+
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card passkey-register-card">
+                <div class="card-header">
+                    <h3><i class="fa fa-plus"></i> {{ _('Register New Passkey') }}</h3>
+                </div>
+                
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <div class="passkey-icon">
+                            <i class="fa fa-fingerprint"></i>
+                        </div>
+                        <h4>{{ _('Set Up Passwordless Authentication') }}</h4>
+                        <p class="text-muted">
+                            {{ _('Register a new passkey to sign in securely without passwords using your device\'s built-in authentication.') }}
+                        </p>
+                    </div>
+                    
+                    <!-- Step 1: Name the passkey -->
+                    <div id="step1" class="setup-step step-active">
+                        <div class="d-flex align-items-start">
+                            <span class="step-number step-number-active">1</span>
+                            <div class="flex-fill">
+                                <h5>{{ _('Name Your Passkey') }}</h5>
+                                <p class="text-muted">{{ _('Give your passkey a memorable name to help you identify it later.') }}</p>
+                                
+                                <form id="passkeyForm">
+                                    {{ form.hidden_tag() }}
+                                    <div class="mb-3">
+                                        {{ form.credential_name.label(class="form-label") }}
+                                        {{ form.credential_name(class="form-control", id="credentialName") }}
+                                        <div class="form-text">{{ form.credential_name.description }}</div>
+                                        {% if form.credential_name.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {% for error in form.credential_name.errors %}
+                                                    {{ error }}
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <button type="button" id="startRegistration" class="btn btn-primary">
+                                        <i class="fa fa-arrow-right"></i> {{ _('Continue') }}
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Step 2: Browser authentication -->
+                    <div id="step2" class="setup-step step-inactive">
+                        <div class="d-flex align-items-start">
+                            <span class="step-number step-number-inactive">2</span>
+                            <div class="flex-fill">
+                                <h5>{{ _('Authenticate with Your Device') }}</h5>
+                                <p class="text-muted">{{ _('Use your device\'s built-in authentication (fingerprint, face recognition, PIN, or security key).') }}</p>
+                                
+                                <div id="registrationProgress">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                                        <span id="progressText">{{ _('Preparing registration...') }}</span>
+                                    </div>
+                                    <div class="alert alert-info">
+                                        <strong>{{ _('Follow your browser\'s prompts:') }}</strong>
+                                        <ul class="mb-0 mt-2">
+                                            <li>{{ _('Touch your fingerprint sensor') }}</li>
+                                            <li>{{ _('Look at your camera for face recognition') }}</li>
+                                            <li>{{ _('Enter your device PIN') }}</li>
+                                            <li>{{ _('Insert and touch your security key') }}</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                
+                                <div id="registrationError" class="alert alert-danger" style="display: none;">
+                                    <strong>{{ _('Registration Failed') }}</strong>
+                                    <p id="errorMessage" class="mb-0"></p>
+                                    <button type="button" id="retryRegistration" class="btn btn-sm btn-outline-danger mt-2">
+                                        <i class="fa fa-redo"></i> {{ _('Try Again') }}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Step 3: Success -->
+                    <div id="step3" class="setup-step step-inactive">
+                        <div class="d-flex align-items-start">
+                            <span class="step-number step-number-inactive">3</span>
+                            <div class="flex-fill">
+                                <h5>{{ _('Registration Complete') }}</h5>
+                                <p class="text-muted">{{ _('Your passkey has been successfully registered and is ready to use.') }}</p>
+                                
+                                <div id="successMessage" class="alert alert-success" style="display: none;">
+                                    <i class="fa fa-check-circle"></i> 
+                                    <strong>{{ _('Success!') }}</strong> 
+                                    <span id="successText"></span>
+                                </div>
+                                
+                                <div class="d-flex gap-2">
+                                    <a href="{{ url_for('PasskeyView.index') }}" class="btn btn-primary">
+                                        <i class="fa fa-list"></i> {{ _('View All Passkeys') }}
+                                    </a>
+                                    <button type="button" id="registerAnother" class="btn btn-outline-secondary">
+                                        <i class="fa fa-plus"></i> {{ _('Register Another') }}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Browser Support Information -->
+                    <div class="mt-4">
+                        <div class="alert alert-light">
+                            <h6><i class="fa fa-info-circle"></i> {{ _('Browser Support') }}</h6>
+                            <div class="browser-support">
+                                <strong>{{ _('Compatible browsers:') }}</strong> 
+                                Chrome 67+, Firefox 60+, Safari 14+, Edge 18+
+                                <br>
+                                <strong>{{ _('Supported authenticators:') }}</strong> 
+                                {{ _('Built-in (TouchID, FaceID, Windows Hello), USB Security Keys, Bluetooth/NFC devices') }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Check WebAuthn support
+if (!window.PublicKeyCredential) {
+    document.body.innerHTML = `
+        <div class="container">
+            <div class="alert alert-danger text-center mt-5">
+                <h4>{{ _('WebAuthn Not Supported') }}</h4>
+                <p>{{ _('Your browser does not support WebAuthn. Please use a modern browser like Chrome, Firefox, Safari, or Edge.') }}</p>
+            </div>
+        </div>
+    `;
+}
+
+let registrationInProgress = false;
+
+document.getElementById('startRegistration').addEventListener('click', function() {
+    const credentialName = document.getElementById('credentialName').value.trim();
+    
+    if (!credentialName) {
+        alert('{{ _("Please enter a name for your passkey") }}');
+        return;
+    }
+    
+    if (credentialName.length > 64) {
+        alert('{{ _("Passkey name must be 64 characters or less") }}');
+        return;
+    }
+    
+    startPasskeyRegistration(credentialName);
+});
+
+function startPasskeyRegistration(credentialName) {
+    if (registrationInProgress) {
+        return;
+    }
+    
+    registrationInProgress = true;
+    
+    // Update UI to step 2
+    updateStep(2);
+    document.getElementById('registrationProgress').style.display = 'block';
+    document.getElementById('progressText').textContent = '{{ _("Getting registration options...") }}';
+    
+    // Get registration options from server
+    fetch('{{ url_for("PasskeyView.register_options") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (!data.success) {
+            throw new Error(data.message || '{{ _("Failed to get registration options") }}');
+        }
+        
+        document.getElementById('progressText').textContent = '{{ _("Please authenticate with your device...") }}';
+        
+        // Convert base64url strings to ArrayBuffers
+        const options = data.options;
+        const publicKey = options.publicKey;
+        
+        publicKey.challenge = base64urlToArrayBuffer(publicKey.challenge);
+        publicKey.user.id = base64urlToArrayBuffer(publicKey.user.id);
+        
+        if (publicKey.excludeCredentials) {
+            publicKey.excludeCredentials = publicKey.excludeCredentials.map(cred => ({
+                ...cred,
+                id: base64urlToArrayBuffer(cred.id)
+            }));
+        }
+        
+        // Create credential
+        return navigator.credentials.create({ publicKey: publicKey })
+            .then(credential => {
+                document.getElementById('progressText').textContent = '{{ _("Verifying registration...") }}';
+                
+                // Prepare credential for server
+                const credentialResponse = {
+                    id: credential.id,
+                    rawId: arrayBufferToBase64url(credential.rawId),
+                    response: {
+                        attestationObject: arrayBufferToBase64url(credential.response.attestationObject),
+                        clientDataJSON: arrayBufferToBase64url(credential.response.clientDataJSON),
+                        transports: credential.response.getTransports ? credential.response.getTransports() : []
+                    },
+                    type: credential.type
+                };
+                
+                // Send to server for verification
+                return fetch('{{ url_for("PasskeyView.register_verify") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({
+                        credential: credentialResponse,
+                        challenge_id: options.challenge_id,
+                        credential_name: credentialName
+                    })
+                });
+            });
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Success!
+            updateStep(3);
+            document.getElementById('registrationProgress').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'block';
+            document.getElementById('successText').textContent = data.message;
+        } else {
+            throw new Error(data.message || '{{ _("Registration verification failed") }}');
+        }
+    })
+    .catch(error => {
+        console.error('Registration error:', error);
+        showRegistrationError(error.message);
+    })
+    .finally(() => {
+        registrationInProgress = false;
+    });
+}
+
+function showRegistrationError(message) {
+    document.getElementById('registrationProgress').style.display = 'none';
+    document.getElementById('registrationError').style.display = 'block';
+    document.getElementById('errorMessage').textContent = message;
+}
+
+document.getElementById('retryRegistration').addEventListener('click', function() {
+    document.getElementById('registrationError').style.display = 'none';
+    const credentialName = document.getElementById('credentialName').value.trim();
+    startPasskeyRegistration(credentialName);
+});
+
+document.getElementById('registerAnother').addEventListener('click', function() {
+    // Reset form
+    document.getElementById('credentialName').value = '';
+    updateStep(1);
+    document.getElementById('registrationProgress').style.display = 'none';
+    document.getElementById('registrationError').style.display = 'none';
+    document.getElementById('successMessage').style.display = 'none';
+});
+
+function updateStep(activeStep) {
+    for (let i = 1; i <= 3; i++) {
+        const step = document.getElementById(`step${i}`);
+        const stepNumber = step.querySelector('.step-number');
+        
+        if (i < activeStep) {
+            step.className = 'setup-step step-completed';
+            stepNumber.className = 'step-number step-number-completed';
+            stepNumber.innerHTML = '<i class="fa fa-check"></i>';
+        } else if (i === activeStep) {
+            step.className = 'setup-step step-active';
+            stepNumber.className = 'step-number step-number-active';
+            stepNumber.textContent = i;
+        } else {
+            step.className = 'setup-step step-inactive';
+            stepNumber.className = 'step-number step-number-inactive';
+            stepNumber.textContent = i;
+        }
+    }
+}
+
+// WebAuthn utility functions
+function base64urlToArrayBuffer(base64url) {
+    const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = base64.padEnd(base64.length + (4 - base64.length % 4) % 4, '=');
+    const binary = atob(padded);
+    const buffer = new ArrayBuffer(binary.length);
+    const view = new Uint8Array(buffer);
+    for (let i = 0; i < binary.length; i++) {
+        view[i] = binary.charCodeAt(i);
+    }
+    return buffer;
+}
+
+function arrayBufferToBase64url(buffer) {
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    const base64 = btoa(binary);
+    return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+</script>
+{% endblock %}

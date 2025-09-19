@@ -1,0 +1,419 @@
+{% extends "appbuilder/base.html" %}
+
+{% block head_css %}
+{{ super() }}
+<style>
+.passkey-auth-card {
+    max-width: 500px;
+    margin: 2rem auto;
+}
+
+.auth-icon {
+    font-size: 4rem;
+    color: #0d6efd;
+    margin-bottom: 1.5rem;
+}
+
+.auth-progress {
+    display: none;
+    text-align: center;
+    padding: 2rem;
+}
+
+.auth-error {
+    display: none;
+}
+
+.auth-success {
+    display: none;
+}
+
+.fingerprint-animation {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.1); opacity: 0.7; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.method-option {
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+}
+
+.method-option:hover {
+    border-color: #0d6efd;
+    background-color: #f8f9ff;
+}
+
+.method-option.selected {
+    border-color: #0d6efd;
+    background-color: #e7f3ff;
+}
+
+.method-icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card passkey-auth-card">
+                <div class="card-header text-center">
+                    <h3><i class="fa fa-shield-alt"></i> {{ _('Secure Authentication') }}</h3>
+                </div>
+                
+                <div class="card-body">
+                    <!-- Initial state - method selection -->
+                    <div id="methodSelection">
+                        <div class="text-center mb-4">
+                            <div class="auth-icon">
+                                <i class="fa fa-fingerprint"></i>
+                            </div>
+                            <h4>{{ _('Choose Authentication Method') }}</h4>
+                            <p class="text-muted">
+                                {{ _('Sign in securely using one of your registered authentication methods.') }}
+                            </p>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <div class="method-option" onclick="selectMethod('passkey')">
+                                <div class="text-center">
+                                    <div class="method-icon text-primary">
+                                        <i class="fa fa-fingerprint"></i>
+                                    </div>
+                                    <h6>{{ _('Passkey') }}</h6>
+                                    <small class="text-muted">{{ _('Use your device\'s built-in authentication') }}</small>
+                                </div>
+                            </div>
+                            
+                            <div class="method-option" onclick="selectMethod('password')">
+                                <div class="text-center">
+                                    <div class="method-icon text-secondary">
+                                        <i class="fa fa-key"></i>
+                                    </div>
+                                    <h6>{{ _('Password') }}</h6>
+                                    <small class="text-muted">{{ _('Use your traditional password') }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center">
+                            <button type="button" id="startPasskeyAuth" class="btn btn-primary btn-lg" style="display: none;">
+                                <i class="fa fa-fingerprint"></i> {{ _('Authenticate with Passkey') }}
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Authentication in progress -->
+                    <div id="authProgress" class="auth-progress">
+                        <div class="auth-icon fingerprint-animation">
+                            <i class="fa fa-fingerprint"></i>
+                        </div>
+                        <h4>{{ _('Authenticating...') }}</h4>
+                        <p id="progressText" class="text-muted">{{ _('Please authenticate with your device') }}</p>
+                        
+                        <div class="mt-4">
+                            <div class="alert alert-info">
+                                <strong>{{ _('Use any of these methods:') }}</strong>
+                                <ul class="mb-0 mt-2">
+                                    <li>{{ _('Touch your fingerprint sensor') }}</li>
+                                    <li>{{ _('Use face recognition') }}</li>
+                                    <li>{{ _('Enter your device PIN') }}</li>
+                                    <li>{{ _('Use your security key') }}</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <button type="button" id="cancelAuth" class="btn btn-outline-secondary">
+                            {{ _('Cancel') }}
+                        </button>
+                    </div>
+                    
+                    <!-- Authentication error -->
+                    <div id="authError" class="auth-error">
+                        <div class="text-center mb-4">
+                            <div class="auth-icon text-danger">
+                                <i class="fa fa-exclamation-triangle"></i>
+                            </div>
+                            <h4>{{ _('Authentication Failed') }}</h4>
+                            <div class="alert alert-danger">
+                                <strong>{{ _('Error:') }}</strong>
+                                <span id="errorMessage"></span>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center">
+                            <button type="button" id="retryAuth" class="btn btn-primary">
+                                <i class="fa fa-redo"></i> {{ _('Try Again') }}
+                            </button>
+                            <button type="button" id="backToMethods" class="btn btn-outline-secondary">
+                                {{ _('Choose Different Method') }}
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Authentication success -->
+                    <div id="authSuccess" class="auth-success">
+                        <div class="text-center">
+                            <div class="auth-icon text-success">
+                                <i class="fa fa-check-circle"></i>
+                            </div>
+                            <h4>{{ _('Authentication Successful') }}</h4>
+                            <div class="alert alert-success">
+                                <span id="successMessage">{{ _('You have been successfully authenticated.') }}</span>
+                            </div>
+                            
+                            <p class="text-muted">{{ _('Redirecting...') }}</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Browser compatibility info -->
+                    <div class="mt-4">
+                        <div class="alert alert-light">
+                            <small class="text-muted">
+                                <strong>{{ _('Passkey Requirements:') }}</strong>
+                                {{ _('Modern browser (Chrome 67+, Firefox 60+, Safari 14+, Edge 18+) and a compatible authenticator (TouchID, FaceID, Windows Hello, or security key).') }}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Check WebAuthn support
+const isWebAuthnSupported = !!window.PublicKeyCredential;
+let authenticationInProgress = false;
+
+if (!isWebAuthnSupported) {
+    // Hide passkey option if not supported
+    document.querySelector('.method-option[onclick="selectMethod(\'passkey\')"]').style.display = 'none';
+}
+
+function selectMethod(method) {
+    // Clear previous selections
+    document.querySelectorAll('.method-option').forEach(el => {
+        el.classList.remove('selected');
+    });
+    
+    if (method === 'passkey') {
+        document.querySelector('.method-option[onclick="selectMethod(\'passkey\')"]').classList.add('selected');
+        document.getElementById('startPasskeyAuth').style.display = 'block';
+    } else if (method === 'password') {
+        document.querySelector('.method-option[onclick="selectMethod(\'password\')"]').classList.add('selected');
+        // Redirect to traditional password login
+        window.location.href = '{{ url_for("AuthView.login") }}';
+    }
+}
+
+document.getElementById('startPasskeyAuth').addEventListener('click', function() {
+    if (!isWebAuthnSupported) {
+        showError('{{ _("WebAuthn is not supported in your browser") }}');
+        return;
+    }
+    
+    startPasskeyAuthentication();
+});
+
+document.getElementById('cancelAuth').addEventListener('click', function() {
+    authenticationInProgress = false;
+    showMethodSelection();
+});
+
+document.getElementById('retryAuth').addEventListener('click', function() {
+    startPasskeyAuthentication();
+});
+
+document.getElementById('backToMethods').addEventListener('click', function() {
+    showMethodSelection();
+});
+
+function startPasskeyAuthentication() {
+    if (authenticationInProgress) {
+        return;
+    }
+    
+    authenticationInProgress = true;
+    showProgress();
+    
+    document.getElementById('progressText').textContent = '{{ _("Getting authentication options...") }}';
+    
+    // Get authentication options from server
+    fetch('{{ url_for("PasskeyView.authenticate_options") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (!data.success) {
+            throw new Error(data.message || '{{ _("Failed to get authentication options") }}');
+        }
+        
+        document.getElementById('progressText').textContent = '{{ _("Please authenticate with your device...") }}';
+        
+        // Convert base64url strings to ArrayBuffers
+        const options = data.options;
+        const publicKey = options.publicKey;
+        
+        publicKey.challenge = base64urlToArrayBuffer(publicKey.challenge);
+        
+        if (publicKey.allowCredentials) {
+            publicKey.allowCredentials = publicKey.allowCredentials.map(cred => ({
+                ...cred,
+                id: base64urlToArrayBuffer(cred.id)
+            }));
+        }
+        
+        // Get credential
+        return navigator.credentials.get({ publicKey: publicKey })
+            .then(credential => {
+                document.getElementById('progressText').textContent = '{{ _("Verifying authentication...") }}';
+                
+                // Prepare credential for server
+                const credentialResponse = {
+                    id: credential.id,
+                    rawId: arrayBufferToBase64url(credential.rawId),
+                    response: {
+                        authenticatorData: arrayBufferToBase64url(credential.response.authenticatorData),
+                        clientDataJSON: arrayBufferToBase64url(credential.response.clientDataJSON),
+                        signature: arrayBufferToBase64url(credential.response.signature),
+                        userHandle: credential.response.userHandle ? arrayBufferToBase64url(credential.response.userHandle) : null
+                    },
+                    type: credential.type
+                };
+                
+                // Send to server for verification
+                return fetch('{{ url_for("PasskeyView.authenticate_verify") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({
+                        credential: credentialResponse,
+                        challenge_id: options.challenge_id
+                    })
+                });
+            });
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Success!
+            showSuccess(data.message);
+            
+            // Redirect after success
+            setTimeout(() => {
+                if (data.redirect) {
+                    window.location.href = data.redirect;
+                } else {
+                    window.location.href = '{{ url_for("AuthView.login") }}';
+                }
+            }, 2000);
+        } else {
+            throw new Error(data.message || '{{ _("Authentication verification failed") }}');
+        }
+    })
+    .catch(error => {
+        console.error('Authentication error:', error);
+        
+        // Handle specific WebAuthn errors
+        let errorMessage = error.message;
+        
+        if (error.name === 'InvalidStateError') {
+            errorMessage = '{{ _("This passkey is already registered or invalid") }}';
+        } else if (error.name === 'NotSupportedError') {
+            errorMessage = '{{ _("Passkeys are not supported on this device") }}';
+        } else if (error.name === 'SecurityError') {
+            errorMessage = '{{ _("Security error occurred. Please try again") }}';
+        } else if (error.name === 'NotAllowedError') {
+            errorMessage = '{{ _("Authentication was cancelled or timed out") }}';
+        } else if (error.name === 'AbortError') {
+            errorMessage = '{{ _("Authentication was aborted") }}';
+        }
+        
+        showError(errorMessage);
+    })
+    .finally(() => {
+        authenticationInProgress = false;
+    });
+}
+
+function showMethodSelection() {
+    document.getElementById('methodSelection').style.display = 'block';
+    document.getElementById('authProgress').style.display = 'none';
+    document.getElementById('authError').style.display = 'none';
+    document.getElementById('authSuccess').style.display = 'none';
+}
+
+function showProgress() {
+    document.getElementById('methodSelection').style.display = 'none';
+    document.getElementById('authProgress').style.display = 'block';
+    document.getElementById('authError').style.display = 'none';
+    document.getElementById('authSuccess').style.display = 'none';
+}
+
+function showError(message) {
+    document.getElementById('methodSelection').style.display = 'none';
+    document.getElementById('authProgress').style.display = 'none';
+    document.getElementById('authError').style.display = 'block';
+    document.getElementById('authSuccess').style.display = 'none';
+    document.getElementById('errorMessage').textContent = message;
+}
+
+function showSuccess(message) {
+    document.getElementById('methodSelection').style.display = 'none';
+    document.getElementById('authProgress').style.display = 'none';
+    document.getElementById('authError').style.display = 'none';
+    document.getElementById('authSuccess').style.display = 'block';
+    document.getElementById('successMessage').textContent = message;
+}
+
+// WebAuthn utility functions
+function base64urlToArrayBuffer(base64url) {
+    const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = base64.padEnd(base64.length + (4 - base64.length % 4) % 4, '=');
+    const binary = atob(padded);
+    const buffer = new ArrayBuffer(binary.length);
+    const view = new Uint8Array(buffer);
+    for (let i = 0; i < binary.length; i++) {
+        view[i] = binary.charCodeAt(i);
+    }
+    return buffer;
+}
+
+function arrayBufferToBase64url(buffer) {
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    const base64 = btoa(binary);
+    return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+
+// Auto-start passkey authentication if supported and no other methods
+document.addEventListener('DOMContentLoaded', function() {
+    if (isWebAuthnSupported) {
+        // Pre-select passkey method if supported
+        selectMethod('passkey');
+    }
+});
+</script>
+{% endblock %}

@@ -52,12 +52,12 @@ from ..fieldwidgets import (
 try:
     from .modern_ui import (
         ModernTextWidget,
-        ModernTextAreaWidget, 
+        ModernTextAreaWidget,
         ModernSelectWidget,
-        ColorPickerWidget,
         FileUploadWidget,
         DateTimeRangeWidget,
-        TagInputWidget
+        TagInputWidget,
+        SignatureWidget
     )
     MODERN_UI_AVAILABLE = True
 except ImportError:
@@ -80,6 +80,17 @@ try:
     SPECIALIZED_DATA_AVAILABLE = True
 except ImportError:
     SPECIALIZED_DATA_AVAILABLE = False
+
+# Import modular widgets (new architecture) - These take priority over legacy widgets
+try:
+    from .visualization import GPSTrackerWidget
+    from .editing import MermaidEditorWidget, DbmlEditorWidget, CodeEditorWidget
+    from .media import QrCodeWidget
+    from .charts import AdvancedChartsWidget
+    from .forms import ColorPickerWidget
+    MODULAR_WIDGETS_AVAILABLE = True
+except ImportError:
+    MODULAR_WIDGETS_AVAILABLE = False
 
 # Core widgets - always available
 CORE_WIDGETS = {
@@ -125,12 +136,15 @@ __all__ = list(CORE_WIDGETS.keys()) + list(FIELD_WIDGETS.keys())
 if MODERN_UI_AVAILABLE:
     __all__.extend([
         'ModernTextWidget',
-        'ModernTextAreaWidget', 
+        'ModernTextAreaWidget',
         'ModernSelectWidget',
-        'ColorPickerWidget',
+        # 'ColorPickerWidget',  # MIGRATED TO modular/forms
         'FileUploadWidget',
         'DateTimeRangeWidget',
-        'TagInputWidget'
+        'TagInputWidget',
+        'SignatureWidget'
+        # 'CodeEditorWidget',  # MIGRATED TO modular/editing
+        # 'AdvancedChartsWidget',  # MIGRATED TO modular/charts
     ])
 
 if ADVANCED_FORMS_AVAILABLE:
@@ -143,6 +157,17 @@ if SPECIALIZED_DATA_AVAILABLE:
     __all__.extend([
         'JSONEditorWidget',
         'ArrayEditorWidget'
+    ])
+
+if MODULAR_WIDGETS_AVAILABLE:
+    __all__.extend([
+        'GPSTrackerWidget',
+        'MermaidEditorWidget',
+        'DbmlEditorWidget',
+        'CodeEditorWidget',
+        'QrCodeWidget',
+        'AdvancedChartsWidget',
+        'ColorPickerWidget'
     ])
 
 
@@ -162,10 +187,13 @@ def get_available_widgets():
             'ModernTextWidget': ModernTextWidget,
             'ModernTextAreaWidget': ModernTextAreaWidget,
             'ModernSelectWidget': ModernSelectWidget,
-            'ColorPickerWidget': ColorPickerWidget,
+            # 'ColorPickerWidget': ColorPickerWidget,  # MIGRATED TO modular/forms
             'FileUploadWidget': FileUploadWidget,
             'DateTimeRangeWidget': DateTimeRangeWidget,
             'TagInputWidget': TagInputWidget,
+            'SignatureWidget': SignatureWidget,
+            # 'CodeEditorWidget': CodeEditorWidget,  # MIGRATED TO modular/editing
+            # 'AdvancedChartsWidget': AdvancedChartsWidget,  # MIGRATED TO modular/charts
         }
     
     if ADVANCED_FORMS_AVAILABLE:
@@ -179,7 +207,18 @@ def get_available_widgets():
             'JSONEditorWidget': JSONEditorWidget,
             'ArrayEditorWidget': ArrayEditorWidget,
         }
-    
+
+    if MODULAR_WIDGETS_AVAILABLE:
+        widgets['modular'] = {
+            'GPSTrackerWidget': GPSTrackerWidget,
+            'MermaidEditorWidget': MermaidEditorWidget,
+            'DbmlEditorWidget': DbmlEditorWidget,
+            'CodeEditorWidget': CodeEditorWidget,
+            'QrCodeWidget': QrCodeWidget,
+            'AdvancedChartsWidget': AdvancedChartsWidget,
+            'ColorPickerWidget': ColorPickerWidget,
+        }
+
     return widgets
 
 
@@ -209,5 +248,6 @@ def get_widget_compatibility_info():
         'modern_ui_available': MODERN_UI_AVAILABLE,
         'advanced_forms_available': ADVANCED_FORMS_AVAILABLE,
         'specialized_data_available': SPECIALIZED_DATA_AVAILABLE,
+        'modular_widgets_available': MODULAR_WIDGETS_AVAILABLE,
         'total_widgets': len(__all__)
     }
