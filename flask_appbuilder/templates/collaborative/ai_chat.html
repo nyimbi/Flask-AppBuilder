@@ -1,0 +1,604 @@
+{% extends "appbuilder/base.html" %}
+
+{% block content %}
+<div class="row h-100">
+    <div class="col-md-12">
+        <div class="panel panel-default h-100">
+            <div class="panel-heading">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h3 class="panel-title">
+                        <i class="fa fa-robot"></i> AI Assistant - {{ personality|title }} Mode
+                    </h3>
+                    <div class="btn-group btn-group-sm">
+                        <div class="dropdown">
+                            <button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown">
+                                <i class="fa fa-cog"></i> {{ personality|title }}
+                                <span class="caret"></span>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-right">
+                                <li><a href="?personality=assistant">👤 Assistant</a></li>
+                                <li><a href="?personality=technical">🔧 Technical</a></li>
+                                <li><a href="?personality=creative">🎨 Creative</a></li>
+                                <li><a href="?personality=analyst">📊 Analyst</a></li>
+                                <li><a href="?personality=mentor">🎓 Mentor</a></li>
+                            </ul>
+                        </div>
+                        <button class="btn btn-info" id="toggleStreaming">
+                            <i class="fa fa-stream"></i> <span id="streamingStatus">Streaming: ON</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="panel-body p-0 d-flex flex-column" style="height: calc(100vh - 200px);">
+                <!-- Chat Messages Area -->
+                <div id="chatMessages" class="chat-messages flex-grow-1 p-3">
+                    <div class="text-center text-muted py-5" id="emptyChatState">
+                        <i class="fa fa-comments fa-3x mb-3"></i>
+                        <h4>Start a conversation!</h4>
+                        <p>Ask me anything about your workspace, need help with a task, or just want to chat.</p>
+                    </div>
+                </div>
+                
+                <!-- Chat Input Area -->
+                <div class="chat-input-area border-top p-3">
+                    <form id="chatForm" class="d-flex gap-2">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="messageInput" 
+                                   placeholder="Type your message..." maxlength="2000">
+                            <span class="input-group-text">
+                                <span id="charCount">0/2000</span>
+                            </span>
+                        </div>
+                        <button type="submit" class="btn btn-primary" id="sendButton">
+                            <i class="fa fa-paper-plane"></i>
+                        </button>
+                    </form>
+                    
+                    <!-- Quick Actions -->
+                    <div class="quick-actions mt-2">
+                        <button class="btn btn-outline-secondary btn-sm" onclick="insertQuickMessage('Help me understand this workspace')">
+                            📁 Workspace Help
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm" onclick="insertQuickMessage('What can you help me with?')">
+                            ❓ Capabilities
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm" onclick="insertQuickMessage('Summarize the recent activity')">
+                            📊 Recent Activity
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm" onclick="clearChat()">
+                            🗑️ Clear Chat
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Typing Indicator -->
+<div id="typingIndicator" class="typing-indicator" style="display: none;">
+    <div class="message-bubble ai-message">
+        <div class="typing-dots">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </div>
+</div>
+
+<style>
+.chat-messages {
+    overflow-y: auto;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.message-wrapper {
+    display: flex;
+    margin-bottom: 1rem;
+    animation: slideIn 0.3s ease-out;
+}
+
+.user-message-wrapper {
+    justify-content: flex-end;
+}
+
+.ai-message-wrapper {
+    justify-content: flex-start;
+}
+
+.message-bubble {
+    max-width: 70%;
+    padding: 12px 16px;
+    border-radius: 18px;
+    position: relative;
+    word-wrap: break-word;
+}
+
+.user-message {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+    margin-left: auto;
+}
+
+.ai-message {
+    background: white;
+    color: #333;
+    border: 1px solid #dee2e6;
+    margin-right: auto;
+}
+
+.message-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: bold;
+    margin: 0 8px;
+    flex-shrink: 0;
+}
+
+.user-avatar {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+}
+
+.ai-avatar {
+    background: linear-gradient(135deg, #6f42c1, #495057);
+    color: white;
+}
+
+.message-time {
+    font-size: 11px;
+    color: #6c757d;
+    margin-top: 4px;
+}
+
+.user-message .message-time {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.typing-indicator {
+    display: flex;
+    justify-content: flex-start;
+    margin-bottom: 1rem;
+}
+
+.typing-dots {
+    display: flex;
+    gap: 4px;
+}
+
+.typing-dots span {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #6c757d;
+    animation: typing 1.4s infinite;
+}
+
+.typing-dots span:nth-child(1) { animation-delay: 0s; }
+.typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+.typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes typing {
+    0%, 60%, 100% {
+        transform: translateY(0);
+        opacity: 0.5;
+    }
+    30% {
+        transform: translateY(-10px);
+        opacity: 1;
+    }
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.quick-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.quick-actions .btn {
+    font-size: 12px;
+    padding: 4px 8px;
+}
+
+.chat-input-area {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.streaming-text {
+    border-right: 2px solid #007bff;
+    animation: blink 1s infinite;
+}
+
+@keyframes blink {
+    0%, 50% { border-color: #007bff; }
+    51%, 100% { border-color: transparent; }
+}
+
+.error-message {
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+}
+
+.system-message {
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+    text-align: center;
+    font-style: italic;
+}
+
+#charCount {
+    font-size: 11px;
+    color: #6c757d;
+}
+
+#charCount.warning {
+    color: #ffc107;
+}
+
+#charCount.danger {
+    color: #dc3545;
+}
+
+.h-100 {
+    height: 100%;
+}
+
+.d-flex {
+    display: flex;
+}
+
+.flex-column {
+    flex-direction: column;
+}
+
+.flex-grow-1 {
+    flex-grow: 1;
+}
+
+.gap-2 > * {
+    margin-right: 8px;
+}
+
+.gap-2 > *:last-child {
+    margin-right: 0;
+}
+</style>
+
+<script>
+let conversationId = null;
+let isStreaming = true;
+let streamingResponse = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize conversation
+    initializeConversation();
+    
+    // Setup form handling
+    const chatForm = document.getElementById('chatForm');
+    const messageInput = document.getElementById('messageInput');
+    const sendButton = document.getElementById('sendButton');
+    const charCount = document.getElementById('charCount');
+    
+    chatForm.addEventListener('submit', handleSendMessage);
+    
+    // Character count
+    messageInput.addEventListener('input', function() {
+        const count = this.value.length;
+        charCount.textContent = count + '/2000';
+        
+        if (count > 1800) {
+            charCount.className = 'danger';
+        } else if (count > 1500) {
+            charCount.className = 'warning';
+        } else {
+            charCount.className = '';
+        }
+    });
+    
+    // Auto-resize input
+    messageInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            chatForm.dispatchEvent(new Event('submit'));
+        }
+    });
+    
+    // Toggle streaming
+    document.getElementById('toggleStreaming').addEventListener('click', function() {
+        isStreaming = !isStreaming;
+        const status = document.getElementById('streamingStatus');
+        status.textContent = `Streaming: ${isStreaming ? 'ON' : 'OFF'}`;
+        this.className = isStreaming ? 'btn btn-info' : 'btn btn-outline-info';
+    });
+});
+
+async function initializeConversation() {
+    try {
+        const response = await fetch('/api/v1/ai/conversation', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                title: 'AI Chat Session',
+                personality: '{{ personality }}'
+            })
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            conversationId = result.conversation_id;
+        } else {
+            showError('Failed to initialize conversation: ' + result.error);
+        }
+    } catch (error) {
+        console.error('Conversation initialization error:', error);
+        showError('Failed to initialize conversation');
+    }
+}
+
+async function handleSendMessage(e) {
+    e.preventDefault();
+    
+    const messageInput = document.getElementById('messageInput');
+    const message = messageInput.value.trim();
+    
+    if (!message || !conversationId) {
+        return;
+    }
+    
+    // Clear input and disable send button
+    messageInput.value = '';
+    document.getElementById('sendButton').disabled = true;
+    document.getElementById('charCount').textContent = '0/2000';
+    document.getElementById('charCount').className = '';
+    
+    // Hide empty state if visible
+    const emptyState = document.getElementById('emptyChatState');
+    if (emptyState) {
+        emptyState.style.display = 'none';
+    }
+    
+    // Add user message to chat
+    addMessage('user', message);
+    
+    // Show typing indicator
+    showTypingIndicator();
+    
+    try {
+        if (isStreaming) {
+            await sendStreamingMessage(message);
+        } else {
+            await sendRegularMessage(message);
+        }
+    } catch (error) {
+        console.error('Send message error:', error);
+        hideTypingIndicator();
+        showError('Failed to send message: ' + error.message);
+    }
+    
+    // Re-enable send button
+    document.getElementById('sendButton').disabled = false;
+    messageInput.focus();
+}
+
+async function sendRegularMessage(message) {
+    const response = await fetch(`/api/v1/ai/conversation/${conversationId}/message`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            message: message,
+            streaming: false
+        })
+    });
+    
+    const result = await response.json();
+    hideTypingIndicator();
+    
+    if (result.success) {
+        addMessage('ai', result.response);
+    } else {
+        showError('AI response error: ' + result.error);
+    }
+}
+
+async function sendStreamingMessage(message) {
+    const response = await fetch(`/api/v1/ai/conversation/${conversationId}/message`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            message: message,
+            streaming: true
+        })
+    });
+    
+    if (!response.ok) {
+        throw new Error('Failed to start streaming');
+    }
+    
+    hideTypingIndicator();
+    const messageElement = addMessage('ai', '');
+    const contentElement = messageElement.querySelector('.message-content');
+    
+    // Handle streaming response
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    
+    try {
+        while (true) {
+            const { done, value } = await reader.read();
+            
+            if (done) break;
+            
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop(); // Keep incomplete line in buffer
+            
+            for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                    try {
+                        const data = JSON.parse(line.slice(6));
+                        
+                        if (data.type === 'content') {
+                            contentElement.textContent += data.content;
+                            contentElement.classList.add('streaming-text');
+                        } else if (data.type === 'done') {
+                            contentElement.classList.remove('streaming-text');
+                            return;
+                        } else if (data.type === 'error') {
+                            contentElement.classList.remove('streaming-text');
+                            showError('Streaming error: ' + data.error);
+                            return;
+                        }
+                    } catch (e) {
+                        console.warn('Failed to parse streaming data:', line);
+                    }
+                }
+            }
+            
+            // Auto-scroll to bottom
+            scrollToBottom();
+        }
+    } finally {
+        contentElement.classList.remove('streaming-text');
+    }
+}
+
+function addMessage(type, content) {
+    const messagesContainer = document.getElementById('chatMessages');
+    const messageWrapper = document.createElement('div');
+    messageWrapper.className = `message-wrapper ${type}-message-wrapper`;
+    
+    const avatar = document.createElement('div');
+    avatar.className = `message-avatar ${type}-avatar`;
+    avatar.textContent = type === 'user' ? 'You' : 'AI';
+    
+    const messageBubble = document.createElement('div');
+    messageBubble.className = `message-bubble ${type}-message`;
+    
+    const messageContent = document.createElement('div');
+    messageContent.className = 'message-content';
+    messageContent.textContent = content;
+    
+    const messageTime = document.createElement('div');
+    messageTime.className = 'message-time';
+    messageTime.textContent = new Date().toLocaleTimeString();
+    
+    messageBubble.appendChild(messageContent);
+    messageBubble.appendChild(messageTime);
+    
+    if (type === 'user') {
+        messageWrapper.appendChild(messageBubble);
+        messageWrapper.appendChild(avatar);
+    } else {
+        messageWrapper.appendChild(avatar);
+        messageWrapper.appendChild(messageBubble);
+    }
+    
+    messagesContainer.appendChild(messageWrapper);
+    scrollToBottom();
+    
+    return messageWrapper;
+}
+
+function addSystemMessage(content) {
+    const messagesContainer = document.getElementById('chatMessages');
+    const messageWrapper = document.createElement('div');
+    messageWrapper.className = 'message-wrapper';
+    
+    const messageBubble = document.createElement('div');
+    messageBubble.className = 'message-bubble system-message';
+    messageBubble.textContent = content;
+    
+    messageWrapper.appendChild(messageBubble);
+    messagesContainer.appendChild(messageWrapper);
+    scrollToBottom();
+}
+
+function showError(message) {
+    const messagesContainer = document.getElementById('chatMessages');
+    const messageWrapper = document.createElement('div');
+    messageWrapper.className = 'message-wrapper';
+    
+    const messageBubble = document.createElement('div');
+    messageBubble.className = 'message-bubble error-message';
+    messageBubble.innerHTML = `<i class="fa fa-exclamation-triangle"></i> ${message}`;
+    
+    messageWrapper.appendChild(messageBubble);
+    messagesContainer.appendChild(messageWrapper);
+    scrollToBottom();
+}
+
+function showTypingIndicator() {
+    const indicator = document.getElementById('typingIndicator');
+    const messagesContainer = document.getElementById('chatMessages');
+    messagesContainer.appendChild(indicator);
+    indicator.style.display = 'flex';
+    scrollToBottom();
+}
+
+function hideTypingIndicator() {
+    const indicator = document.getElementById('typingIndicator');
+    indicator.style.display = 'none';
+    if (indicator.parentNode) {
+        indicator.parentNode.removeChild(indicator);
+    }
+}
+
+function scrollToBottom() {
+    const messagesContainer = document.getElementById('chatMessages');
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+function insertQuickMessage(message) {
+    document.getElementById('messageInput').value = message;
+    document.getElementById('messageInput').focus();
+}
+
+async function clearChat() {
+    if (confirm('Clear all chat messages? This will start a new conversation.')) {
+        const messagesContainer = document.getElementById('chatMessages');
+        messagesContainer.innerHTML = `
+            <div class="text-center text-muted py-5" id="emptyChatState">
+                <i class="fa fa-comments fa-3x mb-3"></i>
+                <h4>Start a conversation!</h4>
+                <p>Ask me anything about your workspace, need help with a task, or just want to chat.</p>
+            </div>
+        `;
+        
+        // Initialize new conversation
+        conversationId = null;
+        await initializeConversation();
+        
+        addSystemMessage('New conversation started');
+    }
+}
+</script>
+{% endblock %}

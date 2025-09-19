@@ -1,0 +1,465 @@
+{% extends "appbuilder/base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h3 class="panel-title">
+                        <i class="fa fa-cogs"></i> {{ _("AI System Configuration") }}
+                    </h3>
+                    <a href="{{ url_for('AIAdminView.index') }}" class="btn btn-default btn-sm">
+                        <i class="fa fa-arrow-left"></i> {{ _("Back to Admin") }}
+                    </a>
+                </div>
+            </div>
+            <div class="panel-body">
+                
+                <form id="systemConfigForm" method="POST">
+                    
+                    <!-- General Settings -->
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <div class="panel panel-default">
+                                <div class="panel-heading">
+                                    <h5 class="mb-0">
+                                        <i class="fa fa-sliders"></i> General Settings
+                                    </h5>
+                                </div>
+                                <div class="panel-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="ai_enabled">{{ _("AI System Enabled") }}</label>
+                                                <select class="form-control" id="ai_enabled" name="ai_enabled">
+                                                    <option value="true" selected>{{ _("Enabled") }}</option>
+                                                    <option value="false">{{ _("Disabled") }}</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="default_personality">{{ _("Default AI Personality") }}</label>
+                                                <select class="form-control" id="default_personality" name="default_personality">
+                                                    <option value="assistant">👤 {{ _("Assistant") }}</option>
+                                                    <option value="technical">🔧 {{ _("Technical") }}</option>
+                                                    <option value="creative">🎨 {{ _("Creative") }}</option>
+                                                    <option value="analyst">📊 {{ _("Analyst") }}</option>
+                                                    <option value="mentor">🎓 {{ _("Mentor") }}</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="max_conversation_length">{{ _("Max Conversation Length") }}</label>
+                                                <input type="number" class="form-control" id="max_conversation_length" 
+                                                       name="max_conversation_length" value="100" min="10" max="1000">
+                                                <small class="form-text text-muted">{{ _("Maximum number of messages per conversation") }}</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="response_timeout">{{ _("Response Timeout (seconds)") }}</label>
+                                                <input type="number" class="form-control" id="response_timeout" 
+                                                       name="response_timeout" value="30" min="5" max="120">
+                                                <small class="form-text text-muted">{{ _("Maximum time to wait for AI response") }}</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Model Settings -->
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <div class="panel panel-default">
+                                <div class="panel-heading">
+                                    <h5 class="mb-0">
+                                        <i class="fa fa-brain"></i> Model Settings
+                                    </h5>
+                                </div>
+                                <div class="panel-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="default_chat_model">{{ _("Default Chat Model") }}</label>
+                                                <select class="form-control" id="default_chat_model" name="default_chat_model">
+                                                    <option value="openai:gpt-4">OpenAI GPT-4</option>
+                                                    <option value="openai:gpt-3.5-turbo">OpenAI GPT-3.5 Turbo</option>
+                                                    <option value="anthropic:claude-3-sonnet">Anthropic Claude 3 Sonnet</option>
+                                                    <option value="anthropic:claude-3-haiku">Anthropic Claude 3 Haiku</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="default_embedding_model">{{ _("Default Embedding Model") }}</label>
+                                                <select class="form-control" id="default_embedding_model" name="default_embedding_model">
+                                                    <option value="openai:text-embedding-ada-002">OpenAI Ada 002</option>
+                                                    <option value="openai:text-embedding-3-small">OpenAI Embedding 3 Small</option>
+                                                    <option value="openai:text-embedding-3-large">OpenAI Embedding 3 Large</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <div class="form-group">
+                                                <label for="temperature">{{ _("Temperature") }}</label>
+                                                <input type="range" class="form-control-range" id="temperature" 
+                                                       name="temperature" min="0" max="2" step="0.1" value="0.7">
+                                                <small class="form-text text-muted">{{ _("Creativity level") }}: <span id="temperatureValue">0.7</span></small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-group">
+                                                <label for="max_tokens">{{ _("Max Response Tokens") }}</label>
+                                                <input type="number" class="form-control" id="max_tokens" 
+                                                       name="max_tokens" value="2048" min="100" max="8192">
+                                                <small class="form-text text-muted">{{ _("Maximum length of AI responses") }}</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-group">
+                                                <label for="top_p">{{ _("Top P") }}</label>
+                                                <input type="range" class="form-control-range" id="top_p" 
+                                                       name="top_p" min="0" max="1" step="0.05" value="0.9">
+                                                <small class="form-text text-muted">{{ _("Nucleus sampling") }}: <span id="topPValue">0.9</span></small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Knowledge Base Settings -->
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <div class="panel panel-default">
+                                <div class="panel-heading">
+                                    <h5 class="mb-0">
+                                        <i class="fa fa-database"></i> Knowledge Base Settings
+                                    </h5>
+                                </div>
+                                <div class="panel-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="auto_indexing">{{ _("Automatic Content Indexing") }}</label>
+                                                <select class="form-control" id="auto_indexing" name="auto_indexing">
+                                                    <option value="true" selected>{{ _("Enabled") }}</option>
+                                                    <option value="false">{{ _("Disabled") }}</option>
+                                                </select>
+                                                <small class="form-text text-muted">{{ _("Automatically index workspace content") }}</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="indexing_interval">{{ _("Indexing Interval (minutes)") }}</label>
+                                                <input type="number" class="form-control" id="indexing_interval" 
+                                                       name="indexing_interval" value="60" min="5" max="1440">
+                                                <small class="form-text text-muted">{{ _("How often to check for new content") }}</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="chunk_size">{{ _("Document Chunk Size") }}</label>
+                                                <input type="number" class="form-control" id="chunk_size" 
+                                                       name="chunk_size" value="1000" min="100" max="4000">
+                                                <small class="form-text text-muted">{{ _("Size of text chunks for embedding") }}</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="chunk_overlap">{{ _("Chunk Overlap") }}</label>
+                                                <input type="number" class="form-control" id="chunk_overlap" 
+                                                       name="chunk_overlap" value="200" min="0" max="500">
+                                                <small class="form-text text-muted">{{ _("Overlap between chunks for context") }}</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="similarity_threshold">{{ _("Similarity Search Threshold") }}</label>
+                                                <input type="range" class="form-control-range" id="similarity_threshold" 
+                                                       name="similarity_threshold" min="0" max="1" step="0.05" value="0.7">
+                                                <small class="form-text text-muted">{{ _("Minimum similarity for search results") }}: <span id="similarityValue">0.7</span></small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="max_search_results">{{ _("Max Search Results") }}</label>
+                                                <input type="number" class="form-control" id="max_search_results" 
+                                                       name="max_search_results" value="10" min="1" max="50">
+                                                <small class="form-text text-muted">{{ _("Maximum number of search results") }}</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Security & Privacy -->
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <div class="panel panel-default">
+                                <div class="panel-heading">
+                                    <h5 class="mb-0">
+                                        <i class="fa fa-shield"></i> Security & Privacy
+                                    </h5>
+                                </div>
+                                <div class="panel-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="data_retention_days">{{ _("Conversation Retention (days)") }}</label>
+                                                <input type="number" class="form-control" id="data_retention_days" 
+                                                       name="data_retention_days" value="90" min="7" max="365">
+                                                <small class="form-text text-muted">{{ _("How long to keep conversation data") }}</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="anonymize_data">{{ _("Anonymize Data") }}</label>
+                                                <select class="form-control" id="anonymize_data" name="anonymize_data">
+                                                    <option value="true">{{ _("Enabled") }}</option>
+                                                    <option value="false" selected>{{ _("Disabled") }}</option>
+                                                </select>
+                                                <small class="form-text text-muted">{{ _("Remove user identifiers from stored data") }}</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="rate_limit_requests">{{ _("Rate Limit (requests/minute)") }}</label>
+                                                <input type="number" class="form-control" id="rate_limit_requests" 
+                                                       name="rate_limit_requests" value="60" min="1" max="1000">
+                                                <small class="form-text text-muted">{{ _("Maximum requests per user per minute") }}</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="content_filtering">{{ _("Content Filtering") }}</label>
+                                                <select class="form-control" id="content_filtering" name="content_filtering">
+                                                    <option value="strict">{{ _("Strict") }}</option>
+                                                    <option value="moderate" selected>{{ _("Moderate") }}</option>
+                                                    <option value="permissive">{{ _("Permissive") }}</option>
+                                                    <option value="off">{{ _("Off") }}</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Save Button -->
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group text-center">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="fa fa-save"></i> {{ _("Save Configuration") }}
+                                </button>
+                                <button type="button" class="btn btn-default btn-lg ml-2" onclick="resetForm()">
+                                    <i class="fa fa-undo"></i> {{ _("Reset to Defaults") }}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </form>
+                
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.mb-4 {
+    margin-bottom: 1.5rem;
+}
+
+.mb-0 {
+    margin-bottom: 0;
+}
+
+.ml-2 {
+    margin-left: 0.5rem;
+}
+
+.d-flex {
+    display: flex;
+}
+
+.justify-content-between {
+    justify-content: space-between;
+}
+
+.align-items-center {
+    align-items: center;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.form-control-range {
+    width: 100%;
+    height: 1.5rem;
+    padding: 0;
+    background-color: transparent;
+    -webkit-appearance: none;
+}
+
+.form-control-range::-webkit-slider-track {
+    width: 100%;
+    height: 0.5rem;
+    cursor: pointer;
+    background: #ddd;
+    border-radius: 0.25rem;
+}
+
+.form-control-range::-webkit-slider-thumb {
+    height: 1rem;
+    width: 1rem;
+    border-radius: 50%;
+    background: #007bff;
+    cursor: pointer;
+    -webkit-appearance: none;
+    margin-top: -0.25rem;
+}
+
+.form-control-range::-moz-range-track {
+    width: 100%;
+    height: 0.5rem;
+    cursor: pointer;
+    background: #ddd;
+    border-radius: 0.25rem;
+    border: none;
+}
+
+.form-control-range::-moz-range-thumb {
+    height: 1rem;
+    width: 1rem;
+    border-radius: 50%;
+    background: #007bff;
+    cursor: pointer;
+    border: none;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Update range input displays
+    const temperatureSlider = document.getElementById('temperature');
+    const temperatureValue = document.getElementById('temperatureValue');
+    const topPSlider = document.getElementById('top_p');
+    const topPValue = document.getElementById('topPValue');
+    const similaritySlider = document.getElementById('similarity_threshold');
+    const similarityValue = document.getElementById('similarityValue');
+    
+    temperatureSlider.addEventListener('input', function() {
+        temperatureValue.textContent = this.value;
+    });
+    
+    topPSlider.addEventListener('input', function() {
+        topPValue.textContent = this.value;
+    });
+    
+    similaritySlider.addEventListener('input', function() {
+        similarityValue.textContent = this.value;
+    });
+    
+    // Form submission
+    document.getElementById('systemConfigForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        saveConfiguration();
+    });
+});
+
+async function saveConfiguration() {
+    const formData = new FormData(document.getElementById('systemConfigForm'));
+    const config = {};
+    
+    for (let [key, value] of formData.entries()) {
+        // Convert string booleans to actual booleans
+        if (value === 'true') {
+            config[key] = true;
+        } else if (value === 'false') {
+            config[key] = false;
+        } else if (!isNaN(value) && value !== '') {
+            // Convert numeric strings to numbers
+            config[key] = parseFloat(value);
+        } else {
+            config[key] = value;
+        }
+    }
+    
+    try {
+        const response = await fetch('/api/v1/ai/system-config', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(config)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('{{ _("Configuration saved successfully!") }}');
+        } else {
+            alert('{{ _("Failed to save configuration") }}: ' + result.error);
+        }
+    } catch (error) {
+        console.error('Save error:', error);
+        alert('{{ _("Error saving configuration") }}');
+    }
+}
+
+function resetForm() {
+    if (confirm('{{ _("Reset all settings to default values?") }}')) {
+        // Reset form to default values
+        document.getElementById('ai_enabled').value = 'true';
+        document.getElementById('default_personality').value = 'assistant';
+        document.getElementById('max_conversation_length').value = '100';
+        document.getElementById('response_timeout').value = '30';
+        document.getElementById('default_chat_model').value = 'openai:gpt-4';
+        document.getElementById('default_embedding_model').value = 'openai:text-embedding-ada-002';
+        document.getElementById('temperature').value = '0.7';
+        document.getElementById('temperatureValue').textContent = '0.7';
+        document.getElementById('max_tokens').value = '2048';
+        document.getElementById('top_p').value = '0.9';
+        document.getElementById('topPValue').textContent = '0.9';
+        document.getElementById('auto_indexing').value = 'true';
+        document.getElementById('indexing_interval').value = '60';
+        document.getElementById('chunk_size').value = '1000';
+        document.getElementById('chunk_overlap').value = '200';
+        document.getElementById('similarity_threshold').value = '0.7';
+        document.getElementById('similarityValue').textContent = '0.7';
+        document.getElementById('max_search_results').value = '10';
+        document.getElementById('data_retention_days').value = '90';
+        document.getElementById('anonymize_data').value = 'false';
+        document.getElementById('rate_limit_requests').value = '60';
+        document.getElementById('content_filtering').value = 'moderate';
+    }
+}
+</script>
+{% endblock %}

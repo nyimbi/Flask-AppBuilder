@@ -1,0 +1,38 @@
+{% extends "appbuilder/general/model/edit.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        {{ super() }}
+    </div>
+    <div class="col-md-4">
+        <div class="panel panel-warning">
+            <div class="panel-heading">
+                <h4 class="panel-title">
+                    <i class="fa fa-exclamation-triangle"></i> {{ _("Important Notes") }}
+                </h4>
+            </div>
+            <div class="panel-body">
+                <h5>{{ _("Team Name Changes") }}</h5>
+                <p class="text-muted">{{ _("Changing the team name will update the team's URL and may affect integrations.") }}</p>
+                
+                <h5>{{ _("Privacy Changes") }}</h5>
+                <p class="text-muted">{{ _("Making a private team public will allow anyone to see team information and request membership.") }}</p>
+            </div>
+        </div>
+        
+        <div class="panel panel-info">
+            <div class="panel-heading">
+                <h4 class="panel-title">
+                    <i class="fa fa-users"></i> {{ _("Team Management") }}
+                </h4>
+            </div>
+            <div class="panel-body">
+                <a href="{{ url_for('TeamModelView.team_members', team_id=pk) }}" class="btn btn-block btn-primary">
+                    <i class="fa fa-users"></i> {{ _("Manage Members") }}
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

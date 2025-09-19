@@ -1,0 +1,81 @@
+{% extends "appbuilder/base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">
+                    <i class="fa fa-user"></i> {{ _("My Teams") }}
+                </h3>
+            </div>
+            <div class="panel-body">
+                {% if teams %}
+                <div class="row">
+                    {% for team in teams %}
+                    <div class="col-md-6 col-lg-4">
+                        <div class="panel panel-{% if team.is_private %}warning{% else %}info{% endif %}">
+                            <div class="panel-heading">
+                                <h4 class="panel-title">
+                                    <i class="fa fa-users"></i> {{ team.name }}
+                                    {% if team.is_private %}
+                                    <span class="label label-warning pull-right">{{ _("Private") }}</span>
+                                    {% else %}
+                                    <span class="label label-success pull-right">{{ _("Public") }}</span>
+                                    {% endif %}
+                                </h4>
+                            </div>
+                            <div class="panel-body">
+                                <p class="text-muted">{{ team.description or _("No description") }}</p>
+                                
+                                <div class="text-center">
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('TeamModelView.show', pk=team.id) }}" class="btn btn-primary">
+                                            <i class="fa fa-eye"></i> {{ _("View") }}
+                                        </a>
+                                        <a href="{{ url_for('TeamModelView.team_members', team_id=team.id) }}" class="btn btn-info">
+                                            <i class="fa fa-users"></i> {{ _("Members") }}
+                                        </a>
+                                        {% if team.can_edit %}
+                                        <a href="{{ url_for('TeamModelView.edit', pk=team.id) }}" class="btn btn-warning">
+                                            <i class="fa fa-edit"></i> {{ _("Edit") }}
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="panel-footer">
+                                <small class="text-muted">
+                                    <i class="fa fa-calendar"></i> {{ _("Created") }}: {{ team.created_at.strftime('%Y-%m-%d') if team.created_at else '-' }}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center">
+                    <div class="jumbotron">
+                        <h2><i class="fa fa-users fa-3x text-muted"></i></h2>
+                        <h3>{{ _("No Teams Found") }}</h3>
+                        <p class="text-muted">{{ _("You are not a member of any teams yet.") }}</p>
+                        <a href="{{ url_for('TeamModelView.add') }}" class="btn btn-primary btn-lg">
+                            <i class="fa fa-plus"></i> {{ _("Create Your First Team") }}
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="text-center" style="margin-top: 20px;">
+                    <a href="{{ url_for('TeamModelView.list') }}" class="btn btn-default">
+                        <i class="fa fa-list"></i> {{ _("View All Teams") }}
+                    </a>
+                    <a href="{{ url_for('TeamModelView.add') }}" class="btn btn-success">
+                        <i class="fa fa-plus"></i> {{ _("Create New Team") }}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

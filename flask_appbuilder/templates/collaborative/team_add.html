@@ -1,0 +1,28 @@
+{% extends "appbuilder/general/model/add.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        {{ super() }}
+    </div>
+    <div class="col-md-4">
+        <div class="panel panel-info">
+            <div class="panel-heading">
+                <h4 class="panel-title">
+                    <i class="fa fa-info-circle"></i> {{ _("Team Guidelines") }}
+                </h4>
+            </div>
+            <div class="panel-body">
+                <h5>{{ _("Team Name") }}</h5>
+                <p class="text-muted">{{ _("Choose a descriptive name for your team. This will be visible to all members.") }}</p>
+                
+                <h5>{{ _("Privacy Settings") }}</h5>
+                <p class="text-muted">{{ _("Private teams require approval to join. Public teams allow anyone to request membership.") }}</p>
+                
+                <h5>{{ _("Team Management") }}</h5>
+                <p class="text-muted">{{ _("As the team creator, you'll automatically become the team owner with full administrative privileges.") }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

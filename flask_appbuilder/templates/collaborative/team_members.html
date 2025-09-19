@@ -1,0 +1,123 @@
+{% extends "appbuilder/base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">
+                    <i class="fa fa-users"></i> {{ _("Team Members") }} - {{ team.name }}
+                </h3>
+            </div>
+            <div class="panel-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <!-- Current Members -->
+                        <h4>{{ _("Current Members") }}</h4>
+                        {% if members %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>{{ _("Member") }}</th>
+                                        <th>{{ _("Role") }}</th>
+                                        <th>{{ _("Joined") }}</th>
+                                        <th>{{ _("Actions") }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for member in members %}
+                                    <tr>
+                                        <td>
+                                            <i class="fa fa-user"></i> {{ member.user.username }}
+                                            {% if member.user.first_name or member.user.last_name %}
+                                                ({{ member.user.first_name }} {{ member.user.last_name }})
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="label label-{% if member.role.name == 'OWNER' %}danger{% elif member.role.name == 'ADMIN' %}warning{% else %}info{% endif %}">
+                                                {{ member.role.name }}
+                                            </span>
+                                        </td>
+                                        <td>{{ member.joined_at.strftime('%Y-%m-%d') if member.joined_at else '-' }}</td>
+                                        <td>
+                                            {% if member.role.name != 'OWNER' %}
+                                            <form method="POST" action="{{ url_for('TeamModelView.remove_member', team_id=team.id, user_id=member.user.id) }}" style="display: inline;">
+                                                <button type="submit" class="btn btn-xs btn-danger" onclick="return confirm('{{ _("Are you sure you want to remove this member?") }}')">
+                                                    <i class="fa fa-remove"></i> {{ _("Remove") }}
+                                                </button>
+                                            </form>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <p class="text-muted">{{ _("No members found.") }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <!-- Add Member Form -->
+                        <div class="panel panel-success">
+                            <div class="panel-heading">
+                                <h4 class="panel-title">
+                                    <i class="fa fa-plus"></i> {{ _("Add Member") }}
+                                </h4>
+                            </div>
+                            <div class="panel-body">
+                                <form method="POST" action="{{ url_for('TeamModelView.add_member', team_id=team.id) }}">
+                                    {{ add_member_form.hidden_tag() }}
+                                    
+                                    <div class="form-group">
+                                        {{ add_member_form.user_id.label(class="control-label") }}
+                                        {{ add_member_form.user_id(class="form-control") }}
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        {{ add_member_form.role.label(class="control-label") }}
+                                        {{ add_member_form.role(class="form-control") }}
+                                    </div>
+                                    
+                                    <button type="submit" class="btn btn-success btn-block">
+                                        <i class="fa fa-plus"></i> {{ _("Add Member") }}
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        
+                        <!-- Team Info -->
+                        <div class="panel panel-info">
+                            <div class="panel-heading">
+                                <h4 class="panel-title">
+                                    <i class="fa fa-info-circle"></i> {{ _("Team Information") }}
+                                </h4>
+                            </div>
+                            <div class="panel-body">
+                                <p><strong>{{ _("Team Name:") }}</strong> {{ team.name }}</p>
+                                <p><strong>{{ _("Privacy:") }}</strong> 
+                                    <span class="label label-{% if team.is_private %}warning{% else %}success{% endif %}">
+                                        {% if team.is_private %}{{ _("Private") }}{% else %}{{ _("Public") }}{% endif %}
+                                    </span>
+                                </p>
+                                <p><strong>{{ _("Created:") }}</strong> {{ team.created_at.strftime('%Y-%m-%d') if team.created_at else '-' }}</p>
+                                
+                                <div class="btn-group-vertical btn-block">
+                                    <a href="{{ url_for('TeamModelView.show', pk=team.id) }}" class="btn btn-primary btn-sm">
+                                        <i class="fa fa-eye"></i> {{ _("View Team") }}
+                                    </a>
+                                    <a href="{{ url_for('TeamModelView.list') }}" class="btn btn-default btn-sm">
+                                        <i class="fa fa-list"></i> {{ _("Back to Teams") }}
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

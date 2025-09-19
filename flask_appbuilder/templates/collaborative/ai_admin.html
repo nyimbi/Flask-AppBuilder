@@ -1,0 +1,470 @@
+{% extends "appbuilder/base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">
+                    <i class="fa fa-cogs"></i> {{ _("AI System Administration") }}
+                </h3>
+            </div>
+            <div class="panel-body">
+                
+                <!-- System Overview Stats -->
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <h4><i class="fa fa-dashboard"></i> System Overview</h4>
+                    </div>
+                </div>
+                
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="stats-card text-center p-3 border rounded">
+                            <div class="stats-number text-primary">{{ system_stats.total_conversations }}</div>
+                            <div class="stats-label">Total Conversations</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stats-card text-center p-3 border rounded">
+                            <div class="stats-number text-success">{{ system_stats.active_conversations }}</div>
+                            <div class="stats-label">Active Conversations</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stats-card text-center p-3 border rounded">
+                            <div class="stats-number text-info">{{ system_stats.total_messages }}</div>
+                            <div class="stats-label">Total Messages</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stats-card text-center p-3 border rounded">
+                            <div class="stats-number text-warning">{{ "%.2f"|format(system_stats.average_response_time) }}s</div>
+                            <div class="stats-label">Avg Response Time</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Knowledge Base Stats -->
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <h4><i class="fa fa-database"></i> Knowledge Base Status</h4>
+                    </div>
+                </div>
+                
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="stats-card text-center p-3 border rounded">
+                            <div class="stats-number text-secondary">{{ knowledge_base_stats.total_documents }}</div>
+                            <div class="stats-label">Indexed Documents</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stats-card text-center p-3 border rounded">
+                            <div class="stats-number text-secondary">{{ knowledge_base_stats.total_chunks }}</div>
+                            <div class="stats-label">Content Chunks</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stats-card text-center p-3 border rounded">
+                            <div class="stats-number text-secondary">{{ knowledge_base_stats.total_embeddings }}</div>
+                            <div class="stats-label">Vector Embeddings</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- AI Models Configuration -->
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">
+                                        <i class="fa fa-brain"></i> AI Models Configuration
+                                    </h5>
+                                    <a href="{{ url_for('AIAdminView.models') }}" class="btn btn-primary btn-sm">
+                                        <i class="fa fa-cog"></i> Configure Models
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="panel-body">
+                                {% if available_models %}
+                                <div class="table-responsive">
+                                    <table class="table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Provider</th>
+                                                <th>Model</th>
+                                                <th>Status</th>
+                                                <th>Type</th>
+                                                <th>Max Tokens</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for model in available_models %}
+                                            <tr>
+                                                <td>
+                                                    <span class="label label-info">{{ model.provider }}</span>
+                                                </td>
+                                                <td>{{ model.model_name }}</td>
+                                                <td>
+                                                    {% if model.is_available %}
+                                                        <span class="label label-success">Available</span>
+                                                    {% else %}
+                                                        <span class="label label-danger">Unavailable</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>{{ model.model_type }}</td>
+                                                <td>{{ model.max_tokens or 'N/A' }}</td>
+                                                <td>
+                                                    <button class="btn btn-xs btn-primary" onclick="testModel('{{ model.provider }}', '{{ model.model_name }}')">
+                                                        <i class="fa fa-play"></i> Test
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                {% else %}
+                                <div class="text-center text-muted py-3">
+                                    <i class="fa fa-exclamation-triangle fa-2x mb-2"></i>
+                                    <p>No AI models configured</p>
+                                    <a href="{{ url_for('AIAdminView.models') }}" class="btn btn-primary">
+                                        Configure Models
+                                    </a>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Quick Actions -->
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <h5 class="mb-0">
+                                    <i class="fa fa-flash"></i> Quick Actions
+                                </h5>
+                            </div>
+                            <div class="panel-body">
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <div class="admin-action-card text-center p-3 border rounded">
+                                            <i class="fa fa-refresh fa-2x text-primary mb-2"></i>
+                                            <h6>Rebuild Knowledge Base</h6>
+                                            <button class="btn btn-primary btn-sm" onclick="rebuildKnowledgeBase()">
+                                                Start Rebuild
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="admin-action-card text-center p-3 border rounded">
+                                            <i class="fa fa-trash fa-2x text-danger mb-2"></i>
+                                            <h6>Clear Old Conversations</h6>
+                                            <button class="btn btn-danger btn-sm" onclick="clearOldConversations()">
+                                                Clear Old
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="admin-action-card text-center p-3 border rounded">
+                                            <i class="fa fa-download fa-2x text-info mb-2"></i>
+                                            <h6>Export Chat Data</h6>
+                                            <button class="btn btn-info btn-sm" onclick="exportChatData()">
+                                                Export
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="admin-action-card text-center p-3 border rounded">
+                                            <i class="fa fa-cog fa-2x text-secondary mb-2"></i>
+                                            <h6>System Configuration</h6>
+                                            <a href="{{ url_for('AIAdminView.system_config') }}" class="btn btn-secondary btn-sm">
+                                                Configure
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Recent Activity Log -->
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <h5 class="mb-0">
+                                    <i class="fa fa-history"></i> Recent Activity
+                                </h5>
+                            </div>
+                            <div class="panel-body">
+                                <div id="activityLog" style="max-height: 300px; overflow-y: auto;">
+                                    <div class="text-center text-muted py-3">
+                                        <i class="fa fa-clock-o"></i> Loading recent activity...
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.stats-card {
+    background: white;
+    transition: transform 0.2s ease-in-out;
+}
+
+.stats-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.stats-number {
+    font-size: 2rem;
+    font-weight: bold;
+    line-height: 1;
+}
+
+.stats-label {
+    font-size: 0.875rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 0.5rem;
+}
+
+.admin-action-card {
+    background: white;
+    transition: transform 0.2s ease-in-out;
+    height: 140px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.admin-action-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.mb-4 {
+    margin-bottom: 1.5rem;
+}
+
+.mb-2 {
+    margin-bottom: 0.5rem;
+}
+
+.mb-0 {
+    margin-bottom: 0;
+}
+
+.p-3 {
+    padding: 1rem;
+}
+
+.border {
+    border: 1px solid #dee2e6;
+}
+
+.rounded {
+    border-radius: 0.375rem;
+}
+
+.d-flex {
+    display: flex;
+}
+
+.justify-content-between {
+    justify-content: space-between;
+}
+
+.align-items-center {
+    align-items: center;
+}
+
+.text-center {
+    text-align: center;
+}
+</style>
+
+<script>
+// Test AI model connection
+async function testModel(provider, modelName) {
+    if (confirm(`Test connection to ${provider} ${modelName}?`)) {
+        try {
+            const response = await fetch('/api/v1/ai/test-model', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    provider: provider,
+                    model_name: modelName
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                alert(`Model test successful!\nResponse time: ${result.response_time}ms`);
+            } else {
+                alert(`Model test failed: ${result.error}`);
+            }
+        } catch (error) {
+            console.error('Model test error:', error);
+            alert('Failed to test model connection');
+        }
+    }
+}
+
+// Rebuild knowledge base
+async function rebuildKnowledgeBase() {
+    if (confirm('This will rebuild the entire knowledge base. This may take several minutes. Continue?')) {
+        try {
+            const response = await fetch('/api/v1/ai/knowledge/rebuild', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                alert('Knowledge base rebuild started. Check the activity log for progress.');
+                loadActivityLog();
+            } else {
+                alert(`Failed to start rebuild: ${result.error}`);
+            }
+        } catch (error) {
+            console.error('Rebuild error:', error);
+            alert('Failed to start knowledge base rebuild');
+        }
+    }
+}
+
+// Clear old conversations
+async function clearOldConversations() {
+    const days = prompt('Clear conversations older than how many days? (default: 30)');
+    const daysInt = parseInt(days) || 30;
+    
+    if (confirm(`This will permanently delete conversations older than ${daysInt} days. Continue?`)) {
+        try {
+            const response = await fetch('/api/v1/ai/conversations/cleanup', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    days_old: daysInt
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                alert(`Cleanup complete. Deleted ${result.deleted_count} conversations.`);
+                location.reload();
+            } else {
+                alert(`Cleanup failed: ${result.error}`);
+            }
+        } catch (error) {
+            console.error('Cleanup error:', error);
+            alert('Failed to clear old conversations');
+        }
+    }
+}
+
+// Export chat data
+async function exportChatData() {
+    const format = prompt('Export format (json/csv):', 'json');
+    if (!format || !['json', 'csv'].includes(format.toLowerCase())) {
+        alert('Invalid format. Use json or csv.');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/v1/ai/conversations/export?format=${format}`, {
+            method: 'GET'
+        });
+        
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `chat_export_${new Date().toISOString().split('T')[0]}.${format}`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        } else {
+            const result = await response.json();
+            alert(`Export failed: ${result.error}`);
+        }
+    } catch (error) {
+        console.error('Export error:', error);
+        alert('Failed to export chat data');
+    }
+}
+
+// Load activity log
+async function loadActivityLog() {
+    try {
+        const response = await fetch('/api/v1/ai/activity-log?limit=20');
+        const result = await response.json();
+        
+        const logContainer = document.getElementById('activityLog');
+        
+        if (result.success && result.activities.length > 0) {
+            let html = '';
+            result.activities.forEach(activity => {
+                html += `
+                    <div class="activity-item d-flex justify-content-between align-items-center py-2 border-bottom">
+                        <div>
+                            <strong>${activity.action}</strong>
+                            <small class="text-muted d-block">${activity.details}</small>
+                        </div>
+                        <small class="text-muted">${activity.timestamp}</small>
+                    </div>
+                `;
+            });
+            logContainer.innerHTML = html;
+        } else {
+            logContainer.innerHTML = `
+                <div class="text-center text-muted py-3">
+                    <i class="fa fa-info-circle"></i> No recent activity
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Activity log error:', error);
+        document.getElementById('activityLog').innerHTML = `
+            <div class="text-center text-danger py-3">
+                <i class="fa fa-exclamation-triangle"></i> Failed to load activity log
+            </div>
+        `;
+    }
+}
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    loadActivityLog();
+    
+    // Refresh activity log every 30 seconds
+    setInterval(loadActivityLog, 30000);
+});
+</script>
+{% endblock %}

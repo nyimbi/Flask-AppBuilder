@@ -1,0 +1,26 @@
+{% extends "appbuilder/general/model/list.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">
+                    <i class="fa fa-users"></i> {{ _("Teams") }}
+                </h3>
+            </div>
+            <div class="panel-body">
+                {{ super() }}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block add_custom_actions %}
+<div class="btn-group">
+    <a href="{{ url_for('TeamModelView.my_teams') }}" class="btn btn-sm btn-primary">
+        <i class="fa fa-user"></i> {{ _("My Teams") }}
+    </a>
+</div>
+{% endblock %}
